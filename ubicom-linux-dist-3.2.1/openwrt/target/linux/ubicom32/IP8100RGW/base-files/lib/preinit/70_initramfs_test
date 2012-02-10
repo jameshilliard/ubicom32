@@ -1,0 +1,20 @@
+#!/bin/sh
+# Copyright (C) 2006 OpenWrt.org
+# Copyright (C) 2010 Vertical Communications
+
+initramfs_test() {
+    if [ -n "$INITRAMFS" ]; then
+	boot_run_hook initramfs
+	preinit_ip_deconfig
+	break
+    fi
+}
+
+mount_etc() {
+	mount -t jffs2 /dev/mtdblock3 /overlay
+	mkdir -p /overlay/etc
+	mount -t mini_fo -o base=/etc,sto=/overlay/etc "mini_fo:/overlay/etc" /etc
+}
+
+boot_hook_add preinit_main initramfs_test
+boot_hook_add initramfs mount_etc

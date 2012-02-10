@@ -1,0 +1,7 @@
+invaRel.badconf:20: cannot set relation test for component gloss
+invaRel.badconf:21: cannot set relation cpu for component stdio
+invaRel.badconf:22: component foo not found
+invaRel.badconf:23: component connect-pin not found
+invaRel.badconf:24: cannot set relation loader for component loader
+invaRel.badconf:25: cannot set relation cpu for component mem
+Configuration error.  Aborting.

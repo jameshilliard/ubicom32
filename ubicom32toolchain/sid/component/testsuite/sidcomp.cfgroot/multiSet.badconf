@@ -1,0 +1,42 @@
+# This conf file contains
+
+# configuration logging
+set main verbose? 0
+
+load libsched.la sched_component_library
+load libconsoles.la console_component_library
+
+new sid-sched-host host-sched
+new sid-sched-sim target-sched
+new sid-io-stdio stdio
+
+set target-sched enabled? 0		# multiple set command with diff value
+set target-sched enabled? 1		# multiple set command with diff value
+set target-sched enabled? 0		# multiple set command with diff value
+set target-sched enabled? 0		# multiple set command with diff value	
+set target-sched enabled? 1		# multiple set command with diff value (last one wins)
+set target-sched num-clients 20		# multiple set command with diff value
+set target-sched num-clients 200	# multiple set command with diff value
+set target-sched num-clients 2000	# multiple set command with diff value
+
+set host-sched enabled? 0		# multiple set command with diff value
+set host-sched enabled? 1		# multiple set command with diff value
+set host-sched enabled? 0		# multiple set command with diff value
+set host-sched enabled? 1		# multiple set command with diff value (last one wins)
+set host-sched num-clients 4		# multiple set command with diff value
+set host-sched num-clients 3		# multiple set command with diff value
+set host-sched num-clients 2		# multiple set command with diff value
+set host-sched num-clients 1		# multiple set command with diff value
+set host-sched 0-regular? 0		# multiple set command with diff value
+set host-sched 0-regular? 1		# multiple set command with diff value
+set host-sched 0-time 50
+
+set target-sched num-clients 2		# multiple set command with diff value (last one wins)
+
+connect-pin target-sched 0-control <- stdio stdin
+connect-pin target-sched 1-control <- stdio stdin
+connect-pin target-sched 0-event -> stdio stdout
+connect-pin target-sched 1-event -> stdio stdout
+connect-pin target-sched 2-event -> stdio stdout
+connect-pin host-sched 0-event -> stdio poll
+connect-pin host-sched 3-event -> stdio poll

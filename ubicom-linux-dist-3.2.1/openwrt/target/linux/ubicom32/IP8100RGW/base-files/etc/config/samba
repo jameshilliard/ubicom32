@@ -1,0 +1,14 @@
+config samba
+	option 'name'			'ubicom'
+	option 'workgroup'		'WORKGROUP'
+	option 'description'	'Ubicom SaMBa Server'
+	option 'homes' 			'0'
+		
+config sambashare
+	option 'name'			'share'
+	option 'path'			'/mnt'
+	option 'read_only'		'no'
+	option 'guest_ok'		'yes'
+	option 'create_mask'	'0755'
+	option 'dir_mask'		'0755'
+	#option 'users'			'abc'

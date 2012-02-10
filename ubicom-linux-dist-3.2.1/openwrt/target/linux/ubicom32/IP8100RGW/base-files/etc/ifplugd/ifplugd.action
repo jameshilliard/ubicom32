@@ -1,0 +1,25 @@
+#!/bin/sh
+. /etc/functions.sh
+
+find_pptp_l2tp_if() {
+	local proto
+	config_get proto $1 proto
+	if [ "$proto" == "pptp" -o "$proto" == "l2tp" ]; then
+		wan_if=$1
+	fi
+}
+
+config_load network
+
+# Check if there is a PPTP or L2TP interface
+config_foreach find_pptp_l2tp_if interface
+
+if [ "$2" == "up" ]; then
+	ifup wan
+	[ -n "$wan_if" ] && ifup $wan_if
+elif [ "$2" == "down" ]; then
+	[ -n "$wan_if" ] && ifdown $wan_if
+	ifdown wan
+fi
+
+[ -x "$(which wanmon)" ] && wanmon &

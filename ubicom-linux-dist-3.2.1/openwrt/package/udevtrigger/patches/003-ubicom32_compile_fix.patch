@@ -1,0 +1,11 @@
+--- a/Makefile
++++ b/Makefile
+@@ -119,7 +119,7 @@ WARNINGS	= -Wstrict-prototypes -Wsign-co
+		  -Wpointer-arith -Wcast-align -Wsign-compare -Wmissing-prototypes
+ CFLAGS		+= $(WARNINGS)
+
+-LDFLAGS = -Wl,-warn-common
++LDFLAGS += -Wl,-warn-common
+
+ OPTFLAGS = -Os
+ CFLAGS += $(OPTFLAGS)

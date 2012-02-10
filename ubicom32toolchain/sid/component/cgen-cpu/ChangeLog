@@ -1,0 +1,837 @@
+2007-02-05  Dave Brolley  <brolley@redhat.com>
+
+	* Contribute the following changes:
+	2005-04-22  Richard Sandiford  <rsandifo@redhat.com>
+
+	* compCGEN.cxx: Apply automatic MeP-Integrator changes.
+
+	2005-04-17  Nick Clifton  <nickc@redhat.com>
+
+	* common_model.h (class mep_common_model): Add default
+          defintions of MAX_UNITS and UNIT_U_EXEC in case they are not
+          defined.
+
+	2003-10-07  Dave Brolley  <brolley@redhat.com>
+
+	* compCGEN.cxx: Remove references to mep_ext[2-6] and
+	 mep_ext_{core,cop}[2-6].
+
+	2002-02-04  Frank Ch. Eigler  <fche@redhat.com>
+
+	* compCGEN.cxx (mep): Add new hw-cpu-mep-extN types.
+
+	2001-04-03  John Healy  <jhealy@redhat.com>
+
+	* compCGEN.cxx (compCGENCreate): Added conditional statements so
+	that the mep code is only included in the compilation when the
+	target is mep.
+
+	2001-04-03  Ben Elliston  <bje@redhat.com>
+
+	* compCGEN.cxx (compCGENListTypes): Add hw-cpu-mep.
+	(compCGENCreate): Handle it.
+
+	* configure.in (cpu_subdirs): Reinstate mep.
+	* configure: Regenerate.
+
+	2001-03-28  Ben Elliston  <bje@redhat.com>
+
+	* configure.in (cpu_subdirs): Back out today's change.
+	* configure: Regenerate.
+
+	* configure.in (cpu_subdirs): Add mep.
+	* configure: Regenerate.
+
+2006-10-23  Dave Brolley  <brolley@redhat.com>
+
+	* compCGEN.cxx (cgen_print_address): Print "0x" prefix.
+
+2006-10-18  Dave Brolley  <brolley@redhat.com>
+
+	* Contribute the following changes:
+	
+	2006-05-11  Dave Brolley  <brolley@redhat.com>
+
+	* configure.in: Add sh support.
+	* compCGEN.cxx: #include sh* cpu headers.
+	(compCGENListTypes): List hw-cpu-sh*.
+	(compCGENCreate): Handle hw-cpu-sh*.
+	* sh: New directory.
+
+2006-07-14  Dave Brolley  <brolley@redhat.com>
+
+	* CGEN.sh.in (fileopts): Place semantic switches first so that they
+	are processed first.
+
+2006-06-26  Dave Brolley  <brolley@redhat.com>
+
+	* common-xml/behavior.xml (profiling): New behavior documented.
+	* common-xml/interface.xml (pins): Document gprof-pc, gprof-pc-hi
+	and sample-gprof pins.
+
+2006-06-23  Thiemo Seufer  <ths@mips.com>
+
+	* tracedis.cxx (bfd_getb16, bfd_getl16, bfd_getb32, bfd_getl32):
+	Remove invalid use of register specifier.
+
+2006-06-20  Dave Brolley  <brolley@redhat.com>
+
+	* compCGEN.cxx (cgen_bi_endian_cpu): Initialize loader. Add "loader"
+	relation and "disassembly-symbol-address" pin.
+	(cgen_print_address): Call cgen_symbol_at_address and print the
+	symbol name.
+	(cgen_symbol_at_address): Implemented.
+	* cgen-cpu.h (class cgen_bi_endian_cpu): Add symbol_at_address,
+	loader and disassembly_symbol_address_pin.
+
+2006-06-14  Dave Brolley  <brolley@redhat.com>
+
+	* cgen-fpu.h (cgen_fp_ops): All operations now take
+	const cgen_fpu*.
+	* cgen-fpu.cxx: Likewise.
+
+2006-06-06  Frank Ch. Eigler  <fche@elastic.org>
+
+	* Makefile.am, Makefile.in: Add "opcodes/cgen-bitset" to library.
+
+2006-05-11  Dave Brolley  <brolley@redhat.com>
+
+	* cgen-model.h (cgen_model): Initialize vliw_cycles.
+	(model_insn_after): Correct comment re: last_p.
+	* cgen-ops.h (SUBWORDDIHI, SUBWORDDIQI, SUBWORDDFDI): New functions.
+	* compCGEN.cxx (cgen_bi_endian_cpu): Initialize branch_was_return.
+
+2006-05-10  Dave Brolley  <brolley@redhat.com>
+
+	* fp.cxx (fp::integer (long long&, round_mode_t)): New method.
+	(fp::integer (unsigned long long&, round_mode_t)): New method.
+	* fp.h: Likewise.
+	* cgen-fpu.cxx (unorderedsf): New method.
+	(adddf, subdf, muldf, divdf, negdf, absdf, sqrtdf): Implemented.
+	(eqdf, ltdf, ledf, gtdf, gedf, gedf): Implemented.
+	(unordereddf): New method.
+	(unordereddf, fextsfdf): Implemented.
+	(floatdisf, fixsfsi, fixsfdi, floatsidf, floatdidf, fixdfsi) 
+	(fixdfdi): Implemented.
+	* cgen-fpu.h: Likewise.
+	* cgen-cpu.h (trace_counter): Now virtual.
+	(SETMEMBI): Write to data memory
+	(class cgen_bi_endian_cpu, class cgen_bi_endian_cpu) 
+	(class cgen_bi_endian_cpu, class cgen_bi_endian_cpu): Read/write
+	from data memory.
+	* CGEN.sh.in: Correct usage comment.
+
+2005-12-16  Nathan Sidwell  <nathan@codesourcery.com>
+
+	Second part of ms1 to mt renaming.
+	* Makefile.in: Rebuilt.
+	* aclocal.m4: Rebuilt.
+	* compCGEN.cxx: Adjust.
+	* configure: Rebuilt.
+	* configure.in: Rebult.
+
+2005-12-12  Nathan Sidwell  <nathan@codesourcery.com>
+
+	* mt: Renamed from ms1 dir.  Update file names as appropriate.
+
+2005-10-28  Dave Brolley  <brolley@redhat.com>
+
+	Contribute the following changes:
+	2003-10-07  Dave Brolley  <brolley@redhat.com>
+
+	* tracedis.cxx (cgen_disassemble): Rename isa_mask to isas. Now
+	(CGEN_ISA_MASK*).
+	* tracedis.h (opcode/cgen-bitset.h): #include it.
+	(cgen_disassemble): Rename isa_mask to isas. Now
+	(CGEN_ISA_MASK*).
+	(cgen_bi_endian_cpu::disassemble): 'isas' now (CGEN_ISA_MASK *).
+	* cgen-cpu.h (opcode/cgen-bitset.h): #include it.
+	(cgen_bi_endian_cpu::disassemble): 'isas' now (CGEN_ISA_MASK *).
+	* compCGEN.cxx (cgen_disassemble): Rename isa_mask to isas. Now
+	(CGEN_ISA_MASK*).
+
+2005-08-19  Dave Brolley  <brolley@redhat.com>
+
+	* Contribute the following changes:
+
+	2005-07-13  Dave Brolley  <brolley@redhat.com>
+
+	* cgen-cpu.h (notify_ret): Set last_caller and last_callee.
+
+	2005-05-29  Dave Brolley  <brolley@redhat.com>
+
+	* cgen-cpu.h (branch, done_insn, done_cti_insn, notify_ret): 
+	New virtual overrides.
+	(was_return): New member of cgen_bi_endian_cpu.
+
+2005-08-19  Dave Brolley  <brolley@redhat.com>
+
+	* cgen-fpu.cxx: New file.
+	* cgen-fpu.h: New file.
+	* Makefile.am (libcgencpu_la_SOURCES): Add cgen-fpu.cxx.
+	* Makefile.in: Regenerated.
+	* Contribute the following enhancements to floating point
+	support:
+	
+	2005-06-14  Dave Brolley  <brolley@redhat.com>
+
+	* fp.h (do_round,do_normal_round,do_normal_underflow,do_normal_overflow):
+	Now virtual.
+	* fp.cxx (do_normal_overflow): Round up to infinity only if
+	the result is positive.
+	(operator-): Don't apply 'neg' to a nan.
+	(neg): Return src if it is a qnan.
+
+	2005-05-20  Dave Brolley  <brolley@redhat.com>
+
+	* fp.cxx (pack_any): Ensure that nan results have a positive sign.
+	(operator-): Simply call operator+ with the rhs negated.
+	* fp.h (is_negative): New method of fp.
+
+	2005-05-13  Dave Brolley  <brolley@redhat.com>
+
+	* fp.h (fp): All arithmetic operator methods are now members
+	of class fp.
+	* fp.cxx (fp): Likewise.
+
+	2005-04-27  Dave Brolley  <brolley@redhat.com>
+
+	* fp.cxx (fp::unpack): Only perform sanity check for non-nans.
+
+	2005-04-12  Dave Brolley  <brolley@redhat.com>
+
+	* fp.h: Move static constants and functions to top of file for
+	visibility within the file.
+	(get_status): New method of fp.
+	(get_class): Likewise.
+	(qnan_fraction): Likewise.
+	(snan_fraction): Likewise.
+	(qnan_exponent): Likewise.
+	(snan_exponent): Likewise.
+	* fp.cxx (fp_to_int): throw fp::overflow for overflow.
+	(pack_any): Use [sq]nan_{exponent,fraction} to construct nans.
+	(unpack): Initialize status to 'ok'. Set class and status using
+	is_qnan_fraction and is_qnan respectively.
+
+	2005-03-18  Dave Brolley  <brolley@redhat.com>
+
+	* fp.cxx: Move static items from here.
+	* fp.h: To here. Make some methods virtual. Make private members
+	protected.
+	(is_inexact): New method.
+	
+2005-06-30  Frank Ch. Eigler  <fche@elastic.org>
+
+	* cgen-cpu.h (GETMEM?F, SETMEM?F): Use pointer-cast-based
+	integer/float reinterpration instead of reinterpret_cast<>.
+
+2005-06-15  Dave Brolley  <brolley@redhat.com>
+
+	Morpho ms1 cpu contributed on behalf of Red Hat
+	2004-05-14  Stan Cox  <scox@redhat.com>
+
+	* ms1: New directory.
+	* aclocal.m4: Regenerated.
+	* Makefile.in: Ditto.
+	* configure: Ditto.
+	* configure.in: Support added for ms1.
+	* compCGEN.cxx: Ditto.
+
+2005-06-03  Jim Blandy  <jimb@redhat.com>
+
+	* configure.in: Apply AC_CONFIG_SUBDIRS to literal strings only.
+	* acinclude.m4 (gcc_AC_CHECK_DECL, gcc_AC_CHECK_DECLS): Properly
+	quote macro names.
+	* configure: Regenerated.
+
+	* Makefile.am (LIBIBERTY): Link against the libiberty.a from
+	libiberty/pic, not the non-PIC version in libiberty.
+	* Makefile.in, aclocal.m4: Regenerated with Automake 1.9.5.
+
+2005-06-02  Jim Blandy  <jimb@redhat.com>
+
+	* cgen-cpu.h: Remove references to CGEN bitset type.
+
+	* configure.in: Don't forget to AC_SUBST the value of cpu_defs.
+	* configure: Regenerated.
+
+2005-05-10  Dave Brolley  <brolley@redhat.com>
+
+	* configure.in: Set 'cpu_defs' with extra defines needed by Solaris.
+	* configure: Regenerated.
+	* Makefile.am (CXXFLAGS): Set it to @cpu_defs@.
+	* Makefile.in: Regenerated.
+
+2005-05-10  Dave Brolley  <brolley@redhat.com>
+
+	* cgen-cpu.h ({GET,SET}[I]+MEM*): No longer const.
+	* configure.in: Check for pthread library.
+	* configure: Regenerated.
+
+2005-05-06  Jim Blandy  <jimb@redhat.com>
+
+	* cgen-engine.h (EXTRACT_MSB0_INT, EXTRACT_MSB0_UINT)
+	(EXTRACT_LSB0_INT, EXTRACT_LSB0_UINT): Doc fixes.
+
+2005-02-16  Dave Brolley  <brolley@redhat.com>
+
+	* cgen-ops.h (TRUNCBIBI): New macro.
+	(ADDOFQI): New function.
+	(SUBOFQI): New function.
+
+2005-02-12  Frank Ch. Eigler  <fche@elastic.org>
+
+	* cgen-engine.h (virtual_insn_type): Move decl here ...
+	* cgen-cpu.h: ... from here.
+	* Makefile.am (SOURCES): Don't try to build fp code.
+	* Makefile.in: Regenerated.
+
+2005-02-02  Jim Blandy  <jimb@redhat.com>
+
+	* CGEN.sh.in: Request on the command line that cgen/guile.scm be
+	loaded before cgen-sid.scm; cgen-sid.scm no longer loads fixup.scm.
+
+2004-06-25  Dave Brolley  <brolley@redhat.com>
+
+	* tracedis.cxx (register_name): Add parameter for the cgen MACH. Save
+	it in hack_list->machine or p->machine.
+	(cgen_disassemble): Add parameter for the cgen MACH. Pass it to
+	register_name. Use it to set info->mach.
+	(arch_hack): New field 'machine'.
+	(bfd_lookup_arch): Make sure the machines match.
+	* cgen-cpu.h (disassemble): Add parameter for the cgen MACH.
+	* compCGEN.cxx (disassemble): Add parameter for the cgen MACH. Pass it
+	to cgen_disassemble.
+	* tracedis.h (cgen_disassemble): Add parameter for the cgen MACH.
+
+2004-05-08  Robert Cragie <rcc@jennic.com>
+
+	* Makefile.am (_LIBADD, _DEPENDENCIES): Add opcodes/dis-init.c.
+	* Makefile.in: Regenerate.
+
+2004-03-23  Jim Blandy  <jimb@redhat.com>
+
+	* tracedis.cxx (bfd_get_arch, bfd_getb16, bfd_getl16, bfd_getb32)
+	(bfd_getl32, bfd_put_bits, bfd_get_bits, bfd_lookup_arch): These
+	definitions are meant to satisfy references in libopcodes, which
+	is C code, so declare these with 'extern "C"'.  Adjust types to
+	match those declared in the BFD header file.
+
+2004-03-22  Dave Brolley  <brolley@redhat.com>
+
+	* common-xml/interface.xml: Document "trace" pin.
+	* common-xml/behavior.xml: Document "trace" pin.
+
+2003-10-07  Dave Brolley  <brolley@redhat.com>
+
+	* cgen-model.h (class cgen_model): step_cycles and step_latency
+	now public.
+
+2003-10-07  Dave Brolley  <brolley@redhat.com>
+
+	* cgen-model.h (sidtypes.h): #include it.
+	(model_insn_before): Call step_latency. Initialize vliw_cycles.
+	(model_insn_after): Call step_cycles. Update vliw_cycles.
+	(step_cycles): New method.
+	(step_latency): New method.
+	(vliw_cycles): New member of cgen_model.
+	* cgen-engine.h (enum sem_status): Add SEM_STATUS_STALLED.
+
+2003-09-08  Doug Evans  <dje@casey.transmeta.com>
+
+	* CGEN.sh.h: New arg arch-file.
+
+2003-08-21  Dave Brolley  <brolley@redhat.com>
+
+	* compCGEN.cxx (end_trace): Call end_line.
+
+2003-06-17  Doug Evans  <dje@sebabeach.org>
+
+	* Makefile.am (cgen-all): Exit early if file generation fails.
+	* Makefile.in: Regenerate.
+
+2003-06-13  Dave Brolley  <brolley@redhat.com>
+
+	* cgen-ops.h: Revert change of 2003-05-06.
+
+2003-06-10  Dave Brolley  <brolley@redhat.com>
+
+	* configure.in: Call AC_CHECK_FUNCS and AC_CHECK_DECLS for getopt.
+	* configure: Regenerated.
+	* config.in: Regenerated.
+
+2003-05-06  Dave Brolley  <brolley@redhat.com>
+
+	* cgen-ops.h (LTUU{QI,HI,SI,DI,INT}): New macro.
+	(LEUU{QI,HI,SI,DI,INT}): New macro.
+	(GTUU{QI,HI,SI,DI,INT}): New macro.
+	(GEUU{QI,HI,SI,DI,INT}): New macro.
+
+2003-04-16  Dave Brolley  <brolley@redhat.com>
+
+	* common-xml/interface.xml: Document trace-count? and
+	final-insn-count?.
+	* CGEN.sh.in: Implement generation of model.cxx and model.h
+	* cgen-model.h: New file.
+
+2003-02-06  Frank Ch. Eigler  <fche@redhat.com>
+
+	* cgen-engine.h: C++ namespace cleanup.
+
+2003-01-15  Dave Brolley  <brolley@redhat.com>
+
+	* compCGEN.cxx (cgen_bi_endian_cpu): Don't initialize trace_count.
+	(trace_counter): Use total_insn_count and total_latency.
+	* cgen-cpu.h (class cgen_bi_endian_cpu): Remove trace_count.
+
+2003-01-09  Frank Ch. Eigler  <fche@redhat.com>
+
+	* tracedis.cxx (bfd_{get,put}_bits): Use int, not obsolete bfd
+	boolean type.
+
+2003-01-08  Ben Elliston  <bje@redhat.com>
+
+	* fp.h (sidutil::fp): Fully quality std::ostream.
+	* fp.cxx (print_bits): Likewise.
+	(operator<<): Likewise.
+	(fp::round_32): Don't specify a default argument at definition.
+	(fp::round_64): Likewise.
+	
+2002-11-29  Ben Elliston  <bje@redhat.com>
+ 
+	* common-xml/interface.xml (print-insn-summary!): New pin.
+	* common-xml/behavior.xml (tracing): Mention print-insn-summary!.
+
+2002-10-16  Alexandre Oliva  <aoliva@redhat.com>
+
+	* acinclude.m4 (gcc_AC_CHECK_DECL, gcc_AC_CHECK_DECLS): Copied
+	from gcc/aclocal.m4.
+	* configure.in: Check for decls of vasprintf, asprintf and
+	basename.
+	* tracedis.cxx: Include config.h.
+
+2002-10-03  Dave Brolley  <brolley@redhat.com>
+       From Ben Elliston  <bje@redhat.com>
+
+	* compCGEN.cxx (cgen_bi_endian_cpu::cgen_read_memory): Don't
+	bother fiddling the latency values.  Have the disassembler read
+	memory using the disassembler-memory accessor, if available.
+	* common-xml/interface.xml: Document disassembler-memory accessor.
+	* common-xml/behavior.xml (execution): Likewise.
+
+2002-09-19  Alexandre Oliva  <aoliva@redhat.com>
+
+	* CGEN.sh.in: Add $$ to temporary file names.
+
+2002-05-07  Frank Ch. Eigler  <fche@redhat.com>
+
+	* common-xml/interface.xml: Document gdb-breakpoint-{big,little}.
+	* common-xml/debugger-register-access.xml: Cont'd.
+
+2002-04-03  Ben Elliston  <bje@redhat.com>
+
+	* Makefile.am (TRACEDIS): Remove.
+	(libcgencpu_la_SOURCES): Add tracedis.cxx.
+	* tracedis.c: Rename from this ..
+	* tracedis.cxx: .. to this.
+	(trace_printf): New static function.
+	(cgen_disassemble): Pass trace_printf with INIT_DISASSEMBLE_INFO.
+	* compCGEN.cxx: Do not #include "tracedis.h" within extern "C".
+
+2002-03-14  Ben Elliston  <bje@redhat.com>
+
+	* common-xml/behavior.xml (tracing): New behavior section.
+	* common-xml/interface.xml (trace-filename): New attribute.
+	(trace-extract?): Associate with "tracing" behavior.
+	(trace-result?): Likewise.
+
+2002-02-11  Ben Elliston  <bje@redhat.com>
+
+	* Makefile.am (libcgencpu_la_SOURCES): Add fp.h, fp.cxx.
+	* fp.h: New file.
+	* fp.cxx: Likewise.
+
+2002-02-11  Frank Ch. Eigler  <fche@redhat.com>
+
+	* configure, Makefile.in: Regenerated to correct build problem.
+
+2002-02-06  Frank Ch. Eigler  <fche@redhat.com>
+
+	* compCGEN.cxx (cgen_disassemble): New "isa_mask" argument.
+	* tracedis.c (disassemble): Ditto.  Support it.
+	(cgen_disassemble): Defeat initialization bypass cache.
+	* cgen-cpu.h, tracedis.h: Corresponding changes.
+
+2002-01-31  Ben Elliston  <bje@redhat.com>
+
+	* cgen-ops.h (SUBWORDSIQI): New.
+	(SUBWORDSIHI): Ditto.
+	(SUBWORDSFSI): Ditto.
+	(SUBWORDSISF): Ditto.
+	(SUBWORDDIDF): Ditto.
+	(SUBWORDDFSI): Ditto.
+	(SUBWORDSIUQI): Ditto.
+
+2002-01-23  Ben Elliston  <bje@redhat.com>
+
+	* tracedis.c (bfd_getb16): New function.
+	(bfd_getl16): Likewise.
+	(bfd_getb32): Likewise.
+	(bfd_getl32): Likewise.
+
+2001-12-27  Frank Ch. Eigler  <fche@redhat.com>
+
+	* cgen-cpu.h (cgen_bi_endian_cpu): Make trace_count a host_int_8.
+	* compCGEN.cxx (cgen_read_memory): Don't distort memory latency
+	counter with disassembly traffic.
+	(trace_counter): Print also the current scheduler time.  Flush
+	scaches to avoid distorting memory latency counts.
+	* tracedis.c (cgen_disassemble): Defeat initialization bypass cache.
+	
+2001-12-18  Dave Brolley  <brolley@redhat.com>
+
+	* cgen-ops.h (ROLHI): New macro.
+	(RORHI): New macro.
+
+2001-12-17  Dave Brolley  <brolley@redhat.com>
+
+	* cgen-ops.h (ADDCHI): Correct return type.
+
+2001-12-17  matthew green  <mrg@redhat.com>
+
+	* compCGEN.cxx: If SIDTARGET_XSTORMY16, add hw-cpu-xstormy16 support.
+	* configure.in: Decend into xstormy16 if necessary.
+
+2001-12-14  Frank Ch. Eigler  <fche@redhat.com>
+
+	* cgen-engine.h (generic_scache_record): New template.
+
+2001-11-08  Frank Ch. Eigler  <fche@redhat.com>
+
+	* cgen-cpu.h (cgen_bi_endian_cpu): Remove trace_stream field: it's
+	in basic_cpu now.
+	* compCGEN.cxx: Corresponding change.
+
+2001-08-22  graydon hoare  <graydon@redhat.com>
+
+	* Makefile.am: Add missing dis-buf.c
+	* Makefile.in: Regenerate.
+
+2001-08-16  graydon hoare  <graydon@redhat.com>
+
+	* Makefile.am: gcc -> $(CC) fix.
+	* Makefile.in: Regenerate.
+
+2001-08-15  graydon hoare  <graydon@redhat.com>
+
+	* Makefile.am: Add support for building and
+	linking invididual objects from opcodes.
+	* Makefile.in: Regenerate.
+
+2001-08-03  matthew green  <mrg@redhat.com>
+
+	* cgen-cpu.h (~cgen_bi_endian_cpu): Add throw() specifier.
+	* compCGEN.cxx (~cgen_bi_endian_cpu): Likewise.
+
+2001-07-27  Dave Brolley  <brolley@redhat.com>
+
+	* cgen-ops.h (ADDCDI): New function.
+
+2001-07-20  Ben Elliston  <bje@redhat.com>
+
+	* configure.in: Check whether libintl is required for gettext.
+	* acinclude.m4: Remove.
+	* configure: Rebuild.
+	* aclocal.m4: Likewise.
+	* Makefile.in: Likewise.
+
+2001-07-13  Ben Elliston  <bje@redhat.com>
+
+	* Makefile.am (check-local): Rename target from "checkme".
+
+2001-07-12  Dave Brolley  <brolley@redhat.com>
+
+	* cgen-ops.h (ADDCFDI): New function.
+
+2001-07-10  matthew green  <mrg@redhat.com>
+
+	* configure.in: Add xstormy16 support.
+	* compCGEN.cxx: Add xstormy16 support.
+	* Makefile.in: Regenerate.
+	* aclocal.m4: Regenerate.
+	* configure: Regenerate.
+	* cgen-ops.h (JOINHISI): New define.
+
+2001-07-02  Ben Elliston  <bje@redhat.com>
+
+	* common-xml/interface.xml (debug-exec?): Remove.
+
+2001-06-29  graydon hoare  <graydon@redhat.com>
+
+	* common-xml/*: Add files.
+
+2001-06-28  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* compCGEN.cxx (cgen_cpu::stream_state): Change reference to
+	debug_exec_p to use new warnings_enabled flag.
+	(cgen_cpu::destream_state): Ditto.
+
+2001-06-28  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* compCGEN.cxx (cgen_bi_endian_cpu::cgen_bi_endian_cpu): Remove
+	debug_exec_p setting and add warnings_enabled flag which is tied		to new enable-warnings? setting.
+	* cgen-cpu.h (cgen_bi_endian_cpu::debug_exec_p): Removed.
+	(cgen_bi_endian_cpu::warnings_enabled): New member.
+
+2001-06-26  Frank Ch. Eigler  <fche@redhat.com>
+
+	* Makefile.am (ACLOCAL_AMFLAGS): Refer to $srcdir.
+	* Makefile.in: Regenerated.
+
+2001-06-23  Frank Ch. Eigler  <fche@redhat.com>
+
+	* cgen-cpu.h, tracedis.h: #undef AND unwittingly acquired
+	from ansidecl.h.
+
+2001-06-20  matthew green  <mrg@redhat.com>
+
+	* Makefile.am (INCLUDESBFD, OPCODES, LIBIBERTY, TRACEDIS): Set
+	unconditionally.
+	* cgen-cpu.h: Delete CGEN_BFD_DISASSEMBLER conditional.
+	* compCGEN.cxx: Likewise.
+	* configure.in (CY_SID_BFD_DISASM_CHECK): Delete.
+	* configure: Regenerate.
+	* Makefile.in: Likewise.
+	* aclocal.m4: Likewise.
+	* config.in: Likewise.
+
+2001-06-07  matthew green  <mrg@redhat.com>
+
+	* Makefile.am (BFDLIBS): Remove.
+	* Makefile.in: Regenerate.
+	* cgen-cpu.h (disassemble): Now takes a `const char *name' parameter.
+	* compCGEN.cxx (cgen_bi_endian_cpu::disassemble): Likewise.
+	* tracedis.c (cgen_disassemble): Likewise.  Also, call register_name()
+	with arch & name.
+	(bfd_get_arch): New dummy function.
+	(bfd_put_bits, bfd_get_bits): New functions. Copy from libbfd.
+	(hack_list): New list of arch to name mappings.
+	(register_name): New function.
+	(bfd_lookup_arch): New function. Uses hack_list.
+	* tracedis (cgen_disassemble): Update prototype.
+
+2001-06-07  Frank Ch. Eigler  <fche@redhat.com>
+
+	* cgen-cpu.h: Move new getter/setter functions to *MEM* from *IMEM*.
+
+2001-06-06  graydon hoare  <graydon@redhat.com>
+
+	* cgen-types.h: Add SF,DF,BI types.
+	* cgen-cpu.h (class cgen_bi_endian_cpu): Add some getter/setter
+	functions for various memory types.
+
+2001-05-29  matthew green  <mrg@redhat.com>
+
+	* Makefile.am (OPCODES, BFDLIB, LIBIBERTY, TRACEDIS, INCLUDESBFD): New
+	variables set conditionally on CGEN_BFD_DISASSEMBLER.
+	* acinclude.m4: New. Pull in gettext & bfd.
+	* cgen-cpu.h: If CGEN_BFD_DISASSEMBLER, include "bfd.h" and "dis-asm.h".
+	(cgen_bi_endian_cpu): If CGEN_BFD_DISASSEMBLER, new disassemble(),
+	cgen_read_memory(), cgen_print_address(), cgen_memory_error() and
+	cgen_symbol_at_address() methods, and new disassemble_info{} info.
+	New trace_counter() method and int trace_count.
+	* compCGEN.cxx: If CGEN_BFD_DISASSEMBLER, include "bfd.h", "tracedis.h"
+	and "dis-asm.h".
+	(cgen_bi_endian_cpu ctor): Initialise trace_count to zero.
+	(cgen_bi_endian_cpu::disassemble): New method, calls cgen_disasseble().
+	(cgen_bi_endian_cpu::cgen_read_memory): New method, conditional on
+	CGEN_BFD_DISASSEMBLER..
+	(cgen_bi_endian_cpu::cgen_memory_error): Likewise.
+	(cgen_bi_endian_cpu::cgen_print_address): Likewise.
+	(cgen_bi_endian_cpu::cgen_symbol_at_address: Likewise.
+	(cgen_bi_endian_cpu::trace_counter): New method.
+	* configure.in (CY_SID_BFD_DISASM_CHECK): Use.
+	* tracedis.c (cgen_disassemble): New file, front end to disassembler.
+	* tracedis.h: Header file for above.
+	* Makefile.in: Regenerated.
+	* aclocal.m4: Regenerated.
+	* config.in: Regenerated.
+	* configure: Regenerated.
+
+2001-05-23  Ben Elliston  <bje@redhat.com>
+
+	* cgen-types.h (cgen::VOID): Typedef for void.
+
+2001-04-03  Ben Elliston  <bje@redhat.com>
+
+	* cgen-cpu.h (cgen_bi_endian_cpu::GETMEMUQI): New method.
+	(cgen_bi_endian_cpu::SETMEMUQI): Ditto.
+	(cgen_bi_endian_cpu::GETMEMUHI): Ditto.
+	(cgen_bi_endain_cpu::SETMEMUHI): Ditto.
+
+2001-03-22  Ben Elliston  <bje@redhat.com>
+
+	* Makefile.in: Regenerate.
+	* configure: Likewise.
+	* aclocal.m4: Likewise.
+
+2001-03-21  Ben Elliston  <bje@redhat.com>
+
+	* Makefile.in: Regenerate.
+
+2001-03-01  Frank Ch. Eigler  <fche@redhat.com>
+
+	* cgen-engine.h (set_pbb_engine, chain, get_next_vpc, pbb_find,
+	pbb_find_or_alloc, pbb_before, pbb_after): Add branch probability
+	hints.
+
+2001-01-10  Frank Ch. Eigler  <fche@redhat.com>
+
+	* cgen-ops.h (ABSDI, ABSSI, ABSHI, ABSQI): New fns.
+
+2000-12-22  Frank Ch. Eigler  <fche@redhat.com>
+
+	* cgen-ops.h (JOINUQIUHI, SUBWORDHIUHI, SUBWORDUHIUQI): New fns.
+
+2000-11-15  Jeff Johnston  <jjohnstn@redhat.com>
+
+        * configure: Regenerated.
+        * aclocal.m4: Ditto.
+        * Makefile.in: Ditto.
+
+2000-11-01  Frank Ch. Eigler  <fche@redhat.com>
+
+	* Makefile.am (CXXFLAGS, TOP_CXXFLAGS, AM_CXXFLAGS, AM_MAKEFLAGS,
+	MAKEOVERRIDES): New macro concotion to rename/copy incoming CXXFLAGS
+	to TOP_CXXFLAGS in subdirectories.
+	* Makefile.in: Regenerated.
+
+2000-10-25  Frank Ch. Eigler  <fche@redhat.com>
+
+	* Makefile.am (MAKEOVERRIDES): Define empty macro to prevent 
+	automatic override of local CXXFLAGS from top-level Makefile.
+	* Makefile.in: Regenerated.
+
+2000-10-23  Frank Ch. Eigler  <fche@redhat.com>
+
+	* CGEN.sh.in: Add writeback-function file generation (-W flag).
+	* cgen-ops.h (SUBWORDHIQI, -HIBI, -BIHI): New functions.
+
+2000-10-10  Frank Ch. Eigler  <fche@redhat.com>
+
+	* CGEN.sh.in: Disable excessive "set -x" tracing.
+
+2000-09-21  Frank Ch. Eigler  <fche@redhat.com>
+
+	* CGEN.sh: Removed, replaced by
+	* CGEN.sh.in: New file.  Be able to run guile in build tree.
+	* configure.in: Look for guile and generate CGEN.sh.
+	* Makefile.in, aclocal.m4, configure: Regenerated.
+
+2000-09-15  matthew green  <mrg@redhat.com>
+
+	* cgen-cpu.h (GETIMEMUQI, SETIMEMUQI): New inline rtx functions.
+	(GETIMEMUHI, SETIMEMUHI): Likewise.
+	(GETIMEMUSI, SETIMEMUSI): Likewise.
+	(GETIMEMUDI, SETIMEMUDI): Likewise.
+
+2000-09-11  Jeff Johnston  <jjohsntn@redhat.com>
+
+	* cgen-ops.h (GTUINT, LTUINT, GEUINT, LEUINT): New macros.
+	(ADDOFHI, ADDCHI, ADDCFHI, SUBCHI, SUBOFHI, SUBCFHI): Ditto.
+
+2000-09-06  Frank Ch. Eigler  <fche@redhat.com>
+
+	* cgen-cpu.h (SETIMEM*): New inline functions.
+	* cgen-engine.h (cpu_memory_trap ctors): Reorder initializers.
+
+2000-08-30  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* cgen-cpu.h: (GETIMEMQI, GETIMEMHI, GETIMEMSI, GETIMEMDI):  Changed 
+	to specify pc argument as well as address.  New argument is passed on
+	to appropriate read_insn routine.
+	* arm7t/arm7f.cxx: Changed all callers of GETIMEMxx to duplicate
+	pc argument.
+	* m32r/m32rbf.cxx: Ditto.
+
+2000-07-19  Frank Ch. Eigler  <fche@redhat.com>
+
+	* aclocal.m4, configure: Regenerated.
+
+2000-06-14  Frank Ch. Eigler  <fche@redhat.com>
+
+	Regenerating with new cgen decode tree generator.
+	* arm7t/arm-decode.cxx, arm-decode.h: Regenerated.
+	* arm7t/arm-sem.cxx arm-semsw.cxx: Ditto (without decode-splits).
+
+2000-05-31  Ben Elliston  <bje@redhat.com>
+
+	* cgen-ops.h (ADDCQI, ADDCFQI, SUBCQI, SUBCFQI): New functions.
+	(RORQI, ROLQI): New macros.
+
+2000-05-23  Jeff Johnston <jjohnstn@cygnus.com>
+
+	* Makefile.in: Regenerated.
+	* aclocal.m4: Ditto.
+	* configure: Ditto.
+	* stamp-h.in: Ditto.
+
+2000-05-23  Ben Elliston  <bje@redhat.com>
+
+	* arm7t/Makefile.in: Regenerate.
+	* m32r/Makefile.in: Likewise.
+	* Makefile.in: Likewise.
+
+2000-04-26  Frank Ch. Eigler  <fche@redhat.com>
+
+	* cgen-engine.h (last_traced_pc_pbb): New member in pbb_scache<>.
+	(pbb_before): Track this PC address.
+	(pbb_after): Print extra insn trace if "after" virtual insn is after
+	a delay-slot insn.
+	(compile_after_insn): Hijack "before" virtual insn fields to store
+	scache insn.
+
+	* arm7t/atm7f.cxx (arm_pbb_begin, thumb_pbb_begin): Update call to
+	`compile_after_insn'.
+	* arm7t/arm-*, arm7t/thumb-*: Regenerated.
+	* m32r/m32r-*: Regenerated.
+
+2000-04-18  Frank Ch. Eigler  <fche@redhat.com>
+
+	* configure, aclocal.m4, Makefile.in: Regenerated.
+
+2000-04-07  Ben Elliston  <bje@redhat.com>
+
+	* Makefile.am (libcgencpu_la_DEPENDENCIES): Specify.
+	* Makefile.in: Regenerate.
+
+2000-04-05  Frank Ch. Eigler  <fche@redhat.com>
+
+	* m32r/m32r-*: Regenerated.
+	* cgen-cpu.h (GETMEMDI, SETMEMDI, GETIMEMDI): New functions.
+	* cgen-ops.h (ADDOFDI, SUBOFDI): New functions.
+	* Makefile.am (checkme): Don't fail if multi-family tests fail.
+	* Makefile.in: Regenerated.
+
+2000-03-30  Frank Ch. Eigler  <fche@redhat.com>
+
+	* Makefile.am (cgen-all, checkme): New recursive targets.
+	(cgen-*): Removed old targets that now live in subdirs.
+	* arm7t/Makefile.am: Refer to $srcdir/../CGEN.sh.
+	* m32r/Makefile.am: Ditto.
+	* Makefile.in: Regenerated.
+	* arm7t/Makefile.in: Regenerated.
+	* m32r/Makefile.in: Ditto.
+
+2000-03-30  Frank Ch. Eigler  <fche@cygnus.com>
+
+	* configure.in: New file.  Use CPU-family-specific subdirectories.
+	* Makefile.am: Corresponding changes.
+	* CGEN.sh (rootdir): Expect to be run from said subdirectories.
+	* configure, Makefile.in, aclocal.m4: Generated.
+	* stamp-h.in, config.in: Ditto.
+	
+	* ChangeLog.1: New file to collect historical entries.
+	
+	* arm7t: New directory.  Populate with old arm* files.
+	* m32r: New directory.  Populate with old m32r* files.

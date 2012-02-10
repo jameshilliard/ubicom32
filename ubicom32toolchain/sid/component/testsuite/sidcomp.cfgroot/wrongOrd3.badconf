@@ -1,0 +1,37 @@
+# This conf file contains connect-pin and connect-bus commands before the
+# set num-client for target-sched and host-sched
+
+# configuration logging
+set main verbose? 0
+
+# component libraries
+load libconsoles.la console_component_library
+load libgloss.la gloss_component_library
+load libloader.la loader_component_library
+load libmapper.la mapper_component_library
+load libmemory.la mem_component_library
+load libsched.la sched_component_library
+
+# Bus connections before instantiation
+connect-bus remapper all bus access-port
+connect-bus cpu insn-memory remapper access-port
+connect-bus angel target-memory remapper access-port
+connect-bus bus [0,0x7fffff] mem read-write-port
+
+# Components
+
+new sw-load-elf loader
+new sid-io-stdio stdio
+new hw-mapper-basic bus
+new sid-sched-host host-sched
+new sid-sched-sim target-sched
+new hw-memory-ram/rom-basic mem
+
+# connect pin commands executed before set num-client for target-sched and host-sched
+
+connect-pin target-sched 0-control <- stdio poll
+connect-pin target-sched 1-control <- stdio poll
+connect-pin target-sched 0-event -> stdio poll
+connect-pin target-sched 1-event -> stdio poll
+connect-pin host-sched 0-event -> stdio poll
+

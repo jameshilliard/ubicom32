@@ -1,0 +1,28 @@
+# Remote Ubicom target using telnet and tftp
+# Connect to tftp server using ssh
+
+#  Name or IP address of target board
+set_board_info hostname         "ubicom-ip7160rgw-remote"
+
+#  Name or IP address of tftp server 
+#  Note: the target must be able to resove the name via DNS or /etc/hosts
+#set_board_info tftp_host	"vm-ubicom"
+set_board_info tftp_host	"192.168.20.126"
+
+#  Set how to connect to tftp server -- either "ssh" or "local"
+#  If ssh, use shared key to avoid password prompt
+set_board_info tftp_connect	"ssh"
+
+#  Name of user for tftp server if accessed via ssh
+set_board_info tftp_username	"meager"
+
+#  Compiler options
+set_board_info cflags		""
+
+#  Linker options
+set_board_info ldflags          ""
+
+# Connect to target board running uClinux using telnet over
+# Ubicom dongle, use tftp to transfer files
+
+load_generic_config		"ubicom-uclinux"

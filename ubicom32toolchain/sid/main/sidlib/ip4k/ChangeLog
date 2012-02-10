@@ -1,0 +1,163 @@
+2002-01-17  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4ksid.h (ip4kcpu): Add cpu_data_bus and cpu_insn_bus members.
+	(ip4kcopro): Add copro_data_bus and copro_insn_bus members.
+	(ip4k_main_plus_copro): Add cpu_data_bus, cpu_insn_bus,
+	copro_data_bus, and copro_insn_bus members.
+	(ip4kcpu::DATA_READ): Change to use simwcpu::read_memory_bus.
+	(ip4kcpu::INSN_READ): Ditto.
+	(ip4kcopro::DATA_READ): Ditto.
+	(ip4kcopro::INSN_READ): Ditto.
+	(ip4k_main_plus_copro::DATA_READ_MAIN): Ditto.
+	(ip4k_main_plus_copro::INSN_READ_MAIN): Ditto.
+	(ip4k_main_plus_copro::DATA_READ_COPRO): Ditto.
+	(ip4k_main_plus_copro::INSN_READ_COPRO): Ditto.
+	(ip4kcpu::DATA_WRITE): Change to use simwcpu::write_memory_bus.
+	(ip4kcpu::INSN_WRITE): Ditto.
+	(ip4kcopro::DATA_WRITE): Ditto.
+	(ip4kcopro::INSN_WRITE): Ditto.
+	(ip4k_main_plus_copro::DATA_WRITE_MAIN): Ditto.
+	(ip4k_main_plus_copro::INSN_WRITE_MAIN): Ditto.
+	(ip4k_main_plus_copro::DATA_WRITE_COPRO): Ditto.
+	(ip4k_main_plus_copro::INSN_WRITE_COPRO): Ditto.
+	* ip4kcpu.cxx (ip4kcpu::ip4kcpu): Initialize cpu_data_bus and
+	cpu_insn_bus.
+	* ip4kcopro.cxx (ip4kcopro::ip4kcopro): Initialize copro_data_bus
+	and copro_insn_bus.
+	* ip4kmainpluscopro.cxx (ip4k_main_plus_copro::ip4k_main_plus_copro):
+	Initialize cpu_data_bus, cpu_insn_bus, copro_data_bus, and
+	copro_insn_bus.
+
+2001-12-14  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4ksid.h (ip4kcpu::regno_t): Add mt_break_clr.
+
+2001-11-16  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4ksidlib.txt: Add simwcpu::get_exit_code method info.
+	As well, correct state save/restore information.
+
+2001-11-08  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4kcpu.cxx (ip4kcpu::read_register): New method
+	that also accepts a context number.
+	(ip4kcpu::write_register): Ditto.
+	* ip4kmainpluscopro.cxx (ip4k_main_plus_copro::read_register_main): 
+	Ditto.
+	(ip4k_main_plus_copro::write_register_main): Ditto.
+	* ip4ksid.h: Add new prototypes for added methods.
+	* ip4ksidlib.txt: Remove reference to -dlpreopen libtool option.
+
+2001-11-06  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4ksid.h (ip4kcpu::regno_t): Changed register names
+	to match latest spec change.
+
+2001-10-19  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4ksidlib.txt: New documentation file.
+	* configure.in: Change package to sidlib.
+	* Makefile.am: Add install of ip4ksidlib.txt.
+	* configure: Regenerated.
+	* Makefile.in: Ditto.
+
+2001-10-18  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* configure: Regenerated.
+	* Makefile.in: Ditto.
+	* aclocal.m4: Ditto.
+
+2001-10-12  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4kcopro.cxx (ip4kcopro::read_register): Add call to
+	check_load to ensure load/reset has been done first.
+	(ip4kcopro::write_register): Ditto.
+	* ip4cpu.cxx (ip4kcpu::read_register): Ditto.
+	(ip4kcpu::write_register): Ditto.
+	(ip4kcpu::interrupt): Ditto.
+	* ip4kmainpluscopro.cxx
+	(ip4k_main_plus_copro::read_register_main): Ditto.
+	(ip4k_main_plus_copro::write_register_main): Ditto.
+	(ip4k_main_plus_copro::read_register_copro): Ditto.
+	(ip4k_main_plus_copro::write_register_copro): Ditto.
+	(ip4k_main_plus_copro::interrupt_main): Ditto.
+
+2001-09-10  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4kcopro.cxx (ip4kcopro::read_register): Change to support
+	host_int_8 register.
+	(ip4kcopro::write_register): Ditto.
+	(ip4kcopro::checkpoint_all_state): Change to use string2stream
+	for the binary data and add blanks between the component name
+	and its corresponding binary string2stream.
+	(ip4kcopro::restore_all_state): Use stream2string to read the
+	binary data from the stream.
+	* ip4kcpu.cxx (ip4kcpu::read_register): Change to check for
+	size before extracting data from result.
+	(ip4kcpu::checkpoint_all_state): Use string2stream to save
+	binary data and add blank between it and component name.
+	(ip4kcpu::restore_all_state): Use stream2string to restore
+	binary data.
+	(ip4kcpu::interrupt): Use "irq-" as interrupt prefix instead
+	of "irq-pin-".
+	* ip4kmainpluscopro.cxx:
+	(ip4k_main_plus_copro::read_insn_memory_copro): New method.
+	(ip4k_main_plus_copro::write_insn_memory_copro): Ditto.
+	(ip4k_main_plus_copro::read_register_copro): Change to read
+	host_int_8 results.
+	(ip4k_main_plus_copro::write_register_copro): Change to write
+	host_int_8 input.
+	(ip4k_main_plus_copro::interrupt_main): Change to use "irq-"
+	as interrupt prefix.
+	(ip4k_main_plus_copro::checkpoint_all_state): Use string2stream
+	to save binary data.
+	(ip4k_main_plus_copro::restore_all_state): Use stream2string
+	to restore binary data.
+	* ip4ksid.h (ip4kcopro::read_register): Change prototype.
+	(ip4kcopro::write_register): Ditto.
+	(ip4k_main_plus_copro::read_register_copro): Ditto.
+	(ip4k_main_plus_copro::write_register_copro): Ditto.
+	(ip4k_main_plus_copro::read_insn_memory_copro): New template.
+	(ip4k_main_plus_copro::write_insn_memory_copro): Ditto.
+
+2001-08-03  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4ksid.h (ip4kcpu::INSN_READ, ip4kcpu::INSN_WRITE): Changed to
+	use "debugger-bus" and to add in appropriate top-byte of address
+	to trigger insn memory in harvard addressing.
+	(ip4kcopro::INSN_READ, ip4kcopro::INSN_WRITE): Ditto.
+	(ip4k_main_plus_copro::INSN_READ_MAIN): Ditto.
+	(ip4k_main_plus_copro::INSN_WRITE_MAIN): Ditto.
+
+2001-08-03  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4kcopro.cxx: Fixed typo for specifying "step-insn-count".
+	(ip4kcopro::read_register): Changed to use debugger
+	format which returns the value as a string of big-endian bytes.
+	(ip4kcopro::write_register): Changed to use debugger format which
+	expects the value to be sent as a string of big-endian bytes.
+	* ip4kcpu.cxx: Ditto.
+	* ip4kmainpluscopro.cxx: Fixed type when specifying "step-insn-count".
+	(ip4k_main_plus_copro::read_register_main):
+	Changed to use debugger format which returns the value as a string
+	of big-endian bytes.
+	(ip4k_main_plus_copro::read_register_copro): Ditto.
+	(ip4k_main_plus_copro::write_register): Changed to use debugger format 
+	which expects the value to be sent as string of big-endian bytes.
+
+2001-08-02  Dave Brolley  <brolley@redhat.com>
+
+	* ip4ksid.h (ip4k_main_plus_copro): Change default config file name.
+
+2001-08-02  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* aclocal.m4: New file.
+	* ChangeLog: Ditto.
+	* configure: Ditto.
+	* configure.in: Ditto.
+	* ip4kcopro.cxx: Ditto.
+	* ip4kcpu.cxx: Ditto.
+	* ip4kmainpluscopro.cxx: Ditto.
+	* ip4ksid.h: Ditto.
+	* Makefile.am: Ditto.
+	* Makefile.in: Ditto.

@@ -1,0 +1,2 @@
+raise.lo /home/art/newlib-1.16.0/newlib/libc/signal/raise.lo
+signal.lo /home/art/newlib-1.16.0/newlib/libc/signal/signal.lo

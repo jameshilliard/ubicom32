@@ -1,0 +1,11 @@
+--- a/common.mak
++++ b/common.mak
+@@ -1,7 +1,7 @@
+ # vim:set sw=8 nosta:
+
+ COPTS=-Os -Wall -g
+-LDFLAGS=-g
++LDFLAGS+=-g
+
+ CFLAGS=$(COPTS)
+ FPIC=-fPIC

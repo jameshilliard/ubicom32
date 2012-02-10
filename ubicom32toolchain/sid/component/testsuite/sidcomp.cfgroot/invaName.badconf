@@ -1,0 +1,14 @@
+## This conf file contains relate commands with invalid component names
+
+set main verbose? 0
+
+load libconsoles.la console_component_library
+load libgloss.la gloss_component_library
+
+new sid-io-stdio stdio
+new sw-gloss-generic/libgloss gloss
+
+# Component relationships
+relate gloss cpu stdio
+relate glossy cpu stdio			# invalid component name
+relate " " cpu stdio			# invalid component name

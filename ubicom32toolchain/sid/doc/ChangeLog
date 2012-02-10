@@ -1,0 +1,45 @@
+2005-12-16  Nathan Sidwell  <nathan@codesourcery.com>
+
+	Second part of ms1 to mt renaming.
+	* Makefile.in: Rebuilt.
+
+2005-06-03  Jim Blandy  <jimb@redhat.com>
+
+	* Makefile.in: Regenerated with Automake 1.9.5.
+
+2003-06-12  Dave Brolley  <brolley@redhat.com>
+
+	* sid.1: Document 'cycles' suboption of gprof.
+
+2002-11-21  Ben Elliston  <bje@redhat.com>
+
+	* Makefile.am: New file.
+	* sid.1: Likewise.
+
+2001-11-15  Thomas Fitzsimmons  <fitzsim@redhat.com>
+
+	* sid-guide/book-sid.sgml: Add example to Using GDB section.
+
+2001-10-16  Frank Ch. Eigler  <fche@redhat.com>
+
+	* *-guide/images/*.png: New files, replacing ...
+	* *-guide/images/*.jpg: Gone.
+	* cdk-guide/book-cdk.sgml: Switch over.
+	* sid-guide/book-sid.sgml: Ditto.
+
+2001-10-15  Frank Ch. Eigler  <fche@redhat.com>
+
+	* cdk-guide/Makefile (normalize): Rewrite.
+	(pdf, html): Add "-i" sgml flags for print/html entity marks.
+	* sid-guide/Makefile: Ditto.
+	* cdk-guide/book-cdk.sgml: Add date & rendering marks.
+	* sid-guide/book-sid.sgml: Ditto.
+
+2001-08-02  graydon hoare  <graydon@redhat.com>
+
+	* cdk-guide/api-reference.sgml: Rewrite.
+	* cdk-guide/images/accessor-bus.jpg: Add.
+	* cdk-guide/images/name-structure.jpg: Add.
+	* cdk-guide/cdktutorial.sgml: Minor cleanups.
+	* cdk-guide/introduction.sgml: Ditto.
+

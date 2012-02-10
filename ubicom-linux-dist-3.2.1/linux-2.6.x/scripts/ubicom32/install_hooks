@@ -1,0 +1,11 @@
+#!/bin/sh
+#
+# installs git hooks
+#
+DIR=$(dirname $0)
+cd $DIR
+cd ../../.git/hooks;
+
+echo Installing pre-commit hook
+rm pre-commit
+ln -s ../../scripts/ubicom32/pre-commit

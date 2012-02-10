@@ -1,0 +1,545 @@
+#!/bin/bash
+######################################################################
+#  Build script for ubicom32 toolchain
+#
+usage()
+{
+    cat << EOF
+usage: $0 <options> install_dir
+
+Builds the toolchain in the current directory and install to install_dir
+
+OPTIONS:
+   -h		Show this message
+   -k <dir>	Explicity set the kernel source dir
+   -c <dir>	Explicity set the uClibc source dir
+   -f <file>	Load configuration from file.
+   -d	Set gcc/gcc/DATESTAMP today
+EOF
+}
+
+######################################################################
+
+# set to false for testing individual parts
+
+SRC=$(cd $(dirname $0); pwd)
+
+CONFIG_KERNEL_HDR=kernel_hdr
+CONFIG_KERNEL_SRC=$SRC/linux-2.6.x
+CONFIG_SET_DATE=n
+CONFIG_UCLIBC_SRC=$SRC/uClibc
+
+CONFIG_BUILD_HOST_LIBS=true
+
+CONFIG_BUILD_ELF_TOOLCHAIN=true
+CONFIG_BUILD_ELF_LANGUAGES=c
+
+# We don't now build the uClinux variants of the toolchain as the IP8k
+# does not support bFlt files anyway and the IP7k hasn't actually used
+# this format (other than in some benchmark tests) since the introduction
+# of FD-PIC support.
+
+CONFIG_BUILD_UCLINUX_TOOLCHAIN=false
+CONFIG_BUILD_UCLINUX_UCLIBC=false
+CONFIG_BUILD_UCLINUX_LANGUAGES=c,c++
+
+CONFIG_BUILD_LINUX_TOOLCHAIN=true
+CONFIG_BUILD_LINUX_UCLIBC=true
+CONFIG_BUILD_LINUX_LANGUAGES=c,c++
+
+
+PROCESSORS=$(grep -c processor /proc/cpuinfo)
+MAKE_JOBS=$(($PROCESSORS + 1))
+MAKE="nice make"
+SET_DATE=
+
+######################################################################
+
+function Info() {
+    echo "Info: " "$@"
+}
+
+function Status() {
+    echo "------------------------------------------------------------"
+    Info "$TARGET: $@"
+    echo "------------------------------------------------------------"
+}
+
+######################################################################
+
+function warn() {
+    echo "Warning: $@" >&2
+    echo "    in PWD=$PWD" >&2
+}
+
+function clean_up() {
+# restore date stamp
+    if [ "$CLEAN_UP_DATE" != "" ]; then
+	rm $SRC/gcc/gcc/DATESTAMP
+	mv $CLEAN_UP_DATE $SRC/gcc/gcc/DATESTAMP
+    fi
+}
+
+######################################################################
+
+function error_and_exit() {
+    echo "Error: $@" >&2
+    echo "    $TARGET in PWD=$PWD" >&2
+    clean_up
+    exit 1
+}
+
+######################################################################
+# set_dir
+#   changes the current dir to $BUILD/$1
+
+function set_dir() {
+    local DIR="$BUILD/$1"
+    mkdir -p "$DIR"  || error_and_exit "Failed to mkdir dir=$DIR"
+    cd "$DIR" || error_and_exit "Failed to cd dir=$DIR"
+    Info "Set dir=$DIR"
+}
+
+######################################################################
+
+function make_and_install() {
+    Info "Build $PWD"
+    rm -f build_log.txt
+    rm -f build_log2.txt
+    rm -f install_log.txt
+    Info "Logging to $PWD/build_log.txt"
+    $MAKE -j$MAKE_JOBS > build_log.txt 2>&1
+    Info "Logging to $PWD/build_log2.txt"
+    $MAKE  > build_log2.txt 2>&1 || error_and_exit "Failed building"
+    Info "Install $PWD"
+    Info "Logging to $PWD/install_log.txt"
+    $MAKE  install > install_log.txt 2>&1 || error_and_exit "Failed installing"
+}
+
+
+######################################################################
+# configure_and_build()
+
+function configure_and_build()
+{
+    local DIR=$1; shift
+    local SCRIPT=$1; shift
+
+    Info "Configure in $DIR with $SCRIPT"
+    set_dir $DIR
+
+    Info "Running ...."
+
+    echo -n "$SCRIPT "  > reconfigure
+    for p in "$@"; do
+	echo '\' >> reconfigure
+	echo -n "     \"$p\" " >> reconfigure
+    done
+    echo >> reconfigure
+    cat reconfigure
+    chmod +x reconfigure
+    ./reconfigure > /dev/null || error_and_exit "Failed to configure"
+
+    make_and_install
+
+}
+
+######################################################################
+# set_target()
+function set_target
+{
+    TARGET_ARCH=ubicom32
+    TARGET_OS=$1
+    TARGET=${TARGET_ARCH}-${TARGET_OS}
+    CROSS_PREFIX=$INSTALL/$TARGET
+    CROSS_RUNTIME=$CROSS_PREFIX/runtime
+}
+
+######################################################################
+# configure_and_build_toolchain(dir, languages)
+# builds the $TARGET tool chain in $TARGET-$1
+function configure_and_build_toolchain()
+{
+    local languages=$1
+    shift
+    if [ "$languages" = "" ]; then
+	$languages=c
+    fi
+
+    # clean the folder
+    rm $BUILD/$TARGET -rf
+    Status "Build $languages Toolchain"
+
+    # build toolchain
+    configure_and_build $TARGET $SRC/configure \
+	--disable-werror \
+	--enable-gdbmi \
+	--enable-install-libbfd \
+	--enable-languages=$languages \
+	--enable-libada=no \
+	--enable-libssp=no \
+	--enable-rda=no \
+	--prefix=$INSTALL \
+	--target=$TARGET \
+	--with-gmp=$INSTALL \
+	--with-mpfr=$INSTALL \
+	--without-newlib \
+	"$@"
+
+}
+
+######################################################################
+function make_uClibc()
+{
+    local DESTDIR="$CROSS_RUNTIME"
+    local DEVEL_PREFIX=/usr/
+    local RUNTIME_PREFIX=/
+
+    true echo RUNNING: $MAKE -C "$UCLIBC_SRC" \
+	ARCH_CFLAGS="$UCLIBC_CFLAGS" \
+	DESTDIR="$DESTDIR" \
+	DEVEL_PREFIX=$DEVEL_PREFIX \
+	KERNEL_HEADERS="$KERNEL_HEADERS" \
+	MULTILIB="$MULTILIB_DIR" \
+	RUNTIME_PREFIX=$RUNTIME_PREFIX \
+	UCLIBC_EXTRA_CFLAGS="$UCLIBC_EXTRA_CFLAGS" \
+	V=1 \
+	CROSS="$CROSS_COMPILE" \
+	"$@" >&2
+
+    # todo... test with job server
+    $MAKE -C "$UCLIBC_SRC" \
+	CROSS="$CROSS_COMPILE" \
+	RUNTIME_PREFIX=$RUNTIME_PREFIX \
+	ARCH_CFLAGS="$UCLIBC_CFLAGS" \
+	MULTILIB="$MULTILIB_DIR" \
+	DEVEL_PREFIX="$DEVEL_PREFIX" \
+	V=1 \
+	KERNEL_HEADERS="$KERNEL_HEADERS" \
+	DESTDIR="$DESTDIR" \
+	UCLIBC_EXTRA_CFLAGS="$UCLIBC_EXTRA_CFLAGS" \
+	"$@" 2>&1 \
+	|| error_and_exit "Issue building uClibc $@"
+}
+
+function build_and_install_uClibc()
+{
+    MULTILIB_DIR="$1"; shift
+    KERNEL_HEADERS="$BUILD/$KERNEL_HDR/usr/include"
+    UCLIBC_EXTRA_CFLAGS="$@"
+
+    Status "Build uClibc $MULITILIB_DIR , and CFLAGS=$@"
+    set_dir logs/$TARGET/uClibc
+    mkdir -p "$CROSS_RUNTIME"
+    mkdir -p log_$MULTILIB_DIR
+
+    # assume that $TARGET.config is in uClibc\
+    cp $UCLIBC_SRC/$TARGET.config $UCLIBC_SRC/.config || error_and_exit "Couldn't copy $TARGET.config"
+    find $UCLIBC_SRC -name "*.o" -exec rm {} \;
+    make_uClibc clean > log_$MULTILIB_DIR/clean_log.txt || warn "Issue Cleaning uClibc"
+    make_uClibc       > log_$MULTILIB_DIR/build_log.txt || error_and_exit "Building uClibc"
+
+    Status "Install uClibc to $CROSS_RUNTIME"
+    make_uClibc install > log_$MULTILIB_DIR/install_log_.txt
+}
+
+function build_and_install_uClibc_v5()
+{
+    MULTILIB_DIR="$1"; shift
+    KERNEL_HEADERS="$BUILD/$KERNEL_HDR/usr/include"
+    UCLIBC_EXTRA_CFLAGS="$@"
+
+    Status "Build uClibc $MULITILIB_DIR , and CFLAGS=$@"
+    set_dir logs/$TARGET/uClibc
+    mkdir -p "$CROSS_RUNTIME"
+    mkdir -p log_$MULTILIB_DIR
+
+    # assume that $TARGET.config is in uClibc\
+    cp $UCLIBC_SRC/$TARGET-v5.config $UCLIBC_SRC/.config || error_and_exit "Couldn't copy $TARGET.config"
+    find $UCLIBC_SRC -name "*.o" -exec rm {} \;
+    make_uClibc clean > log_$MULTILIB_DIR/clean_log.txt || warn "Issue Cleaning uClibc"
+    make_uClibc       > log_$MULTILIB_DIR/build_log.txt || error_and_exit "Building uClibc"
+
+    cp $UCLIBC_SRC/.config log_$MULTILIB_DIR/v5_config
+
+    Status "Install uClibc to $CROSS_RUNTIME"
+    make_uClibc install > log_$MULTILIB_DIR/install_log_.txt
+}
+
+# Install stripped libraries into sysroot direcotory
+install_target_libs ()
+{
+
+    GCC=$INSTALL/bin/$TARGET-gcc
+    TARGET_SHLIB=$($GCC --print-file-name=$1.so)
+    if [ "$TARGET_SHLIB" == 0 ]; then
+	return 0
+    fi
+    Info "Installing shared $1"
+
+    MULTILIBS=`$GCC --print-multi-lib`
+
+    for ml in $MULTILIBS; do
+
+	dir=`echo ${ml} | sed -e 's/;.*$//'`
+	flags=`echo ${ml} | sed -e 's/^[^;]*;//' -e 's/@/ -/g'`
+	if [ "$dir" = "." ]; then
+	    dir2=
+	else
+	    dir2=`echo ${dir} | sed -e 's|[^/]*|..|g'`/
+	fi
+
+	TARGET_SHLIB=$($GCC $flags --print-file-name=$1.so)
+	TARGET_SHLIB=$(readlink -f $TARGET_SHLIB)
+	TARGET_SHLIB_DIR=$(dirname $TARGET_SHLIB)
+	TARGET_SHLIB_NAME=$(basename $TARGET_SHLIB)
+	TARGET_SHLIB_VERSION=$(echo $TARGET_SHLIB_NAME | sed s/$1.so.'\([0-9]*.[0-9]*.[0-9]*\).*/\1/')
+	MAJOR_NUM=$(echo $TARGET_SHLIB_VERSION | sed 's/\([0-9]*\).*/\1/')
+
+	cp -fv $TARGET_SHLIB $CROSS_RUNTIME/lib/$dir
+	$INSTALL/bin/$TARGET-strip -g $CROSS_RUNTIME/lib/$dir
+	if [ "$MAJOR_NUM" != "" ]; then
+	    ln -sfv $TARGET_SHLIB_NAME $CROSS_RUNTIME/lib/$dir/$1.so.$MAJOR_NUM;
+	fi
+
+    done
+}
+
+######################################################################
+#
+# main script starts here
+#
+
+SRC=$(cd $(dirname $0); pwd)
+
+while getopts "hdk:c:K:C:f:" OPTION
+  do
+     case $OPTION in
+	 h)
+	     usage
+	     exit 1
+	     ;;
+	 d)
+	     CONFIG_SET_DATE=y
+	     ;;
+	 k)
+	     CONFIG_KERNEL_SRC=$OPTARG
+	     ;;
+	 c)
+	     CONFIG_UCLIBC_SRC=$OPTARG
+	     ;;
+	 f)
+	     echo Loading Config from $OPTARG
+	     source $OPTARG
+	     ;;
+	 ?)
+	     usage
+	     exit 1
+	     ;;
+     esac
+done
+
+# private variables
+SET_DATE=
+CLEAN_UP_DATE=
+
+KERNEL_HDR=kernel_hdr
+KERNEL_SRC=$CONFIG_KERNEL_SRC
+
+UCLIBC_SRC=$CONFIG_UCLIBC_SRC
+
+# discard the options.
+shift $(($OPTIND-1))
+INSTALL="$1"
+
+if [ "$INSTALL" == "" ]; then
+    error_and_exit "No install folder specified"
+fi
+
+mkdir -p $INSTALL
+INSTALL=$(cd $INSTALL; pwd)
+
+if [ "$PWD" == "$SRC" ]; then
+    BUILD=$SRC/build
+    mkdir -p $BUILD
+else
+    BUILD=$PWD
+fi
+
+Status "Configuration Parameters"
+Info "Source	= $SRC"
+Info "Install	= $INSTALL"
+Info "Build	= $BUILD"
+
+Info "uClibc	= $UCLIBC_SRC"
+
+Info "Kernel source	= $KERNEL_SRC"
+
+
+# always use elf toolchain
+CROSS_COMPILE=$INSTALL/bin/ubicom32-elf-
+
+# Info Fixing broken cvs install scripts
+find $SRC -name install-sh | xargs chmod +x
+
+if [ "$CONFIG_SET_DATE" == "y" ]; then
+    SET_DATE=$(date +%Y%m%d)
+    CLEAN_UP_DATE="$SRC/gcc/gcc/DATESTAMP.build_all_sav"
+    mv $SRC/gcc/gcc/DATESTAMP $CLEAN_UP_DATE
+    echo $SET_DATE
+ > $SRC/gcc/gcc/DATESTAMP
+fi
+
+[ -z $SET_DATE ] || \
+Info "Date	= $SET_DATE"
+
+export LD_LIBRARY_PATH="$INSTALL/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+
+######################################################################
+if $CONFIG_BUILD_UCLINUX_UCLIBC || $CONFIG_BUILD_LINUX_UCLIBC; then
+
+    if [ ! -e "$UCLIBC_SRC" ]; then
+	error_and_exit "$UCLIBC_SRC not found";
+    fi
+    UCLIBC_SRC=$(cd $UCLIBC_SRC; pwd);
+
+    if [ ! -e "$KERNEL_SRC" ]; then
+	error_and_exit "$KERNEL_SRC not found";
+    fi
+    KERNEL_SRC=$(cd $KERNEL_SRC; pwd);
+
+fi
+
+######################################################################
+
+if $CONFIG_BUILD_HOST_LIBS; then
+    Status "Build Support Librarys"
+    configure_and_build gmp $SRC/gmp-4.3.1/configure --prefix="$INSTALL"
+    configure_and_build mpfr $SRC/mpfr-2.3.1/configure --prefix="$INSTALL" --with-gmp="$INSTALL"
+fi
+
+######################################################################
+
+# set elf target!!
+set_target elf
+
+if $CONFIG_BUILD_ELF_TOOLCHAIN; then
+    configure_and_build_toolchain $CONFIG_BUILD_ELF_LANGUAGES
+
+fi
+
+######################################################################
+Status "Build Kernel Headers"
+rm $BUILD/$KERNEL_HDR -rf
+set_dir $KERNEL_HDR
+mkdir -p usr
+$MAKE -j1 -C $KERNEL_SRC \
+    INSTALL_HDR_PATH="$BUILD/$KERNEL_HDR/usr" \
+    KBUILD_OUTPUT="$BUILD/$KERNEL_HDR" \
+    ARCH="$TARGET_ARCH" CROSS_COMPILE="$CROSS_COMPILE" \
+    headers_check headers_install > build.txt \
+    || error_and_exit "Error Building Kernel Headers"
+# remove the headers check left overs
+find usr -type f -name '.*' -print0 | xargs -0 rm -fv >> build.txt
+
+
+######################################################################
+if $CONFIG_BUILD_UCLINUX_TOOLCHAIN; then
+
+    set_target uclinux
+
+    EXTRA=
+    if $CONFIG_BUILD_UCLINUX_UCLIBC; then
+	UCLIBC_CFLAGS="-g -O2 -mtls"
+	build_and_install_uClibc "" -DUBICOM32_ARCH_VERSION=3
+	build_and_install_uClibc_v5 march-ubicom32v5 -march=ubicom32v5 -DUBICOM32_ARCH_VERSION=5
+	build_and_install_uClibc march-ubicom32v4 -march=ubicom32v4 -DUBICOM32_ARCH_VERSION=4
+	build_and_install_uClibc march-ubicom32v3 -march=ubicom32v3 -DUBICOM32_ARCH_VERSION=3
+
+	Status "Copy kernel headers to $CROSS_RUNTIME"
+	set_dir .
+	cp -rv "$BUILD/$KERNEL_HDR/usr" $CROSS_RUNTIME > khdr_copy.txt \
+	    || error_and_exit "Error Copying Kernel Headers"
+	EXTRA=--with-sysroot=$CROSS_RUNTIME
+    fi
+
+    # now build the c++ toolchain
+    configure_and_build_toolchain $CONFIG_BUILD_UCLINUX_LANGUAGES \
+	--enable-threads=posix $EXTRA
+
+    HOST=$($INSTALL/bin/$TARGET-gcc -v 2>&1 | grep "Configured" |
+	sed "s/.* --host=\([^ ]*\) .*/\1/")
+
+    [ "$HOST" != "" ] || error_and_exit "Could not detect host dir"
+
+    Status "Build elf2flt for $TARGET HOST=$HOST"
+    # add elf2flt
+    configure_and_build $TARGET/elf2flt $SRC/elf2flt/configure \
+	--enable-shared=no \
+	--prefix=$INSTALL \
+	--target=$TARGET \
+	--with-bfd-include-dir=$INSTALL/$HOST/$TARGET/include \
+	--with-bfd-src-dir=$SRC/bfd \
+	--with-binutils-include-dir=$SRC/include \
+	--with-libbfd="$INSTALL/$HOST/$TARGET/lib/libbfd.a" \
+	--with-libiberty=$INSTALL/lib/libiberty.a
+
+    # build gdbserver
+    configure_and_build $TARGET/gdb/gdbserver $SRC/gdb/gdbserver/configure \
+	--prefix="$CROSS_RUNTIME" \
+	--host=$TARGET \
+	CC=$INSTALL/bin/$TARGET-gcc \
+	CFLAGS="-static -elf2flt -static -O2" LDFLAGS="-elf2flt -s"
+fi
+
+######################################################################
+if $CONFIG_BUILD_LINUX_TOOLCHAIN; then
+
+    set_target linux-uclibc
+    EXTRA=
+    if $CONFIG_BUILD_LINUX_UCLIBC; then
+	UCLIBC_CFLAGS="-g -O2 -mtls"
+	build_and_install_uClibc "" -DUBICOM32_ARCH_VERSION=3
+
+	mkdir -p $INSTALL/bin
+	Status "Copy host utils $INSTALL/bin"
+	make_uClibc hostutils > log_/hostutils_log_.txt
+	cp -v "$UCLIBC_SRC/utils/ldd.host" "$INSTALL/bin/$TARGET-ldd" \
+	    || error_and_exit "Error Copying $TARGET-ldd"
+	cp -v "$UCLIBC_SRC/utils/ldconfig.host" "$INSTALL/bin/$TARGET-ldconfig" \
+	    || error_and_exit "Error Copying $TARGET-ldconfig"
+
+	build_and_install_uClibc_v5 march-ubicom32v5 -march=ubicom32v5 -DUBICOM32_ARCH_VERSION=5
+	build_and_install_uClibc march-ubicom32v4 -march=ubicom32v4 -DUBICOM32_ARCH_VERSION=4
+	build_and_install_uClibc march-ubicom32v3 -march=ubicom32v3 -DUBICOM32_ARCH_VERSION=3
+
+	Status "Copy kernel headers to $CROSS_RUNTIME"
+	set_dir .
+	cp -rv "$BUILD/$KERNEL_HDR/usr" $CROSS_RUNTIME > khdr_copy.txt \
+	    || error_and_exit "Error Copying Kernel Headers"
+	EXTRA=--with-sysroot=$CROSS_RUNTIME
+    fi
+    # now build the c++ toolchain
+
+    configure_and_build_toolchain $CONFIG_BUILD_LINUX_LANGUAGES \
+	--enable-threads=posix $EXTRA
+
+    Status "Install shared libs"
+
+    install_target_libs libstdc++
+    install_target_libs libgcc_s
+    install_target_libs libmudflap
+    install_target_libs libmudflapth
+
+    # build gdbserver
+    configure_and_build $TARGET/gdb/gdbserver $SRC/gdb/gdbserver/configure \
+	--prefix="$CROSS_RUNTIME" \
+	--host=$TARGET \
+	CC=$INSTALL/bin/$TARGET-gcc \
+	CFLAGS="-static -O2" LDFLAGS="-s"
+
+fi
+######################################################################
+Status "BUILD COMPLETE"
+clean_up
+######################################################################

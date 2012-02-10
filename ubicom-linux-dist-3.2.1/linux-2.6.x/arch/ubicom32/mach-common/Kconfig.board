@@ -1,0 +1,21 @@
+#
+# Kconfig entries relevant to all boards
+#
+
+#
+# used by VDC
+#
+config VDC_LCD_AUTO_REFRESH_RATE
+	int "LCD Automatic Refresh Rate"
+	depends on VDC_LCD_BITBANG_DISPLAY
+	default 30
+	help
+		This is the rate at which Self-Refresh displays will be refreshed
+		by the VDC.  Set this to 0 to make the VDC refresh on demand.
+		Otherwise, set this number to the requested number of frames per
+		second.
+
+		Displays which are not Self-Refresh will be refreshed by the VDC
+		as specified by the VDCTIO (see ultra config).
+
+

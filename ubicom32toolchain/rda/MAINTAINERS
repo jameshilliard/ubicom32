@@ -1,0 +1,10 @@
+RDA (Red Hat Debug Agent and library) maintainers:
+
+	lib/
+	samples/
+
+Frank Ch. Eigler	fche@redhat.com
+
+	unix/
+
+Michael Snyder		msnyder@redhat.com

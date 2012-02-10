@@ -1,0 +1,37 @@
+# coherency.exp -*- Tcl -*-
+# Basic testing for the LRU replacement policy.
+#
+# Copyright (C) 2001 Red Hat, Inc.
+
+set test "sid startup"
+sid_config_component_etc_test_with_tracing "coherency.conf" \
+        "load libcache.la cache_component_library" \
+        "hw-cache-basic" \
+	"load libmemory.la mem_component_library
+new hw-memory-ram/rom-basic mem
+set mem size 2048
+set real-victim write-through? no
+connect-bus real-victim downstream mem read-write-port"
+
+if {[sid_start "coherency.conf"]} { pass $test } else { fail $test; return }
+
+set test "acquire upstream bus handle"
+set cache_bus [sid_cmd "sid::component::find_bus $victim upstream"]
+if {$cache_bus != ""} { pass $test } else { fail $test }
+
+set test "cache coherency"
+set result [sid_cmd "sid::bus::read_h4_l1 $cache_bus 0x100"]
+if ![sid_bus_ok_p $result] then { fail $test; return }
+set result [sid_cmd "sid::bus::write_h4_l1 $cache_bus 0x100 0x55"]
+if ![sid_bus_ok_p $result] then { fail $test; return }
+set result [sid_cmd "sid::bus::read_h4_l1 $cache_bus 0x100"]
+if ![sid_bus_ok_p $result] then { fail $test; return }
+if {[format %x [lindex $result 1]] != "55"} { fail $test; return }
+pass $test
+
+set test "sid stop"
+if {[sid_stop]} { pass $test } else { fail $test; return }
+
+# zap temp file if tests were successful
+global exit_status
+if {$exit_status == "0"} { file delete "coherency.conf" }

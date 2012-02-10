@@ -1,0 +1,13 @@
+Index: libnl-1.1/lib/Makefile
+===================================================================
+--- libnl-1.1.orig/lib/Makefile	2011-02-14 01:44:03.962911865 -0800
++++ libnl-1.1/lib/Makefile	2011-02-14 01:44:16.958912002 -0800
+@@ -49,7 +49,7 @@
+ 
+ $(OUT_SLIB): ../Makefile.opts $(OBJ)
+ 	@echo "  LD $(OUT_SLIB)"; \
+-	$(CC) -shared -Wl,-soname,libnl.so.1 -o $(OUT_SLIB) $(OBJ) $(LIBNL_LIB) -lc
++	$(CC) $(LDFLAGS) -shared -Wl,-soname,libnl.so.1 -o $(OUT_SLIB) $(OBJ) $(LIBNL_LIB) -lc
+ 	@echo "  LN $(OUT_SLIB) $(LN1_SLIB)"; \
+ 	rm -f $(LN1_SLIB) ; $(LN) -s $(OUT_SLIB) $(LN1_SLIB)
+ 	@echo "  LN $(LN1_SLIB) $(LN_SLIB)"; \

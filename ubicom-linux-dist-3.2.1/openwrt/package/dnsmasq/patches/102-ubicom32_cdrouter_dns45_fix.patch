@@ -1,0 +1,12 @@
+diff -ru dnsmasq-2.55-old/src/forward.c dnsmasq-2.55-new/src/forward.c
+--- dnsmasq-2.55-old/src/forward.c	2010-06-06 22:22:30.000000000 +0300
++++ dnsmasq-2.55-new/src/forward.c	2011-04-01 12:57:41.000000000 +0300
+@@ -511,7 +511,7 @@
+    
+   server = forward->sentto;
+   
+-  if ((header->rcode == SERVFAIL || header->rcode == REFUSED) &&
++  if ((header->rcode == SERVFAIL || header->rcode == REFUSED || header->rcode == NOTIMP) &&
+       !(daemon->options & OPT_ORDER) &&
+       forward->forwardall == 0)
+     /* for broken servers, attempt to send to another one. */

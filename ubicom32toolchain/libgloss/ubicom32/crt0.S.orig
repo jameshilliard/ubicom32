@@ -1,0 +1,189 @@
+##==============================================================================
+##
+##	crt0.S
+##
+##	ubicom32 startup code
+##
+##==============================================================================
+##
+## Copyright (c) 2000, 2001, Red Hat Incorporated
+## 
+## The authors hereby grant permission to use, copy, modify, distribute,
+## and license this software and its documentation for any purpose, provided
+## that existing copyright notices are retained in all copies and that this
+## notice is included verbatim in any distributions. No written agreement,
+## license, or royalty fee is required for any of the authorized uses.
+## Modifications to this software may be copyrighted by their authors
+## and need not follow the licensing terms described here, provided that
+## the new terms are clearly indicated on the first page of each file where
+## they apply.
+##
+	
+##------------------------------------------------------------------------------
+	
+	.file	"crt0.S"
+
+##------------------------------------------------------------------------------
+## Startup code
+	#include "regs.h"
+	.section ".start","ax"
+	.global	_start
+	.global prog_start
+_start:
+	; cause pc to jump to linker's idea of what pc should be
+	; This is UBICOM specific code
+	moveai  a7, #%hi(prog_start)  // pointer to flash acording to linker
+	lea.4 a7,%lo(prog_start)(a7)
+	ret  a7
+	nop
+	nop
+prog_start:	
+	move.4 d1,rosr		; load status register
+	lsr.4 d1,d1,#2		; context is top 4 bits
+	and.4 d1,#7,d1		; only allow contexts 0 - 7
+_switch:
+	mulu #7,d1		; multiply by number of insns per case
+	move.4 d1,mac_lo
+	call a5,.L2		; jump to indexing code
+.LC0:
+	moveai sp,#%hi(_stack-8)
+	lea.4 sp,%lo(_stack-8)(sp)
+	jmpt _start0
+	nop			; filler to make cases equal in size
+	nop
+	nop			; filler to make cases equal in size
+	nop
+.LC1:
+	moveai sp,#%hi(_stackc1-8)
+	lea.4 sp,%lo(_stackc1-8)(sp)
+	moveai a5,#%hi(__c1_main)
+	lea.4 a5,%lo(__c1_main)(a5)
+	calli a5,0(a5)
+.LC1b:
+	suspend
+	jmpt .LC1b
+.LC2:
+	moveai sp,#%hi(_stackc2-8)
+	lea.4 sp,%lo(_stackc2-8)(sp)
+	moveai a5,#%hi(__c2_main)
+	lea.4 a5,%lo(__c2_main)(a5)
+	calli a5,0(a5)
+.LC2b:
+	suspend
+	jmpt .LC2b
+.LC3:
+	moveai sp,#%hi(_stackc3-8)
+	lea.4 sp,%lo(_stackc3-8)(sp)
+	moveai a5,#%hi(__c3_main)
+	lea.4 a5,%lo(__c3_main)(a5)
+	calli a5,0(a5)
+.LC3b:
+	suspend
+	jmpt .LC3b
+.LC4:
+	moveai sp,#%hi(_stackc4-8)
+	lea.4 sp,%lo(_stackc4-8)(sp)
+	moveai a5,#%hi(__c4_main)
+	lea.4 a5,%lo(__c4_main)(a5)
+	calli a5,0(a5)
+.LC4b:
+	suspend
+	jmpt .LC4b
+.LC5:
+	moveai sp,#%hi(_stackc5-8)
+	lea.4 sp,%lo(_stackc5-8)(sp)
+	moveai a5,#%hi(__c5_main)
+	lea.4 a5,%lo(__c5_main)(a5)
+	calli a5,0(a5)
+.LC5b:
+	suspend
+	jmpt .LC5b
+.LC6:
+	moveai sp,#%hi(_stackc6-8)
+	lea.4 sp,%lo(_stackc6-8)(sp)
+	moveai a5,#%hi(__c6_main)
+	lea.4 a5,%lo(__c6_main)(a5)
+	calli a5,0(a5)
+.LC6b:
+	suspend
+	jmpt .LC6b
+.LC7:
+	moveai sp,#%hi(_stackc7-8)
+	lea.4 sp,%lo(_stackc7-8)(sp)
+	moveai a5,#%hi(__c7_main)
+	lea.4 a5,%lo(__c7_main)(a5)
+	calli a5,0(a5)
+.LC7b:
+	suspend
+	jmpt .LC7b
+
+.L2:
+	lea.4 a5,(a5,d1)	; index based on context number
+	calli a5,0(a5)		; jump to correct case
+
+	suspend			; should never get here
+
+_start0:
+	moveai a5,#%hi(_edata)	; get start of bss
+	lea.4 a5,%lo(_edata)(a5)
+
+	moveai a6,#%hi(_end)	; get end of bss
+	lea.4 d0,%lo(_end)(a6)
+
+	sub.4 #0,a5,d0		; check if end and start are the same
+	jmpeq.w.f .L0		; if no bss, then do nothing
+
+.L1:
+	move.4 (a5)4++,#0	; clear a byte and bump pointer
+	sub.4 #0,a5,d0
+	jmpne.w.t .L1
+
+.L0:
+	.if 0
+	moveai a5,#%hi(___main)
+	lea.4 a5,%lo(___main)(a5)
+	calli a5,0(a5)	; call __main to run ctors/dtors
+	.endif
+	xor.4 d1,d1,d1
+	xor.4 d2,d2,d2
+	movei	d0,#1 		;  argc == 1, the command itself
+	moveai a5,#%hi(_main)
+	lea.4 a5,%lo(_main)(a5)
+	calli a5,0(a5)		
+	; 	call a5,_main		; call _main program
+	move.4 d1,d0		; exit with main's return value
+	moveai a5,#%hi(__exit)
+	lea.4 a5,%lo(__exit)(a5)
+	calli a5,0(a5)	; all done, no need to return or
+				; deallocate our stack.
+
+	.align 2
+	.section .stack
+_stack:	.long 	1
+	.section .stackc1
+_stackc1:
+	.long	1
+	.section .stackc2
+_stackc2:
+	.long	1
+	.section .stackc3
+_stackc3:
+	.long	1
+	.section .stackc4
+_stackc4:
+	.long	1
+	.section .stackc5
+_stackc5:
+	.long	1
+	.section .stackc6
+_stackc6:
+	.long	1
+	.section .stackc7
+_stackc7:
+	.long	1
+
+	.align 2
+	.section .data
+	.global ___dso_handle
+___dso_handle:
+	.long ___dso_handle

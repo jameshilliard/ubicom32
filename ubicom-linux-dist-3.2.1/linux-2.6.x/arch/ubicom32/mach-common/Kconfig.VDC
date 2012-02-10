@@ -1,0 +1,162 @@
+# These are generic boards for which we have the init scripts and
+# parameters set in vdc_tio.c.  New boards which are not connected
+# in the standard way may use these defines but modify the resulting
+# platform data to suit their connections.
+#
+# All of the following displays are connected as follows:
+#	Data Bus: PI15-PI0 (16-bit), PI7-PI0 (8-bit)
+#	CS      : PD4
+#	RS      : PD3
+#	WR      : PD2
+#	RD      : PD5
+#	RESET   : PD7
+#
+
+config VDC_NOAUTODETECT
+	bool
+
+choice
+	prompt "Display Type"
+	depends on VDC_NOAUTODETECT
+	help
+		Choose a display type for use with the board.
+
+config VDC_LCD_TFT1N5046E_LANDSCAPE
+	bool "TFT1N5046E Landscape - 16 bit bus"
+	depends on VDC_LCD_BITBANG_16
+	select VDC_LCD_BITBANG_DISPLAY
+	help
+		Truly Semiconductor TFT1N5046E
+		Truly Semiconductor TFT2N0369E
+
+config VDC_LCD_TFT1N5046E_PORTRAIT
+	bool "TFT1N5046E Portrait - 16 bit bus"
+	depends on VDC_LCD_BITBANG_16
+	select VDC_LCD_BITBANG_DISPLAY
+	help
+		Truly Semiconductor TFT1N5046E
+		Truly Semiconductor TFT2N0369E
+
+config VDC_LCD_TFT1N5046E_LANDSCAPE_8
+	bool "TFT1N5046E Landscape - 8 bit bus"
+	depends on VDC_LCD_BITBANG_8
+	select VDC_LCD_BITBANG_DISPLAY
+	help
+		Truly Semiconductor TFT1N5046E
+		Truly Semiconductor TFT2N0369E
+
+config VDC_LCD_TFT1N5046E_PORTRAIT_8
+	bool "TFT1N5046E Portrait - 8 bit bus"
+	depends on VDC_LCD_BITBANG_8
+	select VDC_LCD_BITBANG_DISPLAY
+	help
+		Truly Semiconductor TFT1N5046E
+		Truly Semiconductor TFT2N0369E
+
+config VDC_LCD_TFT1N5046E_LANDSCAPE_8_SPLIT
+	bool "TFT1N5046E Landscape - 8 bit split bus"
+	depends on VDC_LCD_BITBANG_8_SPLIT
+	select VDC_LCD_BITBANG_DISPLAY
+	help
+		Truly Semiconductor TFT1N5046E
+		Truly Semiconductor TFT2N0369E
+
+config VDC_LCD_TFT1N5046E_PORTRAIT_8_SPLIT
+	bool "TFT1N5046E Portrait - 8 bit split bus"
+	depends on VDC_LCD_BITBANG_8_SPLIT
+	select VDC_LCD_BITBANG_DISPLAY
+	help
+		Truly Semiconductor TFT1N5046E
+		Truly Semiconductor TFT2N0369E
+
+config VDC_LCD_CFAF240320KT_PORTRAIT
+	bool "CFAF240320KT Portrait"
+	depends on VDC_LCD_BITBANG_16
+	select VDC_LCD_BITBANG_DISPLAY
+	help
+		Crystalfontz CFAF240320KT
+		Crystalfontz CFAF240320KTTS
+
+
+config VDC_LCD_CFAF240320KT_PORTRAIT_180
+	bool "CFAF240320KT Portrait 180 degrees"
+	depends on VDC_LCD_BITBANG_16
+	select VDC_LCD_BITBANG_DISPLAY
+	help
+		Crystalfontz CFAF240320KT
+		Crystalfontz CFAF240320KTTS
+
+config VDC_LCD_CFAF240400DT_PORTRAIT
+	bool "CFAF240400DT Portrait"
+	depends on VDC_LCD_BITBANG_16
+	select VDC_LCD_BITBANG_DISPLAY
+	help
+		Crystalfontz CFAF240400DT
+
+config VDC_LCD_CFAF320240FT_LANDSCAPE
+	bool "CFAF320240FT / CFAF320240FTTS Landscape"
+	depends on VDC_LCD_BITBANG_16
+	select VDC_LCD_BITBANG_DISPLAY
+	help
+		Crystalfontz CFAF320240FT   (No touch screen)
+		Crystalfontz CFAF320240FTTS (Touch screen)
+
+config VDC_LCD_HX8347_LANDSCAPE
+	bool "HX8347 Landscape"
+	depends on VDC_LCD_BITBANG_16
+	select VDC_LCD_BITBANG_DISPLAY
+	help
+		Himax HX8347 (Touch screen)
+
+config VDC_LCD_HX8347_PORTRAIT
+	bool "HX8347 Portrait"
+	depends on VDC_LCD_BITBANG_16
+	select VDC_LCD_BITBANG_DISPLAY
+	help
+		Himax HX8347 (Touch screen)
+
+#
+# All of the following displays are connected via PLIO SYNC
+#	HSYNC : PD5
+#	VSYNC : PD4
+#	DCLK  : PD7
+#	DEN   : PD6
+#
+config VDC_LCD_LG_LB070WV6
+	bool "LG LB070WV6 7 inch"
+	depends on VDC_LCD_SYNC
+	help
+		LG LB070WV6(TD)(06) with or without touch screen
+
+config VDC_LCD_INNOLUX_AT070TN93
+	bool "Innolux AT070TN93 7 inch"
+	depends on VDC_LCD_SYNC
+	help
+		Innolux AT070TN93 with or without touch screen
+
+config VDC_LCD_TFT1N5046E_HV
+	bool "TFT1N5046E Sync"
+	depends on VDC_LCD_SYNC
+	help
+		Truly Semiconductor TFT1N5046E
+		Truly Semiconductor TFT2N0369E
+
+		In HV Sync mode
+
+#
+# All of the following displays are connected via PLIO DIRECT
+#	LD   : PD1
+#	CKV  : PD2
+#	OEV  : PD3
+#	STVU : PD5
+#	STHL : PD6
+#	POL  : PD4
+#	DCLK : PD7
+
+config VDC_LCD_INNOLUX_AT080TN42
+	bool "Innolux AT080TN42 8 inch"
+	depends on VDC_LCD_DIRECT
+	help
+		Innolux AT080TN42 with or without touch screen
+
+endchoice

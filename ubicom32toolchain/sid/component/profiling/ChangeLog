@@ -1,0 +1,233 @@
+2006-06-26  Dave Brolley  <brolley@redhat.com>
+
+	* sw-profile-gprof.xml: Document new sampling interface.
+	* sw-profile-gprof.txt: Regenerated.
+	* gprof.cxx (target_attribute): Removed from gprof_component.
+	(pc_pin,pc_hi_pin): Added to gprof_component.
+	(bucket_size_set): Use local reference for this->stats[current_stats].
+	(accumulate_call): Likewise.
+	(accumulate): Likewise. Use pc_pin and pc_hi_pin instead of
+	target_attribute to get the pc.
+	(gprof_component): Add pc and pc-hi pins. Don't add value-attribute
+	attribute. Initialize the driven value of pc_hi_pin with 0.
+
+2006-06-14  Dave Brolley  <brolley@redhat.com>
+
+	* gprof.cxx (gprof_component): Remove sim_sched and sim_sched_event.
+	Remove the sim-sched-event attribute and the sim-sched relation.
+	(accumulate): Increment the bucket count by the value driven on the
+	pin.
+	(configure): No longer a subscription to the target scheduler to
+	maintain.
+
+2006-05-11  Dave Brolley  <brolley@redhat.com>
+
+	* gprof.cxx (hitcount_map_t): PC now host_int_8.
+	(cg_count_map_t): Likewise.
+	(statistics): value_min,value_max,limit_min,limit_max likewise.
+	New member, pc_size.
+	(statistics::operator=): Copy pc_size.
+	(cg_caller_hi_pin): New pin.
+	(cg_callee_hi_pin): New pin.
+	(limit_min_set): Handle 64 bits.
+	(limit_max_set): Handle 64 bits.
+	(pc_size_get): New method.
+	(pc_size_set): New method.
+	(accumulate): Use target_attribute + "-hi" to obtain 64 bit pc. Handle
+	64 bits throughout.
+	(accumulate_call): Use {caller,callee}_hi pin to obtain 64 bit pc. Handle
+	64 bits throughout.
+	(store_stats): Handle 32 or 64 bit pc.
+	(gprof_component): Add cg-caller_hi and cg-callee-hi pins. Add pc-size
+	attribute. Initialize value on cg-caller-hi and cg-callee-hi to zero.
+	* sw-profile-gprof.xml: Document cg-caller-hi, cg-callee-hi,
+	bucket-size, pc-size.
+	* sw-profile-gprof.txt: Regenerated.
+
+2005-12-16  Nathan Sidwell  <nathan@codesourcery.com>
+
+	Second part of ms1 to mt renaming.
+	* Makefile.in: Rebuilt.
+
+2005-08-23  Dave Brolley  <brolley@redhat.com>
+
+	* gprof.cxx (configure): Don't reset the N-regular attribute of the
+	scheduler. Call accumulate when configuring for cycles=N.
+
+2005-08-19  Dave Brolley  <brolley@redhat.com>
+
+	* Contribute the following changes:
+
+	2005-07-13  Dave Brolley  <brolley@redhat.com>
+
+	* gprof.cxx (gprof_component): Inherit virtually from
+	fixed_attribute_map_component.
+
+	2005-05-29  Dave Brolley  <brolley@redhat.com>
+
+	* gprof.cxx: Keep a vector of statistics to allow switching from
+	one output file to another dynamically.
+	(sid::pin,sidutil::configurable_component)
+	(sidutil::output_pin,sidutil::tokenize): Add using clauses.
+	(profiling_components): Inherit virtually from fixed_pin_map_component
+	and fixed_relation_map_component. Inherit from configurable_component.
+	(statistics): New struct type.
+	(stats,current_stats): New members of gprof_component.
+	(set_nothing,value_min_get,value_max_get,value_count_get,limit_min_get)
+	(limit_min_set,limit_max_get,limit_max_set,output_file_get)
+	(output_file_set): New methods of gprof_component.
+	(reset): Initialize stats vector.
+	(store): Call store stats for each element of the stats vector.
+	(configure): New virtual override in gprof_component.
+	(gprof_component): Call reset. Add sim-sched-event attribute. Add
+	sim-sched relation.
+
+2005-06-03  Jim Blandy  <jimb@redhat.com>
+
+	* Makefile.in: Regenerated with Automake 1.9.5.
+
+2003-05-13  Dave Brolley  <brolley@redhat.com>
+
+	* gprof.cxx (profiling_components): Set bucket count to zero when it
+	is empty.
+
+2002-11-22  Frank Ch. Eigler  <fche@redhat.com>
+
+	* gprof.cxx: Give up on hash_map; use plain map<> for count tables.
+
+2002-11-11  Frank Ch. Eigler  <fche@redhat.com>
+
+	* gprof.cxx: Namespace usage fixes.
+	* sw-profile-gprof.xml: Reflect potential presence of call-graph info.
+	* sw-profile-gprof.txt: Regenerated.
+
+2002-08-27  Frank Ch. Eigler  <fche@redhat.com>
+
+	From Anthony Green <green@redhat.com>:
+	* gprof.cxx (store): Specify binary mode on output file.
+
+2002-02-18  Frank Ch. Eigler  <fche@redhat.com>
+
+	* gprof.cxx (store): Emit high_pc for histogram as gprof expects it
+	(exclusive upper limit), not actual (maximum value).
+
+2001-12-01  Frank Ch. Eigler  <fche@redhat.com>
+
+	* gprof.cxx (make_pair): Import from std::.
+
+2001-11-08  Frank Ch. Eigler  <fche@redhat.com>
+
+	* gprof.cxx (gprof_component): Add cg caller/callee pins, cg_count_map
+	field.
+	(accumulate_call): New function.
+	(reset): Clear cg map.
+	(store): Emit call graph info.  Emit histogram iff nonempty.
+	* sw-profile-gprof.xml: Document call graph functionality.
+	* sw-profile-gprof.txt: Regenerated.
+
+2001-08-03  matthew green  <mrg@redhat.com>
+
+	* gprof.cxx (~gprof_component): Add prototype.
+
+2001-07-13  Ben Elliston  <bje@redhat.com>
+
+	* Makefile.am (check-local): Rename target from "checkme".
+
+2001-07-11  Frank Ch. Eigler  <fche@redhat.com>
+
+	* sw-profile-gprof.xml: Add <?xml ... ?> prefix.
+
+2001-07-04  graydon hoare  <graydon@redhat.com>
+
+	* configure.in: Add maintainer-mode doc building configury.
+	* configure: Regenerate.
+	* Makefile.am: Add maintainer-mode doc building.
+	* Makefile.in: Regenerate.
+
+2001-07-04  Ben Elliston  <bje@redhat.com>
+
+	* sw-profile-gprof.txt: Generate.
+
+2001-06-27  graydon hoare  <graydon@redhat.com>
+
+	* sw-profile-gprof.xml: Add.
+
+2001-04-04  Frank Ch. Eigler  <fche@redhat.com>
+
+	* gprof.cxx (limit_min, limit_max): New variables/attributes.
+	(accumulate): Respect them.
+	* sw-profile-gprof.txt: Document them.
+
+2001-03-23  John Healy  <jhealy@redhat.com>
+
+	* Makefile.in: Regenerated.
+
+2000-11-21  Frank Ch. Eigler  <fche@redhat.com>
+
+	* Makefile.in: Regenerated.
+
+2000-07-19  Frank Ch. Eigler  <fche@redhat.com>
+
+	* Makefile.in: Regenerated.
+
+2000-05-26  Frank Ch. Eigler  <fche@redhat.com>
+
+	* gprof.cxx: Import more std:: identifiers.
+
+2000-01-25  Frank Ch. Eigler  <fche@redhat.com>
+
+	* Makefile.in: Regenerated.
+
+2000-01-12  Frank Ch. Eigler  <fche@cygnus.com>
+
+	* Makefile.in: Regenerated.
+
+1999-12-09  Faisal Khoja  <fkhoja@cygnus.com>
+
+	* Makefile.in: Regenerated.
+
+1999-12-08  Faisal Khoja  <fkhoja@cygnus.com>
+
+	* Makefile.in: Regenerated.
+
+1999-12-08  Ben Elliston  <bje@cygnus.com>
+
+	* sw-profile-gprof.txt: Update "relate" command usage.
+
+1999-12-07  Frank Ch. Eigler  <fche@cygnus.com>
+
+	* sw-profile-gprof.txt: New file.  Renamed from
+	* README: Deleted.
+	* Makefile.am: Install new file.
+	* Makefile.in: Regenerated.
+
+1999-11-24  Frank Ch. Eigler  <fche@cygnus.com>
+
+	* gprof.cxx (gprof_component ctor): Reorder initializers to
+	allay warnings.
+	(store): Use formerly unused variable.
+	* Makefile.am (DEJAGNUFLAGS): Set to runprof.exp
+	* Makefile.in: Regenerated.
+
+1999-11-23  Frank Ch. Eigler  <fche@cygnus.com>
+
+	* gprof.cxx (accumulate, reset, store): Take unused arg.
+	(do_delete): Use dynamic_cast<>.
+
+1999-11-22  Frank Ch. Eigler  <fche@cygnus.com>
+
+	* README: Fixed some typos, added some filler.
+
+1999-11-03  Frank Ch. Eigler  <fche@cygnus.com>
+
+	* README: New documentation file.
+	* gprof.cxx (bucket_size_get, bucket_size_set): New functions.
+	Check bucket-size changes carefully.
+	(gprof_component ctor): Make "bucket-size" a virtual attribute.
+
+1999-10-25  Frank Ch. Eigler  <fche@cygnus.com>
+
+	* gprof.cxx: New file: sw-profile-gprof component. 
+	* Makefile.am: New file.
+	* Makefile.in: New generated file.
+

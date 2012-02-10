@@ -1,0 +1,24 @@
+# ip4k sidlib testsuite.
+
+if {! $sidtarget(ip4k)} { untested "ip4k sidlib not available"; return }
+
+# load support procs
+load_lib "rundefs.exp"
+
+# all machines (should match the directory name under sidlib)
+set all_machs "ip4k"
+
+set libtool "../libtool"
+set libtool_flags ""
+set gcc_flags "-g"
+
+# download all needed configuration and executable files
+
+foreach src [lsort [glob -nocomplain $srcdir/$subdir/*.conf]] {
+  remote_download host $src
+}
+foreach src [lsort [glob -nocomplain $srcdir/$subdir/*.out]] {
+  remote_download host $src
+}
+
+run-sidlib-tests $all_machs $srcdir/sidlib.ip4k "*.cxx" $libtool $libtool_flags $gcc_flags x

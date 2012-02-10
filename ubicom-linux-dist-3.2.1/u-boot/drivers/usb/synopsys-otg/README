@@ -1,0 +1,70 @@
+Summary:
+================
+This directory contains the source code for USB Synpopsys driver of U-Boot. The development of this driver is 
+closely related to Synopsys HS OTG USB2.0 of Linux: core parts of the source code originate from the Linux 
+Synpopsys driver.
+
+Support:
+================
+This driver supports all U-Boot USB commands to start, reset, stop, read, and write storage device.
+
+Software Configuration:
+=======================
+a) Enable/Disable the first USB port:
+	CONFIG_DWC_PORT0_ENABLE
+
+c) Enable/Disable the second USB port:
+	CONFIG_DWC_PORT1_ENABLE
+
+d) Enable OTG mode for first USB port:
+	CONFIG_DWC_PORT0_OTG
+
+e) Enable source code of OTG mode in driver:
+	CONFIG_DWC_MODE_OTG
+
+U-Boot Driver Support
+=======================
+This section describes the difference among U-Boot Synpopsys driver.
+
+a) Support U-Boot USB Methods:
+	submit_control_msg 
+	submit_int_msg  
+	submit_bulk_msg
+
+	usb_lowlevel_init
+	usb_lowlevel_stop
+
+	These methods are in driver/dwc_otg_hcd_uboot.c.
+
+b) Poll Interrupt Status Register 
+	Poll interrupt status register to handle transfer completion after submission of USB URB.
+
+	This is implemented in driver/dwc_otg_hcd_uboot.c.
+
+c) Delete descriptor DMA related code
+	These code is not used in U-Boot.
+
+d) Modify Linux kernel related code 
+	Modify the code related to Linux kernel to adapt to U-Boot, including tasklet, spinlock, kmalloc, and so on.
+
+	The most of source code in dwc_common_port is modified to adapt to U-Boot. 
+
+e) Add unsched queue for QH
+	This queue is to keep all the endpoints that are currently served. This is to keep the right toggle for transfer 
+	to each endpoint.
+
+f) Modify hub_control 
+	The root hub descriptors are defined in new file dwc_otg_hcd_hub.h. The root hub related methods for these new descriptors are 
+	also added in hub_control.
+
+	The number that represent each hub request is also different in U-Boot. They are modified to adapt to U-Boot. 	
+	   
+9) Delete all stop watch code
+	This is not used in U-Boot.
+
+k) Delete all PCI related code
+	This is not used in driver.
+
+l) Fix bugs related to hcd stop
+
+                                          

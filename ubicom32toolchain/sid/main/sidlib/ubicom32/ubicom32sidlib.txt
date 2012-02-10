@@ -1,0 +1,733 @@
+			IP3K SID Encapsulation Design Document
+			======================================
+
+Introduction
+============
+
+This document details the encapsulation of the ip3k SID simulator into a single
+C++ class.  To understand the design-decisions made, one must first understand 
+the current SID model.  A SID simulator has a main entry routine that is found 
+in sid/main/dynamic/mainDynamic.cxx.  A basic description of the main program 
+algorithm is:
+
+  1. process command line arguments which includes the configuration file name
+  2. instantiate the cfgroot component
+  3. open and load the configuration file via the cfgroot component
+  4. process the configuration line by line via the cfgroot component
+  5. start the simulation running by driving the cfgroot "run!" pin
+  6. at exit from the run loop uninstantiate the cfgroot component and exit
+
+We can break this algorithm into three definitive phases: argument parsing, 
+configuration, and execution.  Argument parsing primarily handles two special 
+cases: 
+  1. specifying a configuration file to append to the configuration 
+  2. specifying a configuration line to append to the configuration  
+
+The cfgroot component is the work-horse for everything but the argument 
+parsing.  It is fairly obvious that the encapsulation class should somehow 
+contain a cfgroot object and provide an interface that manipulates the cfgroot 
+object to perform most of the desired behavior.
+
+Because the cfgroot component uses configuration files, it is completely 
+target-independent.  This feature is desirable for maximizing code reuse and 
+making it easy for other platforms to encapsulate sid as well.  If we were to 
+expose the cfgroot abilities directly to the user, the class would be 
+target-independent, however, it would make usage difficult, especially for
+the novice sid user.
+
+A clean design is to split the encapsulation into multiple layers.  At the 
+bottom, we can have a target-independent layer that directly manipulates the 
+cfgroot object.  At the top, we can have a user-friendly ip3k wrapper class 
+which ultimately translates requests into calls to the base class.
+
+For this design, we actually plan to create three distinct layers:
+
+  1. a low-level base class which performs all direct operations with the 
+     cfgroot component
+  2. a mid-level class which provides a generic "simulator-with-cpu" interface
+  3. high-level ip3k-specific classes for the main processor and main processor
+     plus coprocessor
+
+Breaking up the problem into these layers maximizes future code reuse and 
+makes the implementation simpler.  
+
+Class Descriptions
+==================
+
+
+sidlib::cfgroot_interface class
+-------------------------------
+
+As stated, this is the base class that manipulates the cfgroot object directly.
+The following details the portion of the interface that is exposed to the 
+higher-level classes that inherit from sidlib::cfgroot_interface:
+
+namespace sidlib {
+  class cfgroot_interface {
+    protected:
+      cfgroot_interface ();
+      // this constructor creates a blank sid system, containing the cfgroot 
+      // component
+
+      ~cfgroot_interface ();
+      // deconstructor that shuts down the sid system and removes the cfgroot 
+      // component
+
+      void add_configure_line (const string& line);
+      // this member function adds one configuration command line.
+
+      void add_configure_file (const string& file_name);
+      // this member function adds an entire file of configuration commands
+
+      vector<string> list_component_names ();
+      // this member function queries cfgroot to get a list of all component 
+      // names instantiated in configuration
+
+      sid::component* lookup_component (const string& component_name);
+      // this function takes the name of a component and returns a pointer to 
+      // the instance of that named component or NULL if the component is not 
+      // found.
+
+      bool advance ();
+      // this tells the simulator to advance one iteration.  The member 
+      // function returns 'true' if no shutdown-requesting behavior was 
+      // triggered in this iteration.
+  }
+}
+
+
+Hidden in the private section of the class is the actual cfgroot component.
+The constructor instantiates this cfgroot component as part of its 
+initialization.  When a configuration file is added via the 
+add_configure_file method, it is opened, read, and processed by the private 
+sid::cfgroot component.  Additional lines can be added via the 
+add_configure_line method.  In this way, higher level components can perform 
+operations that are currently provided by the "-e" and "-f" sid command-line 
+options.  
+
+For example, an inheriting class could do:
+
+  this->add_configure_file ("ip3k-gloss.conf");
+  this->add_configure_line ("set loader file my.out");
+
+which would effectively use the default ip3k configuration and change the name 
+of the executable to "my.out".
+
+The list_component_names member function is used to determine which components 
+have been added by configuration.  The lookup_component member function allows 
+the caller to access the actual components instantiated by the sid::cfgroot 
+object.  Using the two member functions in tandem, an inheriting class can get 
+pointers to all of the components instantiated by configuration without knowing
+anything regarding the configuration (hence, target-independent).
+
+The advance member function performs the equivalent of  one iteration of the 
+sid::cfgroot inner run loop.  For regular sid invocations, the loop gets
+run by driving the "run!" pin.  For sid gdb servers, the loop runs 
+indefinitely until the sid::cfgroot component is deconstructed.  To add
+a step behavior, a new pin interface ("step!") must be added to the sid::cfgroot
+component.
+
+
+sidlib::simwcpu class
+---------------------
+
+The next level in the class hierarchy, is the sidlib::simwcpu class which 
+models a simulator with at least one cpu:
+
+namespace sidlib {
+  class simwcpu: public cfgroot_interface {
+    protected:
+      simwcpu (const string& conf_file_name);
+      // this constructor creates a new instance of the sid system, implying a 
+      // cpu.  The specified configuration file is used as the base 
+      // configuration file.  In addition, the constructor will set the
+      // "step-cycle-limit" attribute of the target scheduler to 1.
+
+      bool load (const string& loader_name,
+                 const string& object_file_name);
+      // load the given loader to load the specified ELF target program.  
+      // Return 'true' on success.
+
+
+      sid::bus::status read_memory (const string& component,
+                                    const string& accessor,
+				    sid::host_int_4 address,
+				    sid::big_int_1& data);
+      sid::bus::status read_memory (const string& component,
+                                    const string& accessor,
+				    sid::host_int_4 address,
+				    sid::little_int_1& data);
+      sid::bus::status read_memory (const string& component,
+                                    const string& accessor,
+				    sid::host_int_4 address,
+				    sid::big_int_2& data);
+      sid::bus::status read_memory (const string& component,
+                                    const string& accessor,
+				    sid::host_int_4 address,
+				    sid::little_int_2& data);
+      sid::bus::status read_memory (const string& component,
+                                    const string& accessor,
+				    sid::host_int_4 address,
+				    sid::big_int_4& data);
+      sid::bus::status read_memory (const string& component,
+                                    const string& accessor,
+				    sid::host_int_4 address,
+				    sid::little_int_4& data);
+      sid::bus::status read_memory (const string& component,
+                                    const string& accessor,
+				    sid::host_int_4 address,
+				    sid::big_int_8& data);
+      sid::bus::status read_memory (const string& component,
+                                    const string& accessor,
+				    sid::host_int_4 address,
+				    sid::little_int_8& data);
+      sid::bus::status write_memory (const string& component,
+                                     const string& accessor,
+				     sid::host_int_4 address,
+				     const sid::big_int_1& data);
+      sid::bus::status write_memory (const string& component,
+                                     const string& accessor,
+				     sid::host_int_4 address,
+				     const sid::little_int_1& data);
+      sid::bus::status write_memory (const string& component,
+                                     const string& accessor,
+				     sid::host_int_4 address,
+				     const sid::big_int_2& data);
+      sid::bus::status write_memory (const string& component,
+                                     const string& accessor,
+				     sid::host_int_4 address,
+				     const sid::little_int_2& data);
+      sid::bus::status write_memory (const string& component,
+                                     const string& accessor,
+				     sid::host_int_4 address,
+				     const sid::big_int_4& data);
+      sid::bus::status write_memory (const string& component,
+                                     const string& accessor,
+				     sid::host_int_4 address,
+				     const sid::little_int_4& data);
+      sid::bus::status write_memory (const string& component,
+                                     const string& accessor,
+				     sid::host_int_4 address,
+				     const sid::big_int_8& data);
+      sid::bus::status write_memory (const string& component,
+                                     const string& accessor,
+				     sid::host_int_4 address,
+				     const sid::little_int_8& data);
+      // generic memory access routines for reading/writing memory of a 
+      // specified component
+
+      sid::component::status read_register (const string& component,
+                                            unsigned regno,
+					    string &value);
+      sid::component::status write_register (const string& component,
+                                             unsigned regno,
+					     const string& value);
+      // read/write a cpu register.  The register number matches that used 
+      // by gdb
+
+      sid::component::status drive_pin (const string& component,
+                                        const string& pin_name,
+					const host_int_4 value);
+      // send a signal to specified pin of specified component
+
+      sid::component::status get_attribute (const string& component,
+                                            const string& attr_name,
+					    string& value);
+      sid::component::status set_attribute (const string& component,
+                                            const string& attr_name,
+                                            const string& value);
+      // get/set an attribute of a specified component
+
+  public:
+      bool step ();
+      bool step (unsigned max_iterations);
+      // the step methods use the inherited advance() method to execute the 
+      // desired number of iterations (default being 1).  Return true if the 
+      // program has not stopped.
+
+      void reset();
+      // apply the hardware reset signal to all known components.
+
+      map<string,string> save_state_map ();
+      sid::component::status restore_state_map (const map<string, string>& s);
+      // create or restore snapshot of named components.  Where the snapshot 
+      // contains components that are not instantiated, these snapshot elements
+      // are ignored.
+
+      sid::component::status get_exit_code (host_int_4& exit_code);
+      // get exit code for application from "gloss" component
+  }
+}
+
+It should be noted that sidlib::simwcpu makes some assumptions.  The reset() 
+method assumes there is an "hw-reset-net" component to specify a reset request.
+The step() method assumes that there is a "target-sched" to manipulate.
+The get_exit_code() method assumes there is a "gloss" component to get
+the exit code from.
+
+This class is still target-independent.  A higher-level class can tie itself 
+to a particular configuration and thereby hard-code known component names.
+
+For example, the ip3k cpu plus coprocessor simulator can be modelled by a 
+higher-level class which could read registers from either processor:
+
+  this->read_register ("coprocessor", 4, data1);
+  this->read_register ("cpu", 5, data2);
+
+Similarly, the irq 0 pin of the main processor could be triggered 
+as such:
+
+  this->drive_pin ("cpu", "irq_0", 1);
+
+
+ip3k-specific classes
+---------------------
+
+With the target-independent base classes in place, it is relatively 
+straight-forward to make platform-specific high level sid encapsulations based 
+on a configuration file.  These high-level encapsulations will be defined
+to the end-user via an appropriate header file for the processor (e.g.  
+<ip3ksid.h>).
+
+For example, the following classes encapsulate the ip3k main processor and
+coprocessor.respectively,  running gloss:
+
+namespace sidlib {
+  class ip3kcpu : public simwcpu {
+    public:
+      ip3kcpu (const string& conf_file = "ip3k-chiphw-gloss.conf");
+      // default constructor that will construct simwcpu (conf_file) (default
+      // to "ip3k-chiphw-gloss" and will set the "step-insns-count" attribute 
+      // for the cpu so stepping will step single insns
+
+      bool load (const string& object_file_name);
+      // load function that will simply call 
+      // simwcpu::load ("loader", object_file_name); and return result
+
+      sid::bus::status read_data_memory (sid::host_int_4 address, 
+                                         big_int_1& data);
+      sid::bus::status read_data_memory (sid::host_int_4 address, 
+                                         big_int_2& data);
+      sid::bus::status read_data_memory (sid::host_int_4 address, 
+                                         big_int_4& data);
+      sid::bus::status read_data_memory (sid::host_int_4 address, 
+                                         big_int_8& data);
+      sid::bus::status read_data_memory (sid::host_int_4 address,
+                                         unsigned int length,
+                                         sid::host_int_1 *buf);
+      sid::bus::status write_data_memory (sid::host_int_4 address, 
+                                          const big_int_1& data);
+      sid::bus::status write_data_memory (sid::host_int_4 address, 
+                                          const big_int_2& data);
+      sid::bus::status write_data_memory (sid::host_int_4 address, 
+                                          const big_int_4& data);
+      sid::bus::status write_data_memory (sid::host_int_4 address, 
+                                          const big_int_8& data);
+      sid::bus::status write_data_memory (sid::host_int_4 address,
+                                          unsigned int length,
+                                          const sid::host_int_1 *buf);
+
+      sid::bus::status read_insn_memory (sid::host_int_4 address, 
+                                         big_int_1& data);
+      sid::bus::status read_insn_memory (sid::host_int_4 address, 
+                                         big_int_2& data);
+      sid::bus::status read_insn_memory (sid::host_int_4 address, 
+                                         big_int_4& data);
+      sid::bus::status read_insn_memory (sid::host_int_4 address, 
+                                         big_int_8& data);
+      sid::bus::status read_insn_memory (sid::host_int_4 address,
+                                         unsigned int length,
+                                         sid::host_int_1 *buf);
+      sid::bus::status write_insn_memory (sid::host_int_4 address, 
+                                          const big_int_1& data);
+      sid::bus::status write_insn_memory (sid::host_int_4 address, 
+                                          const big_int_2& data);
+      sid::bus::status write_insn_memory (sid::host_int_4 address, 
+                                          const big_int_4& data);
+      sid::bus::status write_insn_memory (sid::host_int_4 address, 
+                                          const big_int_8& data);
+      sid::bus::status write_insn_memory (sid::host_int_4 address,
+                                          const unsigned int length,
+                                          const sid::host_int_1 *buf);
+      // read/write memory functions
+
+      sid::component::status read_register (unsigned regno, host_int_4& value);
+      sid::component::status read_register (int context, unsigned regno, 
+                                            host_int_4& value);
+      sid::component::status write_register (unsigned regno, host_int_4 value);
+      sid::component::status write_register (int context, unsigned regno, 
+                                             host_int_4 value);
+      // register read and write routines.
+
+      sid::component::status interrupt (unsigned irq_number);
+      // This routine translates the irq bit number (0-31) into the appropriate
+      // hardware interrupt pin name for the main processor and then uses 
+      // simwcpu::drive_pin ("cpu", pin_name, 1);
+
+      void checkpoint_all_state (std::ostream& file) const;
+      sid::component::status restore_all_state (std::istream& file);
+      // These routines save and restore the state to a file using
+      // the simwcpu::save_state_map() and simwcpu::restore_state_map()
+      // member functions.
+    
+      // Inherited member functions from simwcpu
+      // =======================================
+      // void reset ();  /* this will end up causing a hardware reset */
+      // 
+      // void step ();
+      // void step (unsigned max_iterations);
+      // 
+      // sid::component::status get_exit_code (host_int_4& x);
+      //
+
+  }
+
+  class ip3kcopro : public simwcpu {
+    public:
+      ip3kcopro (const string& conf_file = "ip3kmath-gloss.conf");
+      // default constructor that will construct simwcpu (conf_file) (default
+      // to "ip3kmath-gloss.conf" and will set the "step-insns-count" attribute 
+      // for the coprocessor so stepping will step single insns
+
+      bool load (const string& object_file_name);
+      // load function that will simply call 
+      // simwcpu::load ("loader", object_file_name); and return result
+
+      sid::bus::status read_data_memory (sid::host_int_4 address, 
+                                         big_int_1& data);
+      sid::bus::status read_data_memory (sid::host_int_4 address, 
+                                         big_int_2& data);
+      sid::bus::status read_data_memory (sid::host_int_4 address, 
+                                         big_int_4& data);
+      sid::bus::status read_data_memory (sid::host_int_4 address, 
+                                         big_int_8& data);
+      sid::bus::status read_data_memory (sid::host_int_4 address,
+                                         unsigned int length,
+                                         sid::host_int_1 *buf);
+      sid::bus::status write_data_memory (sid::host_int_4 address, 
+                                          const big_int_1& data);
+      sid::bus::status write_data_memory (sid::host_int_4 address, 
+                                          const big_int_2& data);
+      sid::bus::status write_data_memory (sid::host_int_4 address, 
+                                          const big_int_4& data);
+      sid::bus::status write_data_memory (sid::host_int_4 address, 
+                                          const big_int_8& data);
+      sid::bus::status write_data_memory (sid::host_int_4 address,
+                                          unsigned int length,
+                                          const sid::host_int_1 *buf);
+
+      sid::bus::status read_insn_memory (sid::host_int_4 address, 
+                                         big_int_1& data);
+      sid::bus::status read_insn_memory (sid::host_int_4 address, 
+                                         big_int_2& data);
+      sid::bus::status read_insn_memory (sid::host_int_4 address, 
+                                         big_int_4& data);
+      sid::bus::status read_insn_memory (sid::host_int_4 address, 
+                                         big_int_8& data);
+      sid::bus::status read_insn_memory (sid::host_int_4 address,
+                                         unsigned int length,
+                                         sid::host_int_1 *buf);
+      sid::bus::status write_insn_memory (sid::host_int_4 address, 
+                                          const big_int_1& data);
+      sid::bus::status write_insn_memory (sid::host_int_4 address, 
+                                          const big_int_2& data);
+      sid::bus::status write_insn_memory (sid::host_int_4 address, 
+                                          const big_int_4& data);
+      sid::bus::status write_insn_memory (sid::host_int_4 address, 
+                                          const big_int_8& data);
+      sid::bus::status write_insn_memory (sid::host_int_4 address,
+                                          unsigned int length,
+                                          const sid::host_int_1 *buf);
+      // read/write memory functions
+
+      sid::component::status read_register (unsigned regno, host_int_8& value);
+      sid::component::status write_register (unsigned regno, host_int_8 value);
+      // register read and write routines.
+
+      sid::component::status interrupt (unsigned irq_number);
+      // This routine does nothing as there are no external hardware interrupts
+      // for the coprocessor.
+
+      void checkpoint_all_state (std::ostream& file) const;
+      sid::component::status restore_all_state (std::istream& file);
+      // These routines save and restore the state to a file using
+      // the simwcpu::save_state_map() and simwcpu::restore_state_map()
+      // member functions.
+    
+      // Inherited member functions from simwcpu
+      // =======================================
+      // void reset (); /* this will end up causing a hardware reset */
+      // 
+      // void step ();
+      // void step (unsigned max_iterations);
+      // 
+      // sid::component::status get_exit_code (host_int_4& x);
+      //
+  }
+}
+
+A combined ip3k main processor plus coprocessor encapsulation would be:
+
+namespace sidlib {
+  class ip3kmain_plus_copro : public simwcpu {
+    public:
+      ip3k_main_plus_copro ();
+      // default constructor that will construct 
+      // simwcpu ("ip3k-gloss-coprocessor.conf") and
+      // will set the "step-insns-count" attribute for the cpu and
+      // coprocessor to 1 so stepping will step single insns
+
+      bool load_main (const string& object_file_name);
+      // load function that will simply call 
+      // simwcpu::load ("loader", object_file_name); and return result
+
+      bool load_copro (const string& object_file_name);
+      // load function that will simply call 
+      // simwcpu::load ("loader-copro", object_file_name); and return result
+
+      sid::bus::status read_data_memory_copro (sid::host_int_4 address, 
+                                               big_int_1& data);
+      sid::bus::status read_data_memory_copro (sid::host_int_4 address, 
+                                               big_int_2& data);
+      sid::bus::status read_data_memory_copro (sid::host_int_4 address, 
+                                               big_int_4& data);
+      sid::bus::status read_data_memory_copro (sid::host_int_4 address, 
+                                               big_int_8& data);
+      sid::bus::status read_data_memory_copro (sid::host_int_4 address,
+                                               unsigned int length,
+                                               sid::host_int_1 *buf);
+      sid::bus::status write_data_memory_copro (sid::host_int_4 address, 
+                                                const big_int_1& data);
+      sid::bus::status write_data_memory_copro (sid::host_int_4 address, 
+                                                const big_int_2& data);
+      sid::bus::status write_data_memory_copro (sid::host_int_4 address,
+                                                const big_int_4& data);
+      sid::bus::status write_data_memory_copro (sid::host_int_4 address, 
+                                                const big_int_8& data);
+      sid::bus::status write_data_memory_copro (sid::host_int_4 address,
+                                                unsigned int length,
+                                                const sid::host_int_1 *buf);
+
+      sid::bus::status read_insn_memory_copro (sid::host_int_4 address, 
+                                               big_int_1& data);
+      sid::bus::status read_insn_memory_copro (sid::host_int_4 address, 
+                                               big_int_2& data);
+      sid::bus::status read_insn_memory_copro (sid::host_int_4 address, 
+                                               big_int_4& data);
+      sid::bus::status read_insn_memory_copro (sid::host_int_4 address, 
+                                               big_int_8& data);
+      sid::bus::status read_insn_memory_copro (sid::host_int_4 address,
+                                               unsigned int length,
+                                               sid::host_int_1 *buf);
+      sid::bus::status write_insn_memory_copro (sid::host_int_4 address, 
+                                                const big_int_1& data);
+      sid::bus::status write_insn_memory_copro (sid::host_int_4 address, 
+                                                const big_int_2& data);
+      sid::bus::status write_insn_memory_copro (sid::host_int_4 address, 
+                                                const big_int_4& data);
+      sid::bus::status write_insn_memory_copro (sid::host_int_4 address, 
+                                                const big_int_8& data);
+      sid::bus::status write_insn_memory_copro (sid::host_int_4 address,
+                                                unsigned int length,
+                                                const sid::host_int_1 *buf);
+
+      // copro read/write memory functions
+
+      sid::bus::status read_data_memory_main (sid::host_int_4 address, 
+                                              big_int_1& data);
+      sid::bus::status read_data_memory_main (sid::host_int_4 address, 
+                                              big_int_2& data);
+      sid::bus::status read_data_memory_main (sid::host_int_4 address, 
+                                              big_int_4& data);
+      sid::bus::status read_data_memory_main (sid::host_int_4 address, 
+                                              big_int_8& data);
+      sid::bus::status read_data_memory_main (sid::host_int_4 address,
+                                              unsigned int length,
+                                              sid::host_int_1 *buf);
+      sid::bus::status write_data_memory_main (sid::host_int_4 address, 
+                                               const big_int_1& data);
+      sid::bus::status write_data_memory_main (sid::host_int_4 address, 
+                                               const big_int_2& data);
+      sid::bus::status write_data_memory_main (sid::host_int_4 address, 
+                                               const big_int_4& data);
+      sid::bus::status write_data_memory_main (sid::host_int_4 address, 
+                                               const big_int_8& data);
+      sid::bus::status write_data_memory_main (sid::host_int_4 address,
+                                               unsigned int length,
+                                               const sid::host_int_1 *buf);
+
+      sid::bus::status read_insn_memory_main (sid::host_int_4 address, 
+                                              big_int_1& data);
+      sid::bus::status read_insn_memory_main (sid::host_int_4 address, 
+                                              big_int_2& data);
+      sid::bus::status read_insn_memory_main (sid::host_int_4 address, 
+                                              big_int_4& data);
+      sid::bus::status read_insn_memory_main (sid::host_int_4 address, 
+                                              big_int_8& data);
+      sid::bus::status read_insn_memory_main (sid::host_int_4 address,
+                                              unsigned int length,
+                                              sid::host_int_1 *buf);
+      sid::bus::status write_insn_memory_main (sid::host_int_4 address, 
+                                               const big_int_1& data);
+      sid::bus::status write_insn_memory_main (sid::host_int_4 address, 
+                                               const big_int_2& data);
+      sid::bus::status write_insn_memory_main (sid::host_int_4 address, 
+                                               const big_int_4& data);
+      sid::bus::status write_insn_memory_main (sid::host_int_4 address, 
+                                               const big_int_8& data);
+      sid::bus::status write_insn_memory_main (sid::host_int_4 address,
+                                               unsigned int length,
+                                               const sid::host_int_1 *buf);
+      // core read/write memory functions
+
+      sid::component::status read_register_main (unsigned regno, 
+                                                 host_int_4& value);
+      sid::component::status read_register_main (int context,
+                                                 unsigned regno, 
+                                                 host_int_4& value);
+      sid::component::status write_register_main (unsigned regno, 
+                                                  host_int_4 value);
+      sid::component::status write_register_main (int context,
+	                                          unsigned regno, 
+                                                  host_int_4 value);
+      // register read and write routines for core.
+
+      sid::component::status read_register_copro (unsigned regno, 
+                                                  host_int_8& value);
+      sid::component::status write_register_copro (unsigned regno, 
+                                                   host_int_8 value);
+      // register read and write routines for coprocessor.
+
+      sid::component::status interrupt_main (unsigned irq_number);
+      // This routine translates the irq bit number (0-31) into the appropriate
+      // hardware interrupt pin name for the main processor and then uses 
+      // simwcpu::drive_pin ("cpu", pin_name, 1);
+
+      void checkpoint_all_state (std::ostream& file) const;
+      sid::component::status restore_all_state (std::istream& file);
+      // These routines save and restore the state to a file using
+      // the simwcpu::save_state_map() and simwcpu::restore_state_map()
+      // member functions.
+
+      // Inherited member functions from simwcpu
+      // =======================================
+      // void reset (); /* this will end up causing a hardware reset for main and copro */
+      // 
+      // void step ();
+      // void step (unsigned max_iterations);
+      // 
+      // sid::component::status get_exit_code (host_int_4& x);
+      //
+  }
+}
+
+Note that the high-level encapsulations are small in size due to the fact 
+that they are using the sidlib::simwcpu class to do the real work.
+
+Also note that gdb configurations are not provided as the gdb control of
+components counteracts the control provided by these classes.
+
+Packaging
+=========
+
+The sid encapsulation library is planned to be packaged as a static library: 
+libsid.a that will be installed in install/lib/sidlib.  The library will be
+self-contained in that all relevant code from sid will be included in the
+library.  The library will be built using sidlibtool so that a user may use 
+sidlibtool to link and compile a program.  The user would specify the libsid.la
+instead of libsid.a.  Doing so will automatically bring in the libraries
+required by libsid so that a user need not specify them on the command line.
+If sidlibtool is not used, then the user is responsible for adding all of the
+libraries that libsid.a requires and any additional libraries needed by
+the application.
+
+As part of this design, the sidlib.h and ip3ksid.h header files will be 
+installed in the install/include directory.
+
+Sample Code
+===========
+
+The following exhibits some sample code utilizing the ip3k main encapsulation:
+
+#include <ip3ksid.h>
+#include <fstream>
+
+using namespace sid;
+using namespace std;
+using namespace sidlib;
+
+int main ()
+{
+  host_int_4 d4;
+  ip3kcpu *x = new ip3kcpu ();
+
+  x->load ("my.out");
+  x->step (100);  /* step 100 insns */
+  x->write_register (ip3kcpu::d4, 22);  /* change d4 to 22 */
+  fstream save_state ("my.file", 
+                      ios::binary | ios::in | ios::out | ios::trunc);
+  x->checkpoint_all_state (save_state);  /* save current state */
+  
+  x->interrupt (0); /* cause irq corresponding to int_stat0 bit 0 */
+
+  delete x;
+
+  /* start again but restore to point saved earlier */
+  x = new ip3kcpu ();
+  x->load ("my.out"); 
+  x->step (80);  /* step 80 insns */
+  x->write_register (ip3kcpu::d4, 23);  /* change d4 to 23 */
+  save_state.seekp (0);
+  x->restore_all_state (save_state);
+  /* at this point we should be at the 101st insn and d4 is 22 */
+
+  /* ... */
+  x->read_register (ip3kcpu::d4, d4);   /* get d4 */
+  delete x;
+  return d4;
+}
+
+sidlibtool g++ -o samp -export-dynamic -I/${install_dir}/include \
+-L/${install_dir}/${hostname}/lib sample.cxx \
+/${install_dir}/${hostname}/lib/sidlib/libsid.la
+./samp
+echo $?
+22
+
+Special Notes
+-------------
+
+It is possible to instantiate multiple sid encapsulations at the same time.  
+Note that the save/restore state member functions use a file and it is up to the
+user to prevent any collision between multiple instantiations.  As well, any
+save/restore operations are only valid for the same configuration and 
+executable.  A save/restore is not currently supported across different host 
+platforms.  When saving to a file, the file should be opened binary mode and
+truncated before writing.
+
+Block memory reads and writes utilize the data in target-order.  Any attempts
+to modify the data must either be on a byte by byte basis or must account
+for any differences between host and target endian.
+
+If a step member function returns false, then no further action is supported
+on the encapsulation class other than termination/destruction and
+get_exit_code().  Any other actions result in undefined behavior.
+  
+Specifying a configuration file for a class constructor is restricted to one 
+that specifies all the options used to build the default configuration file.
+Failing to conform to this restriction causes undefined behavior (e.g.
+specifying a main processor-only configuration file to the ip3kcopro class).
+
+
+
+
+
+
+
+
+
+
+
+
+
+

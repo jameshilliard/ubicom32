@@ -1,0 +1,75 @@
+diff -urN uci-2010-09-28.2-orig/lua/Makefile uci-2010-09-28.2/lua/Makefile
+--- uci-2010-09-28.2-orig/lua/Makefile	2010-11-01 12:57:11.000000000 +0200
++++ uci-2010-09-28.2/lua/Makefile	2011-01-18 07:43:52.000000000 +0200
+@@ -31,10 +31,10 @@
+ all: uci.so
+ 
+ uci.so: uci.o
+-	$(PLUGIN_LD) $(PLUGIN_LDFLAGS) -o $@ $^ $(LIBS)
++	$(PLUGIN_LD) $(LDFLAGS) $(PLUGIN_LDFLAGS) -o $@ $^ $(LIBS)
+ 
+ %.o: %.c
+-	$(CC) $(CPPFLAGS) $(CFLAGS) $(FPIC) -c -o $@ $<
++	$(CC) $(LDFLAGS) $(CPPFLAGS) $(CFLAGS) $(FPIC) -c -o $@ $<
+ 
+ install:
+ 	mkdir -p $(DESTDIR)$(luadir)
+diff -urN uci-2010-09-28.2-orig/Makefile uci-2010-09-28.2/Makefile
+--- uci-2010-09-28.2-orig/Makefile	2010-11-01 12:57:11.000000000 +0200
++++ uci-2010-09-28.2/Makefile	2011-01-18 07:42:48.000000000 +0200
+@@ -41,19 +41,19 @@
+ 	fi
+ 
+ %.o: %.c
+-	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) $<
++	$(CC) $(LDFLAGS) -c -o $@ $(CPPFLAGS) $(CFLAGS) $<
+ 
+ %.static.o: %.c
+-	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) $<
++	$(CC) $(LDFLAGS) -c -o $@ $(CPPFLAGS) $(CFLAGS) $<
+ 
+ %.shared.o: %.c
+-	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) $(FPIC) $<
++	$(CC) $(LDFLAGS) -c -o $@ $(CPPFLAGS) $(CFLAGS) $(FPIC) $<
+ 
+ uci: cli.o libuci.$(SHLIB_EXT)
+-	$(CC) -o $@ $< -L. -luci $(LIBS)
++	$(CC) $(LDFLAGS) -o $@ $< -L. -luci $(LIBS)
+ 
+ uci-static: cli.o libuci.a
+-	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
++	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $^ $(LIBS)
+ 
+ ucimap.c: ucimap.h uci.h
+ 
+@@ -63,12 +63,12 @@
+ 	$(RANLIB) $@
+ 
+ libuci.$(SHLIB_EXT): $(patsubst %.c,%.shared.o, $(SOURCES))
+-	$(LINK) $(SHLIB_FLAGS) -o $(SHLIB_FILE) $^ $(LIBS)
++	$(LINK) $(LDFLAGS) $(SHLIB_FLAGS) -o $(SHLIB_FILE) $^ $(LIBS)
+ 	ln -sf $(SHLIB_FILE) $@
+ 
+ ucimap-example.c: list.h
+ ucimap-example: ucimap-example.o libuci.a
+-	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
++	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $^ $(LIBS)
+ 
+ clean:
+ 	rm -f uci uci-static *.[oa] *.so* *.dylib* uci_config.h ucimap-example
+diff -urN uci-2010-09-28.2-orig/trigger/Makefile uci-2010-09-28.2/trigger/Makefile
+--- uci-2010-09-28.2-orig/trigger/Makefile	2011-01-18 07:37:52.000000000 +0200
++++ uci-2010-09-28.2/trigger/Makefile	2011-01-18 07:44:22.000000000 +0200
+@@ -31,10 +31,10 @@
+ all: uci_trigger.so
+ 
+ uci_trigger.so: uci_trigger.o
+-	$(PLUGIN_LD) $(PLUGIN_LDFLAGS) -o $@ $^ $(LIBS)
++	$(PLUGIN_LD) $(LDFLAGS) $(PLUGIN_LDFLAGS) -o $@ $^ $(LIBS)
+ 
+ %.o: %.c
+-	$(CC) $(CPPFLAGS) $(CFLAGS) $(FPIC) -c -o $@ $<
++	$(CC) $(LDFLAGS) $(CPPFLAGS) $(CFLAGS) $(FPIC) -c -o $@ $<
+ 
+ install:
+ 	mkdir -p $(DESTDIR)$(luadir)

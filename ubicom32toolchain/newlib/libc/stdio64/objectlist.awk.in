@@ -1,0 +1,10 @@
+dummy.lo /home/art/newlib-1.16.0/newlib/libc/stdio64/dummy.lo
+fdopen64.lo /home/art/newlib-1.16.0/newlib/libc/stdio64/fdopen64.lo
+fgetpos64.lo /home/art/newlib-1.16.0/newlib/libc/stdio64/fgetpos64.lo
+fopen64.lo /home/art/newlib-1.16.0/newlib/libc/stdio64/fopen64.lo
+freopen64.lo /home/art/newlib-1.16.0/newlib/libc/stdio64/freopen64.lo
+fseeko64.lo /home/art/newlib-1.16.0/newlib/libc/stdio64/fseeko64.lo
+fsetpos64.lo /home/art/newlib-1.16.0/newlib/libc/stdio64/fsetpos64.lo
+ftello64.lo /home/art/newlib-1.16.0/newlib/libc/stdio64/ftello64.lo
+stdio64.lo /home/art/newlib-1.16.0/newlib/libc/stdio64/stdio64.lo
+tmpfile64.lo /home/art/newlib-1.16.0/newlib/libc/stdio64/tmpfile64.lo

@@ -1,0 +1,21 @@
+2001-11-06  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* libc/rundefs.exp: Remove -dlpreopen which is no longer needed.
+
+2001-10-19  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* Makefile.in: Regenerated.
+
+2001-09-19  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* libc/rundefs.exp: Allow libtool to be passed as parameter.
+	Also use -dlpreopen to open libsid.la.
+
+2001-09-10  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* Makefile.am: New file.
+	* Makefile.in: Ditto.
+	* config/default.exp: Ditto.
+	* lib/rundefs.exp: Ditto.
+
+	

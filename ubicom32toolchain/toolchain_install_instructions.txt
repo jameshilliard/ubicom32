@@ -1,0 +1,68 @@
+# !/bin/bash
+#----Please check these first----
+#The GNU build environment is broken on a default install of Ubuntu.   In order to build Ubicom tools on Ubuntu, the following packages must be installed:   #libc6-dev, texinfo, bison, flex, tk, g++, libncurses-dev, libx11-dev, and expect also build-essential.  To fetch and install a package, execute:
+
+#sudo apt-get install package
+
+#Do all these as root.For switch to root use "sudo su" for ubuntu/
+#1-)Installing gmp and mpfr
+#Go into the toolchain source directory which should include binutils , gcc ,gmp ,mpfr directories. 
+#Get into gmp directory and type 
+./configure --prefix=/usr/local 
+#and then type 
+make 
+#after that type 
+make install
+
+#Get into mpfr directory and type 
+./configure --prefix=/usr/local 
+#and then type 
+make 
+#after that type 
+make install
+
+#2-)You need a place where toolchain will install.
+#Say it opt/ubicom32tools (you can change this path to wyw)
+cd /
+cd opt
+mkdir ubicom32tools
+cd ubicom32tools
+mkdir bin  #we do this and will add to PATH because gcc will check binutils for cross platform from here
+export PATH=/opt/ubicom32tools/bin:$PATH
+
+#Go into the toolchain source directory which should include binutils , gcc ,gmp ,mpfr directories. 
+#We need two obj directory for toolchain and binutils.
+mkdir obj-toolchain
+mkdir obj-gcc
+cd obj-toolchain #we will configure toolchain here this means all messy stuff will here and our source will clean.
+#run (you can change --prefix path to wyw)
+../binutils/configure --target=ubicom32-elf --enable-gdbmi --enable-install-libbfd --prefix=/opt/ubicom32tools --enable-languages=c --enable-libssp=no --enable-libada=no --enable-newlib=no --enable-libgloss=no --enable-rda=no --disable-werror
+#before make chamge some permissions in binutils directory
+chmod 777 utils/spu/configure
+chmod 777 gdb/observer.sh
+#if you do something wrong use "rm -rf *' command this will clean directory so toolchain build
+#if everything is ok run
+make
+#and then 
+make install
+# now you can check /opt/ubicom32tools/bin for ubicom32-elf-as or ubicom32-elf-ld and etc. 
+# Simply type "ubicom32-elf-ld -v" it will work because it is in our PATH . Version should 2.19 for binutils.
+
+#Now we will compile gcc so
+# goto obj-gcc
+cd ..
+cd obj-gcc
+#export libraries path
+export LD_LIBRARY_PATH=/usr/local/lib:/usr/lib
+# and then type ( in here  "--with-gmp=/usr/local --with-mpfr=/usr/local" /usr/local shows where is your gmp and mpfr install
+# --prefix=/opt/ubicom32tools shows where is ypur binutils binaries.
+../gcc/configure --with-gmp=/usr/local --with-mpfr=/usr/local --target=ubicom32-elf --enable-gdbmi --enable-install-libbfd --prefix=/opt/ubicom32tools --enable-languages=c --enable-libssp=no --enable-libada=no
+#if all good
+make
+#and then 
+make install
+#please check gcc by simply typing 
+ubicom32-elf-gcc -v
+#version should 4.3.2
+#TBD: Do all these as script.
+

@@ -1,0 +1,23 @@
+LIB2FUNCS_EXTRA = \
+	$(srcdir)/config/ubicom32/divmod.c
+
+# We have rather a lot of multilib permutations.  We only build for the v3 ISA
+# and upwards these days.
+#
+MULTILIB_OPTIONS = march=ubicom32v3/march=ubicom32v4/march=ubicom32v5
+MULTILIB_OPTIONS += mfdpic
+MULTILIB_OPTIONS += mno-ipos-abi/mipos-abi
+MULTILIB_OPTIONS += fno-leading-underscore/fleading-underscore
+
+# Assemble startup files.
+$(T)crti.o: $(srcdir)/config/ubicom32/crti.S $(GCC_PASSES)
+	$(GCC_FOR_TARGET) $(GCC_CFLAGS) $(MULTILIB_CFLAGS) $(INCLUDES) \
+	-c -o $(T)crti.o -x assembler-with-cpp $(srcdir)/config/ubicom32/crti.S
+
+$(T)crtn.o: $(srcdir)/config/ubicom32/crtn.S $(GCC_PASSES)
+	$(GCC_FOR_TARGET) $(GCC_CFLAGS) $(MULTILIB_CFLAGS) $(INCLUDES) \
+	-c -o $(T)crtn.o -x assembler-with-cpp $(srcdir)/config/ubicom32/crtn.S
+
+# these parts are required because uClibc ldso needs them to link.
+# they are not in the specfile so they will not be included automatically.
+EXTRA_MULTILIB_PARTS = crtbegin.o crtend.o crtbeginS.o crtendS.o crti.o crtn.o

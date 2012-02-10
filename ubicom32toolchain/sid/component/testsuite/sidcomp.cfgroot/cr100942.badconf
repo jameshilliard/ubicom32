@@ -1,0 +1,6 @@
+set main verbose? 0
+load libloader.la loader_component_library
+new sw-load-elf loader
+connect-pin main staring -> loader load!         # ERROR: main pin name is "starting"
+connect-pin main starting <-> loader load-me!    # ERROR: loader pin name is "load!"
+connect-pin main staring <-> loader load-me!     # ERROR: both pin names are incorrect

@@ -1,0 +1,73 @@
+Kernel driver isl29011
+======================
+
+Supported chips:
+* Intersil ISL29011
+Prefix: 'isl29011'
+Addresses scanned: 0x44
+Datasheet:
+http://www.intersil.com/data/fn/fn6467.pdf
+
+Author: Daniel Mack <daniel@caiaq.de>
+
+
+Description
+-----------
+The ISL29011 is an integrated ambient and infrared light to digital converter
+with built in IR LED driver and I2C interface.  It features I2C user 
+programmable lux range select for optimized counts/lux, IR LED source current,
+and multi-function control and monitoring capabilities. The internal ADC 
+provides 16-bit resolution while rejecting 50Hz and 60Hz flicker caused by
+artificial light sources.
+
+The driver allows to set the lux range, the bit resolution, the operational
+mode (see below) and the power state of device and can read the current lux
+value, of course.
+
+
+Detection
+---------
+
+The ISL29011 does not have an ID register which could be used to identify
+it, so the detection routine will just try to read from the configured I2C
+addess and consider the device to be present as soon as it ACKs the
+transfer.
+
+
+Sysfs entries
+-------------
+
+range:
+	0: 0.015 lux to 1000 lux (default)
+	1: 0.06 lux to 4000 lux
+	2: 0.24 lux to 16,000 lux
+	3: 0.96 lux to 64,000 lux
+
+led_drive:
+	0: 12.5 mA (default)
+	1: 25 mA (default)
+	2: 50 mA (default)
+	3: 100 mA (default)
+
+resolution:
+	0: 2^16 cycles (default)
+	1: 2^12 cycles
+	2: 2^8 cycles
+	3: 2^4 cycles
+
+mode:
+	0: Power-down the device
+	1: ALS once
+	2: IR once
+	3: Proximity once
+	5: ALS continuous
+	6: IR continuous
+	7: Proximity continuous
+
+power_state:
+	0: device is disabled (default)
+	non-zero: device is enabled
+
+lux (read only):
+	returns the value from the last sensor reading
+

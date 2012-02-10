@@ -1,0 +1,434 @@
+config IP7145DPF
+	bool "IP7145DPF"
+	select PCI
+	select UBICOM32_V4
+	select UBICOM_INPUT
+	select UBICOM_INPUT_I2C
+	select RTC_CLASS
+	select RTC_DRV_S35390A
+	select I2C
+	select I2C_GPIO
+	select GPIO_PCA953X
+	select FB
+	select FB_UBICOM32
+	select LCD_CLASS_DEVICE
+	select LCD_UBICOM32POWER
+	select BACKLIGHT_LCD_SUPPORT
+	select BACKLIGHT_CLASS_DEVICE
+	select BACKLIGHT_UBICOM32
+	select SND_UBI32
+	select MMC_UBICOM32
+	select MMC
+	select MMC_BLOCK
+	select MTD_UBI32_FC
+	select USB_MUSB_HDRC
+	select USB_MUSB_HOST
+	select MUSB_PIO_ONLY
+	help
+		IP7145 Digital Picture Frame reference design, supports:
+			8007-0410 v1.0
+
+config IP7160RGW
+	bool "IP7160RGW"
+	select PCI
+	select UBICOM32_V4
+	select UBICOM_INPUT
+	select NEW_LEDS
+	select LEDS_CLASS
+	select LEDS_GPIO
+	select SPI
+	select SPI_UBICOM32_GPIO
+	select VLAN_8021Q
+	select UBICOM_SWITCH
+	select UBICOM_SWITCH_BCM539X
+	select MTD_UBI32_FC
+	select USB_MUSB_HDRC
+	select USB_MUSB_HOST
+	select MUSB_PIO_ONLY
+	help
+		Ubicom IP7160 RGW Eval, supports:
+			8007-0110 v1.0
+			8007-0111 v1.1
+			8007-0112 v1.2
+
+config IP7160RGWLCD
+	bool "IP7160RGWLCD"
+	select UBICOM32_V4
+	select UBICOM_INPUT
+	select NEW_LEDS
+	select LEDS_CLASS
+	select LEDS_GPIO
+	select SPI
+	select SPI_UBICOM32_GPIO
+	select VLAN_8021Q
+	select UBICOM_SWITCH
+	select UBICOM_SWITCH_BCM539X
+	select INPUT_TOUCHSCREEN
+	select TOUCHSCREEN_TSC2007
+	select FB
+	select FB_UBICOM32
+	select I2C
+	select I2C_GPIO
+	select UBICOM32_LCD_ADAPTER
+	select LCD_CLASS_DEVICE
+	select VDC_LCD_BITBANG_8_SPLIT
+	select VDC_NOAUTODETECT
+	select MTD_UBI32_FC
+	help
+		Ubicom IP7160 RGW Eval, supports:
+			8007-0112 v1.2 + 8007-1410 v1.0
+
+		With Ubicom LCD Adapter
+			8007-0920 v2.0
+			8007-0921 v2.1
+
+
+config IP7160BRINGUP
+	bool "IP7160BRINGUP"
+	select PCI
+	select UBICOM32_V4
+	select NEW_LEDS
+	select LEDS_CLASS
+	select LEDS_GPIO
+	help
+		Ubicom IP7160 Bringup, supports:
+			8007-0010 v1.0
+
+config IP7160DPF
+	bool "IP7160DPF"
+	select PCI
+	select UBICOM32_V4
+	select I2C
+	select I2C_GPIO
+	select FB
+	select FB_UBICOM32
+	select BACKLIGHT_LCD_SUPPORT
+	select BACKLIGHT_CLASS_DEVICE
+	select SND_UBI32
+	select SND_UBI32_AUDIO_CS4350
+	select UBICOM_HID
+	select MTD_UBI32_FC
+	help
+		IP7160 Digital Picture Frame board, supports:
+			8007-0211 Rev 1.1
+
+config IP7500MODULE
+	bool "IP7500MODULE"
+	select PCI
+	select UBICOM32_V4
+	select MTD_UBI32_FC
+	help
+		Ubicom IP7500 CPU Module board, supports:
+			8007-0510  v1.0
+			8007-0510A v1.0
+			8007-0511  v1.1
+			8007-0511A v1.1
+
+		Please see ip7500module.c for more details.
+
+config IP7500AV
+	bool "IP7500AV"
+	select PCI
+	select UBICOM32_V4
+	select I2C
+	select I2C_GPIO
+	select SND_UBI32
+	select SND_UBI32_AUDIO_CS4384
+	select FB
+	select FB_UBICOM32
+	select MTD_UBI32_FC
+	help
+		Ubicom IP7500 Audio Video board, supports:
+			8007-0810  v1.0
+
+		With Ubicom IP7500 CPU Module board:
+			8007-0510  v1.0 -or-
+			8007-0510A v1.0
+
+		Please see ip7500av.c for more details.
+
+config IP7500MEDIA
+	bool "IP7500MEDIA"
+	select PCI
+	select UBICOM32_V4
+	select UBICOM_INPUT_I2C
+	select RTC_CLASS
+	select RTC_DRV_S35390A
+	select I2C
+	select I2C_GPIO
+	select GPIO_PCA953X
+	select FB
+	select FB_UBICOM32
+	select FB_UBICOM32_VIRTUAL
+	select FB_UBICOM32_VIRTUAL_NOAUTO
+	select LCD_CLASS_DEVICE
+	select LCD_UBICOM32POWER
+	select BACKLIGHT_LCD_SUPPORT
+	select BACKLIGHT_CLASS_DEVICE
+	select BACKLIGHT_UBICOM32
+	select INPUT_TOUCHSCREEN
+	select TOUCHSCREEN_TSC2007
+	select SOUND
+	select SND
+	select SND_UBI32
+	select SND_UBI32_AUDIO_CS4350
+	select MMC_UBICOM32
+	select MMC
+	select MMC_BLOCK
+	select MTD_UBI32_FC
+	select USB_MUSB_HDRC
+	select USB_MUSB_HOST
+	select MUSB_PIO_ONLY
+	help
+		IP7500 Media Board w/ IP7500 CPU Module board, supports:
+			8007-0610 v1.0 w/ 8007-0510 v1.0 NOPHY
+			8007-0610 v1.0 w/ 8007-0511 v1.1 NOPHY
+
+		Also supports optional LCD Adapter board:
+			8006-0920 v2.0
+			8006-0921 v2.1
+
+		Please see ip7500media.c for more details.
+
+config IP7500WSPKR
+	bool "IP7500WSPKR"
+	select PCI
+	select UBICOM32_V4
+	select I2C
+	select I2C_GPIO
+	select SOUND
+	select SND
+	select SND_UBI32
+	select SND_UBI32_AUDIO_CS4350
+	select MTD_UBI32_FC
+	select USB_MUSB_HDRC
+	select USB_MUSB_HOST
+	select MUSB_PIO_ONLY
+	help
+		IP7500 Wireless Speaker Board, supports:
+			8007-1210 v1.0
+			8007-1210 v1.1
+
+		with optional LCD Adapter board:
+			8007-1910 v1.0
+
+		Please see ip7500wspkr.c for more details.
+
+config IP7500IAP
+	bool "IP7500IAP"
+	select PCI
+	select UBICOM32_V4
+	select I2C
+	select I2C_GPIO
+	select UBICOM_INPUT
+	select FB_UBICOM32 if FB
+	select FB_UBICOM32_VIRTUAL if FB
+	select FB_UBICOM32_VIRTUAL_NOAUTO if FB
+	select SND if SOUND
+	select SND_UBI32 if SOUND
+	select SND_UBI32_AUDIO_CS4350 if SOUND
+	select RTC_CLASS
+	select RTC_DRV_S35390A
+	select TOUCHSCREEN_TSC2007 if INPUT_TOUCHSCREEN
+	select BACKLIGHT_LCD_SUPPORT
+	select BACKLIGHT_CLASS_DEVICE
+	select BACKLIGHT_UBICOM32
+	select UBICOM32_LCD_ADAPTER
+	select LCD_CLASS_DEVICE
+	select LCD_UBICOM32POWER
+	select VDC_LCD_BITBANG_16
+	select VDC_LCD_BITBANG_8
+	select VDC_LCD_SYNC
+	select VDC_LCD_DIRECT
+	select MTD_UBI32_FC
+	select AT24
+	select USB_MUSB_HDRC
+	select USB_MUSB_HOST
+	select MUSB_PIO_ONLY
+	help
+		IP7500 Internet Audio Player, supports:
+			8007-1110 v1.0
+			8007-1111 v1.1
+			8007-1112 v1.2
+
+		with optional LCD Adapter board:
+			8006-0920 v2.0
+			8006-0921 v2.1
+			8007-1610 v1.0
+			8007-1611 v1.1
+			8007-1710 v1.0
+			8007-2110 v1.0
+			8007-2210 v1.0
+			8000-0310 v1.0
+
+		Please see ip7500iap.c for more details.
+
+config IP7000QEMU
+	bool "IP7000QEMU"
+	select UBICOM32_V4
+	help
+		Ubicom IP7000 QEMU supports:
+			8007-QEMU v1.0
+
+config IP7500TAP
+	bool "IP7500TAP"
+	select UBICOM32_V4
+	select I2C
+	select I2C_GPIO
+	select UBICOM_INPUT
+	select FB
+	select FB_UBICOM32
+	select FB_UBICOM32_VIRTUAL
+	select FB_UBICOM32_VIRTUAL_NOAUTO
+	select SOUND
+	select SND
+	select SND_UBI32
+	select SND_UBI32_GENERIC
+	select SND_UBI32_GENERIC_CAPTURE
+	select SND_UBI32_AUDIO_CS4350
+	select RTC_CLASS
+	select RTC_DRV_S35390A
+	select INPUT_TOUCHSCREEN
+	select TOUCHSCREEN_TSC2007
+	select BACKLIGHT_LCD_SUPPORT
+	select BACKLIGHT_CLASS_DEVICE
+	select BACKLIGHT_UBICOM32
+	select UBICOM32_LCD_ADAPTER
+	select LCD_CLASS_DEVICE
+	select LCD_UBICOM32POWER
+	select VDC_LCD_BITBANG_16
+	select VDC_LCD_BITBANG_8
+	select VDC_LCD_SYNC
+	select VDC_LCD_DIRECT
+	select NEW_LEDS
+	select LEDS_CLASS
+	select LEDS_GPIO
+	select UBICOM32_MULTI_FLASH
+	select MTD_UBI32_FC
+	select MTD_UBI32_NAND_SPI_ER
+	select AT24
+	help
+		IP7500 Total Audio Player, supports:
+			8007-2010 v1.0
+
+		with optional LCD Adapter board:
+			8006-0920 v2.0
+			8006-0921 v2.1
+			8007-1610 v1.0
+			8007-1611 v1.1
+			8007-1710 v1.0
+			8007-2110 v1.0
+			8007-2210 v1.0
+			8000-0310 v1.0
+
+		Please see ip7500tap.c for more details.
+
+config TVIU800
+	bool "TVIU800"
+	select PCI
+	select UBICOM32_V4
+	select I2C
+	select I2C_GPIO
+	select UBICOM_INPUT
+	select FB
+	select FB_UBICOM32
+	select FB_UBICOM32_VIRTUAL
+	select FB_UBICOM32_VIRTUAL_NOAUTO
+	select SOUND
+	select SND
+	select SND_UBI32
+	select SND_UBI32_AUDIO_WM8988
+	select RTC_CLASS
+	select RTC_DRV_S35390A
+	select INPUT_TOUCHSCREEN
+	select TOUCHSCREEN_TSC2007
+	select BACKLIGHT_LCD_SUPPORT
+	select BACKLIGHT_CLASS_DEVICE
+	select BACKLIGHT_UBICOM32
+	select UBICOM32_LCD_ADAPTER
+	select LCD_CLASS_DEVICE
+	select LCD_UBICOM32POWER
+	select VDC_LCD_BITBANG_16
+	select VDC_LCD_BITBANG_8
+	select VDC_LCD_SYNC
+	select VDC_LCD_DIRECT
+	select MTD_UBI32_FC
+	select AT24
+	help
+		Please see tviu800.c for more details.
+
+config VIR200
+	bool "VIR200"
+	select UBICOM32_V4
+	select I2C
+	select I2C_GPIO
+	select FB
+	select FB_UBICOM32
+	select SOUND
+	select SND
+	select SND_UBI32
+	select SND_UBI32_AUDIO_CS4525
+	select RTC_CLASS
+	select RTC_DRV_S35390A
+	select INPUT_TOUCHSCREEN
+	select TOUCHSCREEN_TSC2007
+	select TOUCHSCREEN_ZY070
+	select BACKLIGHT_LCD_SUPPORT
+	select BACKLIGHT_CLASS_DEVICE
+	select BACKLIGHT_UBICOM32
+	select LCD_CLASS_DEVICE
+	select LCD_UBICOM32POWER
+	select UBICOM32_MULTI_FLASH
+	select MTD_UBI32_FC
+	select MTD_UBI32_NAND_SPI_ER
+	select VDC_NOAUTODETECT
+	select VDC_LCD_SYNC
+	select VDC_LCD_LG_LB070WV6
+	select DISPLAY_NOAUTODETECT
+	select UBICOM32_ADV7180
+	select SENSORS_ISL29011
+	help
+		VIR200
+
+		with optional TSC2007 Adapter board:
+			8000-0510 v1.0
+
+		Please see vir200.c for more details.
+
+config VIR100
+	bool "VIR100"
+	select UBICOM32_V4
+	select I2C
+	select I2C_GPIO
+	select FB
+	select FB_UBICOM32
+	select SOUND
+	select SND
+	select SND_UBI32
+	select SND_UBI32_AUDIO_CS4525
+	select RTC_CLASS
+	select RTC_DRV_S35390A
+	select INPUT_TOUCHSCREEN
+	select TOUCHSCREEN_TSC2007
+	select TOUCHSCREEN_ZY070
+	select BACKLIGHT_LCD_SUPPORT
+	select BACKLIGHT_CLASS_DEVICE
+	select BACKLIGHT_UBICOM32
+	select UBICOM32_LCD_ADAPTER
+	select LCD_CLASS_DEVICE
+	select LCD_UBICOM32POWER
+	select UBICOM32_MULTI_FLASH
+	select MTD_UBI32_FC
+	select MTD_UBI32_NAND_SPI_ER
+	select VDC_NOAUTODETECT
+	select VDC_LCD_SYNC
+	select VDC_LCD_LG_LB070WV6
+	select DISPLAY_NOAUTODETECT
+	select SENSORS_ISL29011
+	help
+		VIR100
+
+		with optional TSC2007 Adapter board:
+			8000-0510 v1.0
+
+		Please see vir100.c for more details.

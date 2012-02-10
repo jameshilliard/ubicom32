@@ -1,0 +1,58 @@
+# This conf file contains Connect-bus commands with invalid component names
+
+# configuration logging
+set main verbose? 0
+
+# component libraries
+load libcgencpu.la cgen_component_library
+load libconsoles.la console_component_library
+load libgloss.la gloss_component_library
+load libinterrupt.la interrupt_component_library
+load libloader.la loader_component_library
+load libmapper.la mapper_component_library
+load libmemory.la mem_component_library
+load libmmu.la mmu_component_library
+load libsched.la sched_component_library
+load libtimers.la timer_component_library
+
+# Components
+
+new sw-load-elf loader
+new sid-io-stdio stdio
+new hw-mapper-basic bus
+new sid-sched-host host-sched
+new sid-sched-sim target-sched
+new hw-memory-ram/rom-basic mem
+
+# Scheduler
+
+set target-sched enabled? 1
+set target-sched num-clients 2
+
+set host-sched enabled? 1
+set host-sched num-clients 1
+set host-sched 0-regular? 1
+set host-sched 0-time 50
+
+connect-pin host-sched 0-event -> stdio poll
+
+# Main pin connections
+connect-pin main perform-activity -> host-sched advance
+connect-pin main perform-activity -> target-sched advance
+connect-pin main starting -> loader load!
+
+# ELF loader
+connect-BUS loader load-accessor-data bus access-port	# Error : invalid command
+
+# Alter this attribute to get more available system RAM.
+set mem size 8388608
+
+# Attributes
+set loader file hello
+
+# Bus connections
+connect-bus hw-remap/pause-arm/ref all bus access-port	# Error : invalid component name
+connect-bus bus [0,0] remappers access-port	# Error : component does not exist
+connect-bus " " data-memory " " access-port		# Error : missing component name
+connect-bus set target-memory remapper access-port	# Error : invalid component name
+connect-bus bus1 [0,0x7fffff] mem read-write-port	# Error : component does not exist

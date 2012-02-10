@@ -1,0 +1,95 @@
+# Copyright (C) 2010 Free Software Foundation, Inc.
+#
+# This file is part of DejaGnu.
+#
+# DejaGnu is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# DejaGnu is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with DejaGnu; if not, write to the Free Software Foundation,
+# Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+# This file was written by Michael Eager (eager@eagercon.com)
+#
+# Use TFTP to supply target with executables
+
+#
+# Download $srcfile to $destfile on $dest using tftp.
+#
+
+proc tftp_download { dest srcfile destfile } {
+
+    set tftp_host [board_info $dest tftp_host]
+    set tftp_root [board_info $dest tftp_root]
+
+    set result [regexp {([^/]*)$} $srcfile match filename ]
+
+    if { [board_info $dest tftp_connect] == "ssh" } {
+	# Copy file to tftp server: tftp_host:/tftpboot
+	set result [remote_download $tftp_host $srcfile $tftp_root/$filename]
+    } else {
+	# Copy file to /tftpboot on localhost
+	set result [remote_download "localhost" $srcfile $tftp_root/$filename]
+    }
+
+    # Have target use tftp to fetch the file, move to desired location, 
+    # and make executable.
+    set res [remote_send $dest "tftp -g -r $filename $tftp_host\n"]
+    if { [string compare $filename $destfile] != 0 } {
+	remote_send $dest "mv $filename $destfile\n"
+    }
+    set res [remote_send $dest "chmod +x $destfile\n"]
+    return $destfile
+}
+
+proc tftp_file { dest op args } {
+    if { $op == "delete" } {
+	#  Delete file from tftp server
+	set tftp_host [board_info $dest tftp_host]
+	set tftp_root [board_info $dest tftp_root]
+
+	#  Remove path and process id suffix from filename
+	if { [string first $args /] != -1 } {
+	    set result [regexp {((/[^/]+)+)/(.*)\..*$} $args match path dummy filename ]
+	} else {
+	    set filename $args
+	}
+
+	if { [board_info $dest tftp_connect] == "ssh" } {
+	    #  Remove file from tftp server: tftp_host:/tftpboot
+	    set result [standard_file $tftp_host delete $tftp_root/$filename]
+	} else {
+	    #  Remove file from /tftpboot on localhost
+	    set result [standard_file "localhost" delete $tftp_root/$filename]
+	}
+	remote_send $dest "rm $filename\n"
+    }
+}
+
+proc tftp_upload { dest srcfile destfile } {
+    set tftp_host [board_info $dest tftp_host]
+    set tftp_root [board_info $dest tftp_root]
+
+    set result [regexp {([^/]*)$} $srcfile match filename ]
+
+    # Have target use tftp to send the file to the tftp server
+    remote_send $dest "tftp -p -r /tmp/$filename $tftp_host\n"
+
+    set result [regexp {((/[^/]+)+)/(.*)$} $srcfile match path dummy filename ]
+    if { [board_info $dest tftp_connect] == "ssh" } {
+	# Copy file to tftp server: tftp_host:/tftpboot
+	set result [remote_download $tftp_host $srcfile $tftp_root/$filename]
+    } else {
+	# Copy file to /tftpboot on localhost
+	set result [remote_download "localhost" $srcfile $tftp_root/$filename]
+    }
+
+    return $destfile
+}

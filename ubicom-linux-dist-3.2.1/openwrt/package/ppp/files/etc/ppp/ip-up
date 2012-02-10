@@ -1,0 +1,40 @@
+#!/bin/sh
+
+. /etc/functions.sh
+. /lib/network/config.sh
+
+PPP_IFACE="$1"
+PPP_TTY="$2"
+PPP_SPEED="$3"
+PPP_LOCAL="$4"
+PPP_REMOTE="$5"
+PPP_IPPARAM="$(echo $6 | sed 's/\./_/g')"
+
+export PPP_IFACE PPP_TTY PPP_SPEED PPP_LOCAL PPP_REMOTE PPP_IPPARAM
+[ -z "$PPP_IPPARAM" -o -z "$PPP_LOCAL" ] || {
+	uci_set_state network "$PPP_IPPARAM" ifname "$PPP_IFACE"
+	uci_set_state network "$PPP_IPPARAM" ipaddr "$PPP_LOCAL"
+	uci_set_state network "$PPP_IPPARAM" gateway "$PPP_REMOTE"
+
+	local dns="$DNS1${DNS2:+ $DNS2}"
+	[ -n "$dns" ] && { 
+		add_dns "$PPP_IPPARAM" $dns
+
+		# Add dhcp_option to "lan" config at /etc/config/dhcp for giving "-O, --dhcp-option" to dnsmasq 
+		# so that it gives the WAN side DNS server addresses to the LAN DHCP clients when DNS relay is disabled by "-p 0" option.
+		# 6 is the DNS server option number in RFC2132.
+		# DNS1 and DNS2 variables are set in pppd code (ipcp.c/ipcp_up()).
+		uci set dhcp.lan.dhcp_option=6,$DNS1,$DNS2
+		uci commit dhcp
+		/etc/init.d/dnsmasq restart
+	}
+}
+
+[ -z "$PPP_IPPARAM" ] || env -i ACTION="ifup" INTERFACE="$PPP_IPPARAM" DEVICE="$PPP_IFACE" PROTO=ppp /sbin/hotplug-call "iface"
+
+[ -d /etc/ppp/ip-up.d ] && {
+	for SCRIPT in /etc/ppp/ip-up.d/*
+	do
+		[ -x "$SCRIPT" ] && "$SCRIPT" "$@"
+	done
+}

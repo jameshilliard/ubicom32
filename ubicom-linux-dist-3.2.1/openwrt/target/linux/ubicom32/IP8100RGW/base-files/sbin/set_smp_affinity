@@ -1,0 +1,154 @@
+#!/bin/sh
+
+#
+# Usage:
+#
+# This script will be called with some interrupt name parameters and 
+# it will set the smp affinity values of this interrupts
+#
+# e.g: /sbin/smp eth0 eth1 pciek pciek
+#
+
+#
+# File names.
+#
+VERSION="/proc/version"
+ONLINE="/sys/devices/system/cpu/online"
+INTERRUPTS="/proc/interrupts"
+
+#
+# Check if SMP is enabled
+#
+smp_enabled=`cat $VERSION | grep SMP`
+if [ "$smp_enabled" = "" ]; then
+	echo "SMP is disabled"
+	exit
+fi
+
+#
+# Get the number of configured cpus. We will search it in the 
+# /sys/devices/system/cpu/online file. If SMP is enabled, this file will show 
+# the number of CPUs in the following format
+#
+# cat /sys/devices/system/cpu/online
+# 0-3
+# This means we have 4 CPUs online
+#
+# Or it can be saved as below:
+# 0-3,5-7
+# This means the 5th CPU is not online (is not used), in this case we 
+# have 7 CPUs online and 1 cpu offline.
+#
+# Check first, whether we have offline cpus or not.
+#
+offlinecpus=`cat $ONLINE | grep ","`
+numofcpus=0
+if [ "$offlinecpus" == "" ]; then
+	#
+	# We don't have offline cpus, so our online file looks like 0-3. 
+	# Obtain 3 and 0 and calculate the number of CPus
+	#
+	first=`cat $ONLINE | awk -F- '{print $1}'`
+	last=`cat $ONLINE | awk -F- '{print $2}'`
+	numofcpus=$((last-first+1))
+else
+	#
+	# We have some offline CPUs, so we need to parse the comma separated 
+	# online file.The file looks like 0-3,5-7.
+	#
+	n=1
+	while true; do
+		#
+		# Get the CPU ranges, e.g 0-3 and 5-7
+		#
+		cpurange=`cat $ONLINE | grep "," | awk -F, '{print $'$n'}'`	
+		if [ "$cpurange" != ""  ]; then
+			first=`echo $cpurange | awk -F- '{print $1}'`
+			last=`echo $cpurange | awk -F- '{print $2}'`
+			numofcpus=$((last-first+1+numofcpus))
+			n=$((n+1))
+			continue
+		fi
+		
+		break	
+	done
+fi
+
+#
+# The number of the input interrupt parameters must be equal or less then the online CPUs	
+#
+if [ "$#" -gt "$numofcpus" ]; then
+	echo "The number of input parameters are greater than the number of online CPUs"
+	exit
+fi
+
+#
+# First check that whether we have interrupts for the input parameters or not. 
+# If we don't have an interrupt for this parameter, skip to set the smp 
+# affinity value for it. And also check that we don't have more than one 
+# interrupt for the input parameter, e.g aerdrv, as below.
+# If this is the case we return.
+# 
+#           CPU0       CPU1       CPU2       CPU3       
+#  0:          0          1          0          0       Ubicom32  reserved
+#  2:       2697       2711       4561       4565       UbicoIPI  ipi
+# 10:          0          0          0          0       Ubicom32  reserved
+# 11:          0          0          0          0       Ubicom32  reserved
+# 22:          0          0          0          0       Ubicom32  reserved
+# 23:          0          0          0          0       Ubicom32  reserved
+# 33:      10494          0          0          0       Ubicom32  timer-primary
+# 34:          0      10529          0          0       Ubicom32  timer-cpu
+# 35:          0          0      10589          0       Ubicom32  timer-cpu
+# 36:          0          0          0      10491       Ubicom32  timer-cpu
+# 44:          0          0          0          0       PCIE-MSI  aerdrv
+# 46:          0          0          0          0       PCIE-MSI  aerdrv
+# 62:         65         46         38         67       Ubicom32  UBI32_MAILBOX
+# 70:          1          1          0          0       Ubicom32  dwc_otg, dwc_otg_pcd, dwc_otg_hcd:usb1
+# 73:         10          9          4          1       Ubicom32  eth0
+# 75:          9         29          0          2       Ubicom32  eth1
+# 92:        688        699      18182        486       Ubicom32  wifi0
+# 93:        688        699      18182        486       Ubicom32  pciej
+# 94:        148        139        103       5120       Ubicom32  wifi1
+# 95:        148        139        103       5120       Ubicom32  pciek
+#
+smp_affinity_value=1
+for param in $@ 
+do
+	#
+	# Check whether we have only 1 interrupt for the input interrupt parameter or not
+	#
+	irq=`cat $INTERRUPTS | grep $param | cut -c2-3`
+	numofirq=`echo "$irq" | wc -w`
+	
+	#
+	# If we have more than 1 interrupts for this parameter, skip to set the affinity
+	# value for this parameter.
+	#
+	if [ $numofirq -gt 1 ]; then
+		echo "WARN: The input parameter $param has more than 1 interrupt and this is not suitable for this SMP script"
+		continue
+	fi
+
+	#	
+	# If we don't have any interrupts with this name skip to set affinity value for it.
+	#
+	if [ $numofirq = 0  ]; then
+		echo "WARN: There is not any interrupt for this parameter $param, skip it!"
+		continue
+	fi
+	
+	#
+	# Check whether we have a smp_affinity file for this interrupt or not.
+	#
+	if [ ! -f "/proc/irq/$irq/smp_affinity" ]; then
+		echo "ERROR: There is not any smp_affinity file with the $irq irq value"
+		exit
+	fi
+	
+	#
+	# Set the smp affinity value, everything is OK for this parameter.
+	#
+	echo $smp_affinity_value > /proc/irq/$irq/smp_affinity
+        smp_affinity_value=$((smp_affinity_value*2))
+done
+

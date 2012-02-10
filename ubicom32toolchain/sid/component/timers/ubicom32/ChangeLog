@@ -1,0 +1,141 @@
+2001-09-10  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4k.cxx (ip4kTimerGeneric::stream_state): Add blanks in front of 
+	strings to allow parsing and use '-' instead of blank in names
+	of stored values.
+	(ip4kTimerGeneric::destream_state): Use '-' instead of blanks
+	in names to parse for.
+
+2001-07-11  Frank Ch. Eigler  <fche@redhat.com>
+
+	* hw-timer-ip4k_ref.xml: Add <?xml ... ?> prefix.
+
+2001-07-06  Frank Ch. Eigler  <fche@redhat.com>
+
+	* Makefile.am (ACLOCAL_AMFLAGS): Define.
+	* aclocal.m4, autoconf, Makefile.in: Regenerated.
+
+2001-07-04  graydon hoare  <graydon@redhat.com>
+
+	* configure.in: Add maintainer-mode doc building configury.
+	* configure: Regenerate.
+	* Makefile.am: Add maintainer-mode doc building.
+	* Makefile.in: Regenerate.
+
+2001-07-04  Ben Elliston  <bje@redhat.com>
+
+	* hw-timer-ip4k_ref.xml: Use &lt where necessary.
+	* hw-timer-ip4k_ref.txt: Generate.
+
+2001-06-28  Ben Elliston  <bje@redhat.com>
+
+	* hw-timer-ip4k_ref.xml: New file.
+
+2001-03-23  Dave Brolley  <brolley@redhat.com>
+
+	* ip4k.cxx (word_write): Allow writes to addresses 6 and 7.
+	(word_read): Allow reads at addresses 6 and 7.
+
+2000-11-15  Jeff Johnston  <jjohnstn@redhat.com>
+
+        * configure: Regenerated.
+        * aclocal.m4: Ditto.
+        * Makefile.in: Ditto.
+
+2000-10-20  Jeff Johnston <jjohnstn@redhat.com>
+
+	* ip4k.cxx (timer_enable_pin_handler):  Changed code to not
+	perform full reset on enablement.  Code now performs a counter
+	reset only.  Also added code to set curcmp1 and curcmp2
+	on enablement as this counts as a new pwm cycle.
+	(set_tmren): Ditto.
+	(word_read): Added proper parentheses to handle C precedence rules.
+	* ip4k-timer.h (TXCFG1_OFIE_SHIFT): Corrected.
+
+2000-10-18  Jeff Johnston <jjohnstn@redhat.com>
+
+	* ip4k.cxx (ip4kTimerGeneric): Added "tick-count" setting
+	attribute.
+	(tick): Changed code to loop for tick_count times through
+	main loop to handle case where multiple insns are performed
+	uninterrupted.
+	* ip4k-timer.h (tick_count): New member.
+	* hw-timer-ip4k_ref.txt: Updated documentation to include
+	information on "tick-count" which is tied directly to the
+	"insn-count" simulator option.  Also corrected minor typos.
+
+2000-10-18  Jeff Johnston <jjohnstn@redhat.com>
+
+	* ip4k.cxx (ip4kTimerGeneric): Removed redundant attribute
+	setting for "mode" and "prescale-log2".  Also added watchable
+	pin: "timer-enable".
+	* hw-timer-ip4k_ref.txt: Updated documentation on connecting
+	CPU to timer so that sched 0-event is connected to timer clocks.
+
+2000-10-13  Jeff Johnston <jjohnstn@redhat.com>
+
+	* hw-timer-ip4k_ref.txt: Updated to match V1.11 timer spec.
+	* ip4k.cxx: General rewrite to match V1.11 timer spec which
+	differs from timer chapter in overall spec.  Registers have
+	changed as well as storage layout.  For pwm-mode, changes
+	in txcmp1 or txcmp2 are delayed until the next cycle starts.
+	There are added interrupt enable bits and the addition of
+	event flags in txcfg1.  The txcfg2 register holds the prescale
+	log2 value, cpi1edg, cpi2edg, and cpi2cpi1 whereas it was not
+	used before.  The tctrl register of the cpu is now specified.
+	(txrst): New pin to connect to tctrl register txrst bit in cpu.
+	(txie): New pin to connect to tctrl register txie bit in cpu.
+	(ip4kTimerGeneric): Set watchable attributes for all major
+	state members.
+	(destream, stream): Added all major variables.
+	(txcpi1_pin_handler): Added edge checking based on cpi1edg setting.
+	(txcpi2_pin_handler): Added edge checking based on cpi2edg setting.
+	* ip4k-timer.h (cap1rst, cmp1ie, cap1ie, ofie): New variables
+	added as part of rewrite.
+	(cap1if, cmp1if, cap2if, ofif, cpi1edg, cpi2edg, cpi2cpi1): Ditto.
+	(txie_pin, txrst_pin): New pins.
+
+2000-09-08  Jeff Johnston <jjohnstn@redhat.com>
+
+	* hw-timer-ip4k_ref.txt: Updated to properly discuss
+	enablement pin issues.
+	* ip4k-timer.h (enabled, timer_enable): New booleans.
+	(timer_enable_pin_handler): New method to handle timer enable
+	changes in global control register.
+	* ip4k.cxx (ip4kGenericTimer): Initialized new booleans.
+	Also changed "enabled" attribute to point to enabled instead of
+	tmren.
+	(tick, tmrxcpi1_pin_handle, tmrxcpi2_pin_handle): Changed to
+	use "enabled" instead of "tmren".
+	(timer_enable_pin_handler): New pin handler to sense when the
+	global control register timer enable bit changes value.
+	(bus_interface::word_w): Added code to properly set "enabled"
+	and possibly reset the timer if new setting of TMREN causes the
+	timer to become enabled.
+	(stream, destream): Added streaming/destreaming enabled and 
+	timer_enable.
+
+2000-09-08  Jeff Johnston <jjohnstn@redhat.com>
+
+	* README: Removed.
+
+2000-07-19  Frank Ch. Eigler  <fche@redhat.com>
+
+	* ip4k-timer.h (clock_pin): Correct decl typo.
+	* ip4k.cxx (*): Correct typos throughout.
+	* Makefile.am (libip4ktimers_la_LDFLAGS): Unset.
+	(noinst_LTLIBRARIES): Replace pkglib_LTLIBRARIES.
+	* Makefile.in: Regenerated.
+
+2000-07-14  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* configure.in: New file.
+	* configure: Ditto.
+	* aclocal.m4: Ditto.
+	* Makefile.am: Ditto.
+	* Makefile.in: Ditto.
+	* README: Ditto.
+	* ip4k.cxx: Ditto.
+	* ip4k-timer.h: Ditto.
+	* hw-timer-ip4k_ref.txt: Ditto.
+

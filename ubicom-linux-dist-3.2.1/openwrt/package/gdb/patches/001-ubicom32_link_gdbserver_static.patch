@@ -1,0 +1,11 @@
+--- gdb-6.8-orig/gdb/gdbserver/Makefile.in	2011-04-14 16:02:36.804870825 +0300
++++ gdb-6.8/gdb/gdbserver/Makefile.in	2011-04-15 14:11:36.276368725 +0300
+@@ -105,7 +105,7 @@
+ # LDFLAGS is specifically reserved for setting from the command line
+ # when running make.
+ LDFLAGS = @LDFLAGS@
+-INTERNAL_LDFLAGS = $(LDFLAGS) @RDYNAMIC@
++INTERNAL_LDFLAGS = $(LDFLAGS) -static
+ 
+ # Perhaps should come from parent Makefile
+ VERSION = gdbserver-4.12.3

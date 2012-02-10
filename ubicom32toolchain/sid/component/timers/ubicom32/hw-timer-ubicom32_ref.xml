@@ -1,0 +1,291 @@
+<?xml version="1.0" ?>
+<!DOCTYPE defcomplib SYSTEM "http://sources.redhat.com/sid/component.dtd">
+
+<defcomplib lib="libtimers.la" dlsym="timer_component_library">
+  <defcomponent name="hw-timer-ubicom32/ref-generic" type="concrete">
+
+
+    <!-- pins -->
+    <defpin name="interrupt" direction="out" legalvalues="0 or non-zero" behaviors="interrupting" />
+    <defpin name="interrupt-enable" direction="in" legalvalues="0 or non-zero" behaviors="interrupting" />
+    <defpin name="timer-enable" direction="in" legalvalues="0 or non-zero" behaviors="resetting" />
+    <defpin name="txcpi1" direction="in" legalvalues="any" behaviors="interrupting" />
+    <defpin name="txcpi2" direction="in" legalvalues="any" behaviors="interrupting" />
+    <defpin name="txie" direction="in" legalvalues="0 or non-zero" behaviors="interrupting" />
+    <defpin name="txout" direction="out" legalvalues="0 or non-zero" behaviors="outputting" />
+    <defpin name="txrst" direction="in" legalvalues="0 or non-zero" behaviors="resetting" />
+    <defpin name="reset" direction="in" legalvalues="any" behaviors="resetting" />
+    <defpin name="clock" direction="in" legalvalues="any" behaviors="clocking" />
+
+
+    <!-- buses -->
+    <defbus name="registers" addresses="0x0 to 0xb" accesses="read/write" behaviors="register access" />
+
+
+    <!-- attributes -->
+    <defattribute name="txcnt" category="watchable register" legalvalues="number" defaultvalue="register access" />
+    <defattribute name="txcap1" category="watchable register" legalvalues="number" defaultvalue="register access" />
+    <defattribute name="txcmp1" category="watchable register" legalvalues="number" defaultvalue="register access" />
+    <defattribute name="txcmp2/txcap2" category="watchable register" legalvalues="number" defaultvalue="register access" />
+    <defattribute name="global-timer-enable" category="watchable register" legalvalues="true or false" defaultvalue="register access" />
+    <defattribute name="enabled" category="watchable register" legalvalues="true or false" defaultvalue="register access" />
+    <defattribute name="tmren" category="watchable register" legalvalues="true or false" defaultvalue="register access" />
+    <defattribute name="cap1rst" category="watchable register" legalvalues="true or false" defaultvalue="register access" />
+    <defattribute name="cpi1en" category="watchable register" legalvalues="true or false" defaultvalue="register access" />
+    <defattribute name="cpi2en" category="watchable register" legalvalues="true or false" defaultvalue="register access" />
+    <defattribute name="oen" category="watchable register" legalvalues="true or false" defaultvalue="register access" />
+    <defattribute name="cmp1if" category="watchable register" legalvalues="true or false" defaultvalue="register access" />
+    <defattribute name="cap1if" category="watchable register" legalvalues="true or false" defaultvalue="register access" />
+    <defattribute name="cmp2if/cap2if" category="watchable register" legalvalues="true or false" defaultvalue="register access" />
+    <defattribute name="ofif" category="watchable register" legalvalues="true or false" defaultvalue="register access" />
+    <defattribute name="cmp1ie" category="watchable register" legalvalues="true or false" defaultvalue="register access" />
+    <defattribute name="cap1ie" category="watchable register" legalvalues="true or false" defaultvalue="register access" />
+    <defattribute name="cmp2ie/cap2ie" category="watchable register" legalvalues="true or false" defaultvalue="register access" />
+    <defattribute name="ofie" category="watchable register" legalvalues="true or false" defaultvalue="register access" />
+    <defattribute name="mode" category="watchable register" legalvalues="`pwm-timer' or `capture'" defaultvalue="register access" />
+    <defattribute name="prescale-log2" category="watchable register" legalvalues="0-15" defaultvalue="register access" />
+    <defattribute name="cpi1edg" category="watchable register" legalvalues="0-3" defaultvalue="register access" />
+    <defattribute name="cpi2edg" category="watchable register" legalvalues="0-3" defaultvalue="register access" />
+    <defattribute name="cpi2cpi1" category="watchable register" legalvalues="true or false" defaultvalue="register access" />
+    <defattribute name="ticks" category="watchable register" legalvalues="0..1 &lt;&lt; prescale-log2 - 1" defaultvalue="clocking" />
+    <defattribute name="tick-count" category="setting" legalvalues="1-xxx" defaultvalue="clocking" />
+    <defattribute name="state-snapshot" legalvalues="opaque string" behaviors="state save/restore" />
+  </defcomponent>
+  <synop>
+  Generic Timer
+  </synop>
+  <func>
+    <modelling>
+      <p>This component models the Ubicom IP3000 generic multi-function
+      timers.  The IP3000 has four generic timers (timer1, timer2, timer3, and timer4).
+      The configuration must create four instances of a generic timer.</p>
+    </modelling>
+
+
+    <behavior name="resetting">
+      <p>Upon construction, or when the <pin>reset</pin> input pin is driven, or
+      when the <pin>timer_enable</pin> pin is driven such that the timer is
+      enabled, the timer is reset to a power-up state.  This includes
+      deasserting the interrupt line.</p>
+ 
+      <p>
+      The <pin>timer-enable</pin> input pin is driven from the cpu
+      whenever the <tt>glbl_ctrl</tt> register timer enable bit (bit
+      1) changes.  Driving the pin low will power-down the timer.</p>
+
+      <p>
+      The <pin>counter-reset</pin> input pin (txrst) causes just
+      <attribute>txcnt</attribute> to be reset.
+      </p>
+
+      <p>
+      In pwm-timer mode, changes made to <attribute>TxCMP1</attribute>
+      and <attribute>TxCMP2</attribute>/<attribute>TxCAP2</attribute>
+      are not activated until the counter resets.  Any of the above
+      resets causes the <attribute>TxCMP1</attribute> and
+      <attribute>TxCMP2</attribute> values to become active in the
+      current pwm cycle.</p>
+      </behavior>
+
+    <behavior name="clocking">
+     <p> The 'generic'
+     <component>hw-timer-ubicom32/ref-generic</component> timers rely on a
+     <pin>clock</pin> pin, which is interpreted as the regular "system
+     clock".  The use of an external txclk pin is not supported.</p>
+      
+     <p> It may be the case that instructions are being performed N at a time.
+      In such a case, the setting <attribute>tick-count</attribute> will be set to N.  In this situation,
+      clocking will be treated as if N ticks occur for every 1 clock pulse.
+      Each of the N ticks will be applied one at a time so events may occur sequentially
+      as normal.</p>
+
+      <p>The clock is prescaled such that after x ticks,
+      <attribute>txcnt</attribute> is incremented by 1.  The
+      <attribute>prescale-log2</attribute> factor is found in bits
+      11:8 of <attribute>txcfg2</attribute> and the prescale value is
+      calculated as <tt>1 &lt;&lt;
+      <attribute>prescale-log2</attribute></tt>.</p>
+
+      <p>It should be noted that the higher the value of
+      <attribute>tick-count</attribute>, the less synchronized the
+      timer will be to the cpu.  For scenarios where cpu/timer
+      synchronization is imperative, <attribute>tick-count</attribute>
+      should not exceed the <attribute>prescale_value</attribute>.</p>
+
+      <p>The value of N is specified via the <tt>--insn-count</tt>
+      simulator option.</p>
+      </behavior>
+      
+    <behavior name="interrupting">
+
+      <p>The generic timer has a number of interrupt events.
+      Interrupts are controlled by the <pin>interrupt-enable</pin> pin
+      (<pin>txie</pin>) which actually represents the appropriate txie
+      bit in the cpu tctrl (timer control) register.  In addition to
+      the <pin>interrupt-enable</pin> pin, there are bits in
+      <attribute>txcfg1</attribute> which control interrupt behavior:
+      <attribute>cmp1ie</attribute>, <attribute>cap1ie</attribute>,
+      <attribute>cap2ie</attribute>, and
+      <attribute>ofie</attribute>.</p>
+
+      <p>In 'pwm-timer' mode, an interrupt is driven when
+      <tt><attribute>txcnt</attribute> =
+      <attribute>txcmp1</attribute></tt> and
+      <attribute>cmp1ie</attribute> is set.  An additional interrupt
+      is driven when <tt><attribute>txcnt</attribute> =
+      <attribute>txcmp2</attribute>/<attribute>txcap2</attribute></tt>
+      and <attribute>cmp2ie</attribute>/<attribute>cap2ie</attribute>
+      is set.  If <attribute>ofie</attribute> is set then an interrupt
+      occurs if the counter wraps.</p>
+
+      <p>In 'capture' mode, an interrupt is driven when the
+      <pin>txcpi1</pin> pin is driven with an appropriate edge and
+      <attribute>cap1ie</attribute> is set.  An interrupt is also
+      driven when the <pin>txcpi2</pin> pin is driven with an
+      appropriate edge and
+      <attribute>cmp2ie</attribute>/<attribute>cap2ie</attribute> is
+      set.  An appropriate edge refers to the
+      <attribute>cp1edg</attribute> (bits 1:0) and
+      <attribute>cp2edg</attribute> (bits 3:2) in
+      <attribute>txcfg2</attribute>.  The edge can have the following
+      values: <tt>0x00 = falling-edge</tt>, <tt>0x01 =
+      rising-edge</tt>, <tt>0x1x = any-edge</tt>.  Note that an edge
+      represents a transition from the last state and driving with the
+      same value will not result in an edge.</p>
+
+      <p>If <attribute>ofie</attribute> is set, then an interrupt
+      occurs when the counter wraps.</p>
+      </behavior>
+
+    <behavior name="register access">
+      
+      <p>The <bus>registers</bus> bus provides access to a bank of 2-byte control
+      registers.  The memory map for the generic timer is as follows:
+      </p>
+      <table> 
+	<tr><th>address</th><th>read</th><th>write</th></tr>
+	<tr><td>0</td>	<td>txcnt</td>		<td>(read-only)</td></tr>
+	<tr><td>2</td>	<td>txcap1</td>		<td>(read-only)</td></tr>
+	<tr><td>4</td>	<td>txcap2/txcmp2</td>	<td>(pwm-mode: txcmp2, capture-mode: read-only)</td></tr>
+	<tr><td>6</td>       <td>txcmp1</td>		<td>txcmp1</td></tr>
+	<tr><td>8</td>	<td>txcfg1</td>		<td>txcfg1</td></tr>
+	<tr><td>a</td>	<td>txcfg2</td>		<td>txcfg2</td></tr>
+      </table>
+
+      <p>At power-up, the generic timer is disabled.  A number of
+      control bits in <attribute>txcfg1</attribute> must be used. To
+      generally enable, the <attribute>tmren</attribute> bit must be
+      set (bit 0).  Note the <tt>glbl_ctl</tt> register
+      timer enable bit must also be set (bit 1).  The global timer
+      enable bit state is signalled via the <pin>timer_enable</pin>
+      pin.  To enable output, the <attribute>oen</attribute> bit (bit
+      6) must be set.  To enable the <pin>txcpi1</pin> pin, the
+      <attribute>cpi1en</attribute> bit must be set (bit 3).  To
+      enable the <pin>txcpi2</pin> pin, the
+      <attribute>cpi2en</attribute> bit must be set (bit 4).  The mode
+      by default is 'pwm-timer'.  To get 'capture' mode the
+      <attribute>mode</attribute> bit must be set (bit 7). </p>
+
+      <p>To enable an interrupt when the counter wraps, set the
+      <attribute>ofie</attribute> bit (bit 15).  There are three other
+      interrupt enables: <attribute>cmp1ie</attribute> (bit 12)
+      enables interrupts when <tt><attribute>txcnt</attribute> =
+      <attribute>txcmp1</attribute></tt> (pwm-timer mode).
+      <attribute>cmp2ie</attribute> (bit 14) enables interrupts when
+      <tt><attribute>txcnt</attribute> =
+      <attribute>txcmp2</attribute>/<attribute>txcap2</attribute></tt>
+      (pwm-timer mode).  <attribute>cap1ie</attribute> (bit 13)
+      enables interrupts when the <pin>txcpi1</pin> pin is triggered
+      and the counter is captured in <attribute>txcap1</attribute>.
+      <attribute>cmp2ie</attribute>/<attribute>cap2ie</attribute>
+      works the same except that it is the <pin>txcpi2</pin> pin and
+      the counter is captured into <pin>txcap2</pin>/<pin>txcmp2</pin>
+      (capture mode only).</p>
+
+      <p>To change the prescale value (default 1), place a value
+      (0-15) in bits 11:8 of <attribute>txcfg2</attribute>.  To change
+      which edge is used to trigger a <pin>txcpi1</pin> event, use
+      bits 1:0 of <attribute>txcfg2</attribute> (<tt>0x00 =
+      falling-edge</tt>, <tt>0x01 = rising-edge</tt>, <tt>0x1x =
+      any-edge</tt>).  Similarly the edge for <pin>txcpi2</pin> can be
+      set using bits 3:2.  </p>
+
+      <p>None of the bits are sticky and combinations of options must
+      be specified all at once.</p>
+
+      <p>It should be noted that the <tt>eclkedg</tt> and
+      <tt>eclken</tt> bits in <attribute>txcfg2</attribute> are
+      ignored.  These bits are hardware-configuration options that are
+      not necessary for simulating the timer.</p>
+
+      <p>The tctrl register in the cpu communicates with the
+      appropriate timer via the <pin>txrst</pin> (counter-reset) and
+      <pin>txie</pin> (interrupt-enable) pins.</p>
+      </behavior>
+
+    <behavior name="outputting">
+
+      <p>The generic timer has an output pin: <pin>txout</pin> which
+      outputs when in 'pwm-timer' mode and the output-enable bit:
+      <attribute>oen</attribute> (bit 6) in
+      <attribute>txcfg1</attribute> is set.  When
+      <tt><attribute>txcnt</attribute> =
+      <attribute>txcmp2</attribute>/<attribute>txcap2</attribute></tt>,
+      a high value is driven on the output pin.  The counter is reset
+      and then restarted.  When <tt><attribute>txcnt</attribute> =
+      <attribute>txcmp1</attribute></tt>, a low value is driven on the
+      output pin.  The counter continues at this point until either it
+      wraps or <attribute>txcmp2</attribute> is reached.  If
+      <tt><attribute>txcmp1</attribute> = 0</tt>, then a low-value is
+      output once.  If <tt><attribute>txcmp1</attribute> =
+      <attribute>txcmp2</attribute></tt>, then a high-value is output
+      once.</p>
+    </behavior>
+
+    <convention name="functional" supported="true" />
+    <convention name="save/restore" supported="true" />
+    <convention name="triggerpoints" supported="true">
+      <p>The component supports triggerpoints set on any of the available
+      attributes.</p>
+    </convention>
+    
+  </func>
+  <env>
+    <title>Related components</title>
+    <ul>
+    <li>
+	<p>The timer's <pin>interrupt</pin> pin should be connected to the
+	appropriate irq pin of the cpu for that timer.</p></li>
+
+      <li>
+	<p>This configuration file fragment illustrates how to
+	configure the four 'generic' timers and connect them to the
+	cpu:</p>
+	<code>
+	new hw-timer-ubicom32/ref-generic timer1
+	new hw-timer-ubicom32/ref-generic timer2
+	new hw-timer-ubicom32/ref-generic timer3
+	new hw-timer-ubicom32/ref-generic timer4
+	new sid-sched-sim sched
+	connect-pin sched 0-event timer1 clock
+	connect-pin sched 0-event timer2 clock
+	connect-pin sched 0-event timer3 clock
+	connect-pin sched 0-event timer4 clock
+	connect-pin timer1 interrupt cpu irq_timer_1
+	connect-pin cpu tctrl_t1ie timer1 interrupt-enable
+	connect-pin cpu tctrl_t1rst timer1 counter-reset
+	connect-pin timer2 interrupt cpu irq_timer_2
+	connect-pin cpu tctrl_t2ie timer2 interrupt-enable
+	connect-pin cpu tctrl_t2rst timer2 counter-reset
+	connect-pin timer3 interrupt cpu irq_timer_3
+	connect-pin cpu tctrl_t3ie timer3 interrupt-enable
+	connect-pin cpu tctrl_t3rst timer3 counter-reset
+	connect-pin timer4 interrupt cpu irq_timer_4
+	connect-pin cpu tctrl_t4ie timer4 interrupt-enable
+	connect-pin cpu tctrl_t4rst timer4 counter-reset
+	  </code>
+	</li>
+    </ul>
+  </env>
+</defcomplib>
+

@@ -1,0 +1,13 @@
+diff -urN uci-2010-09-28.2-orig/Makefile.inc uci-2010-09-28.2/Makefile.inc
+--- uci-2010-09-28.2-orig/Makefile.inc	2010-11-01 12:57:11.000000000 +0200
++++ uci-2010-09-28.2/Makefile.inc	2011-01-19 10:15:37.000000000 +0200
+@@ -3,7 +3,7 @@
+ LIBDIRNAME=lib
+ 
+ COPTS=-O2
+-WOPTS=-pedantic -Werror -Wall
++WOPTS=-Werror -Wall
+ FPIC=-fPIC
+ CFLAGS=$(COPTS) $(WOPTS) -std=gnu99
+ CPPFLAGS=-I.
+

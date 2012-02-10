@@ -1,0 +1,26 @@
+#
+# Add any board specific configuration sub-menus here
+#
+
+#
+# IP8500TAP
+#
+choice
+	prompt "IP8500TAP Display Type"
+	depends on IP8500TAP
+	help
+		Choose a display type for use with the board.
+
+config IP8500TAP_AUTODETECT
+	bool "Auto Detect"
+	help
+		Auto detect display, late in boot sequence.
+
+config IP8500TAP_NOAUTODETECT
+	bool "Not Auto Detected"
+	select VDC_NOAUTODETECT
+	help
+		Select the connected display
+
+endchoice
+

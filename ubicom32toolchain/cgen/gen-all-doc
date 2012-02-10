@@ -1,0 +1,61 @@
+#! /bin/sh
+# Utility script to generate html docs for all ports.
+
+# Run this script in the src/cgen directory.
+
+# Exit on any error.
+set -e
+
+# For debugging.
+set -x
+
+# ??? Some are missing, need to add them after some research.
+archs="arm frv i960 m32r openrisc xstormy16"
+
+if [ ! -f sim.scm ]
+then
+    echo "Not in the src/cgen directory." >& 2
+    exit 1
+fi
+
+builddir=tmp-doc
+
+rm -rf $builddir
+mkdir $builddir
+
+export cgendir=`pwd`
+
+(
+  set -e
+  set -x
+  cd $builddir
+  $cgendir/configure --prefix /tmp/junk --target m32r-elf
+
+  for a in $archs
+  do
+    case $a in
+    arm)
+      make html ARCH=$a ISAS=arm INSN_FILE_NAME=arm-arm-insn.html
+      mv arm.html arm-arm.html
+      mv arm-insn.html arm-arm-insn.html
+      make html ARCH=$a ISAS=thumb INSN_FILE_NAME=arm-thumb-insn.html
+      mv arm.html arm-thumb.html
+      mv arm-insn.html arm-thumb-insn.html
+      ;;
+    frv)
+      make html ARCH=$a MACHS="frv,simple,tomcat,fr400" INSN_FILE_NAME=frv-1-insn.html
+      mv frv.html frv-1.html
+      mv frv-insn.html frv-1-insn.html
+      make html ARCH=$a MACHS="fr500" INSN_FILE_NAME=frv-2-insn.html
+      mv frv.html frv-2.html
+      mv frv-insn.html frv-2-insn.html
+      make html ARCH=$a MACHS="fr550" INSN_FILE_NAME=frv-3-insn.html
+      mv frv.html frv-3.html
+      mv frv-insn.html frv-3-insn.html
+      ;;
+    *)
+      make html ARCH=$a
+      ;;
+    esac
+  done
+)

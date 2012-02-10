@@ -1,0 +1,26 @@
+Create board configuration file in this directory.
+
+Sample board configuration files: 
+ubicom-ip7160rgw-local.exp	-- config to use tftp server on local host
+ubicom-ip7160rgw-remote.exp	-- config to use tftp server on remote host
+
+ubicom-ip7160rgw.exp		-- config file for "ubicom-ip7160rgw" board
+
+Note that the board file must have the same name as the DNS or /etc/hosts
+name for the target, with .exp suffix. 
+
+For remote tftp server, ssh shared key access from the local host 
+to the tftp server is required.
+
+To run GCC test suite:
+  cd .../ubicom32toolchain/build/ubicom32-linux-uclibc/gcc/gcc
+  make check-gcc RUNTESTFLAGS="-v --target_board=ubicom-ip7160rgw"
+
+To run partial GCC test suite:
+  cd .../ubicom32toolchain/build/ubicom32-linux-uclibc/gcc/gcc
+  make check-gcc RUNTESTFLAGS="base.exp  -v --target_board=ubicom-ip7160rgw"
+
+  (replace base.exp with desired section.)
+
+If you want to run the C++ test suite, replace "check-gcc" with
+"check-g++".  If you want to run both, just specify "check".

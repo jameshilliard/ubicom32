@@ -1,0 +1,195 @@
+#!/bin/sh
+. /etc/functions.sh
+
+WAN_PORT_STATE=
+WAN_SERVICES_FILE="/etc/wan_services"
+
+# wanmon run states
+# 0  : Idle
+# 1  : Running
+# 2  : Interruptible
+# >2 : Interrupted
+
+clear_state () {
+	uci_revert_state network wanmon $1
+}
+
+get_state () {
+	uci_get_state network wanmon $1 $2
+}
+
+change_state () {
+	clear_state $1
+	uci_set_state network wanmon $1 $2
+}
+
+find_pptp_l2tp_if() {
+	local proto
+	config_get proto $1 proto
+	if [ "$proto" == "pptp" -o "$proto" == "l2tp" ]; then
+		wan_if=$1
+	fi
+}
+
+check_link() {
+	[ "$(cat $WAN_PORT_STATE 2>&-)" == "1" ] && echo -n "1" || echo -n "0"
+}
+
+check_wan() {
+	local link_status
+
+	link_status="$(check_link)"
+
+	while [ $link_status -eq 1 ]; do
+		local wan_if wan_proto command
+
+		# Check if there is a PPTP or L2TP interface
+		config_foreach find_pptp_l2tp_if interface
+
+		[ -z "$wan_if" ] && wan_if=wan
+
+		config_get wan_proto $wan_if proto
+		wan_ifname=$(uci_get_state network $wan_if ifname)
+
+		case $wan_proto in
+			static)
+				command="ifconfig $wan_ifname | grep 'inet addr'"
+				;;
+			dhcp)
+				command="route -n | grep '^0.0.0.0'"
+				;;
+			pppoe)
+				local wan_device=$(uci_get_state network $wan_if device)
+				# Wait until ppp script sets the correct ifname
+				if [ "$wan_device" == "$wan_ifname" ]; then
+					command="false"
+				else
+					command="ifconfig | grep $wan_ifname"
+				fi
+				;;
+			pptp|l2tp)
+				command="ifconfig | grep $wan_ifname"
+				;;
+			ppp)
+				# Currently we do not support PPP
+				echo -n "0"
+				return
+		esac
+
+		if [ -n "$(eval $command)" ]; then
+			echo -n "1"
+			return
+		else
+			sleep 1
+			link_status="$(check_link)"
+		fi
+	done
+
+	echo -n "0"
+}
+
+load_services() {
+	if [ ! -f "$WAN_SERVICES_FILE" ]; then
+		return
+	fi
+
+	local SERVICES
+	SERVICES=$(cat "$WAN_SERVICES_FILE")
+
+	for service in $SERVICES; do
+		if [ -x "/etc/init.d/$service" ]; then
+			eval "/etc/init.d/$service restart"
+
+			# Exit if interrupted
+			if [ $(get_state runstate 2) -gt 2 ]; then
+				change_state runstate 0
+				exit
+			fi
+		fi
+	done
+}
+
+stop_services() {
+	if [ ! -f "$WAN_SERVICES_FILE" ]; then
+		return
+	fi
+
+	# Load services in reverse order
+	local SERVICES
+	SERVICES=$(sed -n '1!G;h;$p' "$WAN_SERVICES_FILE")
+
+	for service in $SERVICES; do
+		if [ -x "/etc/init.d/$service" ]; then
+			eval "/etc/init.d/$service stop"
+
+			# Exit if interrupted
+			if [ $(get_state runstate 2) -gt 2 ]; then
+				change_state runstate 0
+				exit
+			fi
+		fi
+	done
+}
+
+wanmon_main() {
+	local wan_device
+
+	change_state runstate 2
+	stop_services
+	change_state runstate 1
+
+	config_get wan_device wan device
+	if [ -z "$wan_device" ]; then
+		change_state runstate 0
+		exit
+	fi
+	WAN_PORT_STATE=$(printf "/sys/class/net/%s/carrier" $wan_device)
+
+	if [ $(check_wan) -eq 1 ]; then
+		change_state runstate 2
+		load_services
+	fi
+
+	change_state runstate 0
+}
+
+detect_wanmon() {
+	local run_state
+
+	run_state=$(get_state runstate 0)
+
+	if [ $run_state -eq 1 ]; then
+		exit 1
+	elif [ $run_state -gt 1 ]; then
+		run_state=$(($run_state + 1))
+
+		# Set wanmon to interrupted state to interrupt other running wanmon(s)
+		change_state runstate $run_state
+
+		# Wait until running wanmon(s) terminate(s)
+		local current_state=$(get_state runstate 0)
+		while [ $current_state -eq $run_state ]; do
+			sleep 1
+			current_state=$(get_state runstate 0)
+		done
+
+		# Exit if other wanmon is instantiated
+		if [ $current_state -gt $run_state ]; then
+			exit
+		fi
+	fi
+
+	# Set wanmon to running state
+	change_state runstate 1
+}
+
+config_load network
+
+config_get wanmon_enabled wanmon enabled
+if [ "$wanmon_enabled" == "0" ]; then
+	echo "wanmon not enabled. Exit wanmon script."
+	exit 0
+fi
+
+detect_wanmon
+wanmon_main

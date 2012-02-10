@@ -1,0 +1,9 @@
+CBinvaName.badconf:47: component loader accessor   not found
+CBinvaName.badconf:50: component mem accessor ALL not found
+CBinvaName.badconf:51: component mem accessor insn---memory not found
+CBinvaName.badconf:52: component mem accessor CPU not found
+CBinvaName.badconf:53: component bus has no bus another-bus
+CBinvaName.badconf:54: component bus has no bus another-bus
+CBinvaName.badconf:55: component mem has no bus access-port
+CBinvaName.badconf:56: component loader has no bus load!
+Configuration error.  Aborting.

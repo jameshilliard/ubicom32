@@ -1,0 +1,12 @@
+diff -urN lua-5.1.4-orig/src/Makefile lua-5.1.4/src/Makefile
+--- lua-5.1.4-orig/src/Makefile	2011-01-18 06:45:45.000000000 +0200
++++ lua-5.1.4/src/Makefile	2011-01-18 06:59:10.000000000 +0200
+@@ -57,7 +57,7 @@
+ 	$(RANLIB) $@
+ 
+ $(LUA_SO): $(CORE_O) $(LIB_O)
+-	$(CC) -o $@.$(PKG_VERSION) -shared -Wl,-soname="$@.$(PKG_VERSION)" $?
++	$(CC) $(LDFLAGS) -o $@.$(PKG_VERSION) -shared -Wl,-soname="$@.$(PKG_VERSION)" $?
+ 	ln -fs $@.$(PKG_VERSION) $@
+ 
+ $(LUA_T): $(LUA_O) $(LUA_SO)

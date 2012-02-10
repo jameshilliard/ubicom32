@@ -1,0 +1,471 @@
+2007-02-05  Dave Brolley  <brolley@redhat.com>
+
+	* Contribute the following changes:
+	2005-08-22  Dave Brolley  <brolley@redhat.com>
+
+	* mep-cache.cxx (configure): New virtual override in mep_cache.
+	* mep-cache.h (configure): Likewise.
+
+	2005-05-10  Dave Brolley  <brolley@redhat.com>
+
+	* mep-cache.cxx (mep_cache): Inherit from blocking_cache_component.
+	* mep-cache.h (mep_cache): Inherit from blocking_cache_component.
+
+	2004-07-20  Dave Brolley  <brolley@redhat.com>
+
+	* mep-cache.h (clear_tag_pin): New member of mep_cache.
+	(mep_cache::clear_tag): New method.
+	(mep_cache_line::clear_tag): New method.
+	* mep-cache.cxx (mep_cache): Initialize clear_tag_pin. Add clear-tag
+	pin.
+	(mep_cache::clear_tag): New method.
+	(mep_cache_line::clear_tag): New method.
+
+	2004-04-29  Dave Brolley  <brolley@redhat.com>
+
+	* mep-cache.cxx (mep_assoc_replacement_algorithm::expell): update the
+	R bit here.
+	(mep_assoc_replacement_algorithm::update): Removed.
+	* mep-cache.h (mep_assoc_replacement_algorithm::update): Removed.
+
+	2004-04-26  Dave Brolley  <brolley@redhat.com>
+
+	* cache.cxx (mep-cache.h): #include it.
+	(mep_assoc_replacement): New mep_assoc_replacement_algorithm.
+	(CacheListTypes): List hw-mep-cache-* types.
+	(create_mep_cache): New static function.
+	(CacheCreate): Call create_mep_cache.
+	* Makefile.am (libcache_la_SOURCES): Add mep-cache.{cxx,h}.
+	* Makefile.in: Regenerated.
+
+2006-05-10  Dave Brolley  <brolley@redhat.com>
+
+	* cache.cxx (buffer_sizes): New static table.
+	(CacheListTypes): List hw-cache-buffer-* using buffer_sizes. Same for
+	hw-blocking-cache-buffer-*.
+	(CacheCreate): Parse hw-cache-buffer-N and hw-blocking-cache-buffer-N
+	in order to determine buffer size.
+
+2005-12-16  Nathan Sidwell  <nathan@codesourcery.com>
+
+	Second part of ms1 to mt renaming.
+	* Makefile.in: Rebuilt.
+
+2005-06-03  Jim Blandy  <jimb@redhat.com>
+
+	* Makefile.in: Regenerated with Automake 1.9.5.
+
+2005-05-10  Dave Brolley  <brolley@redhat.com>
+
+	* hw-cache.xml: Input to flush-set, invalidate-set and
+	* hw-cache.txt: Regenerated.
+	flush-and-invalidate-set is now an address.
+	* cacheutil.h (addr_to_tag): New method of cache.
+	* cacheutil.cxx (addr_to_tag): New method of cache.
+	* cache.cxx (cache_component::flush_set): Input argument is now an address.
+	(cache_component::flush_and_invalidate_set): Likewise.
+	(blocking_cache_component::flush_set): Likewise.
+	(blocking_cache_component::flush_and_invalidate_set): Likewise.
+
+2005-05-10  Dave Brolley  <brolley@redhat.com>
+
+	* cache.cxx (cache_component): Initialize data_width. Add "data-width"
+	attribute.
+	(read_line): Access the data 4 or 8 bytes at a time, depending on
+	data_width.
+	(write_line): Ditto.
+	(read_downstream, write_downstream): New methods of cache_component.
+	* cache.h (read_downstream, write_downstream): New methods of
+	cache_component.
+	(data_width): New member of cache_component.
+
+2005-05-10  Dave Brolley  <brolley@redhat.com>
+
+	* cache.cxx (cache_component): Add "operation-status" pin.
+	(cache_component::flush_all_lines): Accumulate latency and call
+	report_status.
+	(cache_component::flush_line): Ditto.
+	(cache_component::flush_set): Ditto.
+	(cache_component::flush_and_invalidate_set): Ditto.
+	(cache_component::invalidate_all_lines): Call report_status.
+	(cache_component::invalidate_line): Ditto.
+	(cache_component::flush_and_invalidate_line): Ditto.
+	(cache_component::invalidate_set): Ditto.
+	(cache_component::prefetch_line): Ditto.
+	(cache_component::lock_line): Ditto.
+	(cache_component::unlock_line): Ditto.
+	(blocking_cache_component::flush_all_lines): Call report_status if
+	child is blocked.
+	(blocking_cache_component::flush_line): Ditto.
+	(blocking_cache_component::flush_set): Ditto.
+	(blocking_cache_component::flush_and_invalidate_set): Ditto.
+	(blocking_cache_component::flush_and_invalidate_line): Ditto.
+	(blocking_cache_component::prefetch_line): Ditto.
+	* cache.h (report_status): New method of cache_component.
+	(operation_status_pin): New output pin.
+
+2005-05-10  Dave Brolley  <brolley@redhat.com>
+
+	* cache.h (flush_all_lines, flush_line, flush_set) 
+	(flush_and_invalidate_set, flush_and_invalidate_line) 
+	(prefetch_line): Now virtual. Also, new methods of
+	blocking_cache_component.
+	(setup_flush_all_transaction, setup_flush_line_transaction)
+	(setup_flush_set_transaction)
+	(setup_flush_and_invalidate_set_transaction)
+	(setup_flush_and_invalidate_line_transaction)
+	(perform_flush_all_transaction, perform_flush_line_transaction)
+	(perform_flush_set_transaction)
+	(perform_flush_and_invalidate_set_transaction)
+	(perform_flush_and_invalidate_line_transaction): New methods of
+	blocking_cache_component.
+	* cache.cxx (blocking_cache_component::write): Remove log message. Don't
+	need return code from continue_child_thread_and_wait.
+	blocking_cache_component::read): Ditto.
+	(flush_all_lines, flush_line, flush_set) 
+	(flush_and_invalidate_set, flush_and_invalidate_line) 
+	(prefetch_line): New methods of blocking_cache_component.
+
+2005-05-10  Dave Brolley  <brolley@redhat.com>
+
+	* cache.cxx (cache_component): Initialize total_latency_p. Add
+	"total-latency?" attribute.
+	(read_line): Return the total latency of all accesses if total_latency_p
+	is set.
+	(write_line): Ditto.
+	(handle_bus_error): Copy the status, s, to transaction_status.
+	(blocking_cache_component::read): Always return transaction_status.
+	(blocking_cache_component::write): Ditto.
+	* cache.h (total_latency_p): New member of cache_component.
+
+2005-05-10  Dave Brolley  <brolley@redhat.com>
+
+	* cache.h (cache_component::lock_downstream): New virtual method.
+	(cache_component::unlock_downstream): New virutal method.
+	(blocking_cache_component::lock_downstream): New virtual override.
+	(blocking_cache_component::unlock_downstream): New virtual override.
+	* cache.cxx (read_line): Return the maximum latency from the reads
+	performed if refill latency is not requested. Call lock_downstream
+	before the first read. Call unlock_downstream before the final read.
+	(write_line): Ditto.
+	(blocking_cache_component): Add downstream-lock pin.
+
+2005-05-10  Dave Brolley  <brolley@redhat.com>
+
+	* cache.cxx (blocking_cache_child_thread_root): Don't call
+	child->child_wait_for_resume.
+	(handle_bus_error): Ditto.
+	(DEFN_METHOD): SID_SIG_CHILD_BLOCKED is now ctl_child_blocked.
+
+2005-05-10  Dave Brolley  <brolley@redhat.com>
+
+	* Makefile.am (AM_XXXFLAGS): Set it to $(TOP_CXXFLAGS).
+	(AM_MAKEFLAGS): Pass along TOP_CXXFLAGS.
+	* Makefile.in: Regenerated.
+
+2005-05-10  Dave Brolley  <brolley@redhat.com>
+
+	* cache.h (sidblockingutil.h): #include it.
+	(namespace sid): Add "using" clause. Remove sid:: qualifier from
+	declarations.
+	(cache_component): Inhereit virtually from
+	fixed_attribute_map_component and fixed_pin_map_component.
+	(cache_component::write): Variants now virtual.
+	(cache_component::read): Ditto.
+	(cache_component::handle_read_error): New virtual method.
+	(cache_component::handle_write_error): New virtual method.
+	(cache_bus::write_any): Call cache.write.
+	(cache_bus::read_any): Call cache.read.
+	(blocking_cache_component): New class.
+	* cache.cxx (cache_component::write_any): Call handle_write_error to
+	handle bus errors.
+	(cache_component::write_line): Ditto.
+	(cache_component::read_any): Call handle_read_error as above.
+	(cache_component::read_line): Ditto.
+	(blocking_cache_child_thread_root): New function.
+	(blocking_cache_component): New constructor.
+	(handle_bus_error): New method.
+	(blocking_cache_component:write): New methods.
+	(blocking_cache_component::read): New methods.
+	(CacheListTypes): Add hw-blocking-cache-basic and
+	hw-blocking-cache-buffer-8, hw-blocking-cache-direct* and
+	hw-blocking-cache/*kb*.
+	(CacheCreate): Parse and construct the above.
+
+2004-07-20  Dave Brolley  <brolley@redhat.com>
+
+	* cacheutil.cxx (find): Make sure cache line is valid before returning
+	it.
+	* cache.cxx (write_any): Move call to addr_to_tag to a later point when
+	the result is actually needed. Make sure cache line is valid before
+	flushing it.
+	(read_any): Make sure cache line is valid before flushing it.
+
+2004-07-01  Dave Brolley  <brolley@redhat.com>
+
+	* cache.cxx (write_any): Allow misaligned access. Return
+	bus::misaligned for accesses which cross line boundary.
+	(read_any): Ditto.
+
+2004-05-10  Dave Brolley  <brolley@redhat.com>
+
+	* cacheutil.cxx (find_any_dirty): Make sure the line is valid before
+	checking the dirty bit.
+	(vacancy_p): Line is also vacant if it is not valid.
+
+2004-04-29  Dave Brolley  <brolley@redhat.com>
+
+	* cacheutil.cxx (cache_set::expell_line): Don't update the set here.
+
+2004-04-29  Dave Brolley  <brolley@redhat.com>
+
+	* cache.cxx: Update calls to cache::find.
+	* cacheutil.cxx (cache_set::allocate_lines): Now takes cache index as
+	an argument. Update all callers.
+	(cache_set::find): Now returns a pointer to the line, if found. Update
+	all callers.
+	(cache::find): Ditto.
+	(cache_set::expell_line): Update the status of the expelled line.
+	* cacheutil.h (cache_line_factory::make_line): Now takes cache index as
+	an argument. Update all callers.
+	(cache_set::allocate_lines): Now takes cache index as
+	an argument. Update all callers.
+	(cache_set::find): Now returns a pointer to the line, if found. Update
+	all callers.
+	(cache::find): Ditto.
+
+2004-04-29  Dave Brolley  <brolley@redhat.com>
+
+	* cacheutil.h (cache_line): Removed copy constructor. Now virtual base
+	class.
+	(cache_line::operator=): Removed.
+	(internal_cache_line): New class implements former cache_line class.
+	(cache_set): Now takes cache_line_factory.
+	(allocate_lines): New method moves line allocation from the constructor.
+	(cache_set::set_line): Now takes reference to cache_line.
+	(cache_set::replace_line): Renamed to expell_line. Now returns a pointer
+	to the expelled line.
+	(cache): Now takes cache_line_factory argument.
+	(cache::init): New method moves set allocation from the constructor.
+	(cache_set::expell_line): Renamed to expell_line. Now returns a pointer
+	to the expelled line.
+	(cache_line_factory): New class.
+	* cacheutil.cxx (cache_line): Removed copy constructor. Now virtual base
+	class.
+	(cache_line::operator=): Removed.
+	(internal_cache_line): New class implements former cache_line class.
+	(cache_set): Now takes cache_line_factory.
+	(allocate_lines): New method moves line allocation from the constructor.
+	(cache_set::set_line): Now takes reference to cache_line.
+	(dummy): Now internal to cache_set::find.
+	(cache_set::replace_line): Renamed to expell_line. Now returns a pointer
+	to the expelled line.
+	(cache): Now takes cache_line_factory argument.
+	(cache::init): New method moves set allocation from the constructor.
+	(cache_set::expell_line): Renamed to expell_line. Now returns a pointer
+	to the expelled line.
+	* cache.h (cache_replacement_algorithm::expell): Renamed from 'replace'.
+	Returns a pointer to the expelled line. Update specializations.
+	(cache_component): Now takes a cache_line_factory as an argument.
+	Private data now protected.
+	(line_factory): New member of cache_component.
+	(~cache_component): Now virtual.
+	(CacheCreate): Pass internal_line_factory to cache_component.
+	* cache.cxx (line_sizes): Make it static.
+	(line_sizes): Ditto.
+	(replacement_algorithms): Ditto.
+	(internal_line_factory): New static cache_line_factory.
+	(cache_component): Now takes a cache_line_factory as an argument. Pass
+	the cache line factory to the constructor for acache. Save a reference
+	to the line factory. Call acache.init
+	(write_any): Rewrite to use cache::expell_line instead of the former
+	cache::replace.
+	(read_any): Ditto.
+	(cache_replacement_algorithm::expell): Renamed from 'replace'. Returns
+	a pointer to the expelled line. Update all callers and specializations.
+	(CacheCreate): Pass internal_line_factory to cache_component.
+
+2003-01-31  Frank Ch. Eigler  <fche@redhat.com>
+
+	* log2.h: #undef log2, in case a macro collides with the function.
+
+2002-07-16  Dave Brolley  <brolley@redhat.com>
+
+	* cache.h (cache): Add flush_and_invalidate_set_pin and
+	flush_and_invalidate_pin.
+	* cache.cxx (cache_component): Initialize flush_and_invalidate_set_pin
+	and flush_and_invalidate_pin. Add flush-and-invalidate and
+	flush-and-invalidate-set pins.
+	(flush_set): Don't flush an invalid line.
+	(flush_and_invalidate_set): New method.
+	(flush_and_invalidate_line): New method.
+	* hw-cache.xml, hw-cache.txt: Modified accordingly.
+
+2002-06-08  Ben Elliston  <bje@redhat.com>
+
+	* cacheutil.h (cache_set::expunge): New method.
+	(cache_set::operator[]): Likewise.
+	(cache::invalidate): Likewise.
+	(cache::operator[]): Likewise.
+	* cacheutil.cxx (cache::invalidate): Implement.
+	* cache.h (cache_component::flush_set_pin): New pin.
+	(cache_component::flush_set): New callback method.
+	(cache_component::invalidate_set_pin): New pin.
+	(cache_component::invalidate_set): New method.
+	* cache.cxx (cache_component constructor): Initialise and add
+	"flush-set" and "invalidate-set" pins.
+	(cache_component::flush_set): Implement.
+	(cache_component::invalidate_set): Likewise.
+	* hw-cache.xml: Update documentation.
+
+2002-06-04  Graydon Hoare  <graydon@redhat.com>
+
+	* cache.h (cache_component::set_refill_latency): New method.
+	(cache_component::get_refill_latency): New method.
+	(cache_component::refill_latency_specified): New flag.
+	(cache_component): Virtualize "refill-latency" attribute,
+	note when it is set in "refill_latency_specified".
+	* cache.cxx (read_line): Return either refill latency or
+	downstream latencies, depending on whether explicit refill
+	latency has been specified, not sum of both.
+
+2002-05-17  Ben Elliston  <bje@redhat.com>
+
+	* Makefile.am (DEJAGNUTESTS): Add refill.exp.
+	* cache.h (cache_component::refill_latency): New member.
+	* cache.cxx (cache_component::read_line): Add refill latency.
+	(cache_component::cache_component): Initialise it and add a
+	corresponding "refill-latency" attribute.
+	* hw-cache.xml (memory latency) : Document refill latency.
+
+2002-04-09  Ben Elliston  <bje@redhat.com>
+
+	* cache.cxx (cache_component::read_line): Set the overall latency
+	for a cache line fill to the latency of the first downstream read,
+	not the last.
+
+2001-12-27  Frank Ch. Eigler  <fche@redhat.com>
+
+	* cache.cxx (CacheListTypes, CacheCreate): Support hw-cache-buffer-8
+	component type.
+	* hw-cache.xml, hw-cache.txt: Modified accordingly.
+
+2001-12-27  Frank Ch. Eigler  <fche@redhat.com>
+
+	* cache.cxx (cache_sizes): Add "1" and "2" kb support.
+	* hw-cache.xml, hw-cache.txt: Modified accordingly.
+
+2001-12-04  Frank Ch. Eigler  <fche@redhat.com>
+ 
+ 	* cache.cxx (cache_sizes): Add "4" for "4kb".
+ 	* hw-cache.xml, hw-cache.txt: Modified accordingly.
+
+2001-11-30  Frank Ch. Eigler  <fche@redhat.com>
+
+	* cacheutil.cxx (hash_fn): Fix std:: namespace reference.
+
+2001-10-22  Frank Ch. Eigler  <fche@redhat.com>
+
+	* cache.cxx (flush_all): New function.  Associate with "flush-all" pin.
+	* cacheutil.cxx (find_any_dirty): New functions.
+	* cache.h, cacheutil.h: Relevant changes.
+	Warning cleanups throughout.
+	* hw-cache.xml (flush-all): Document new pin.
+	* hw-cache-txt: Regenerated.
+
+2001-09-27  Frank Ch. Eigler  <fche@redhat.com>
+
+	* cache.cxx (emit_report): Remove extra blank line.
+	(set_hash_mask, set_hash_shift): Exchange names to match functionality.
+	* cacheutil.cxx (cache ctor): Compute good default hash_params.
+
+2001-09-26  Frank Ch. Eigler  <fche@redhat.com>
+
+	* cacheutil.cxx (hash_fn): Detect index overflow.  Complain loudly.
+	* cacheutil.h: Include some more headers.
+
+2001-08-04  Frank Ch. Eigler  <fche@redhat.com>
+
+	* cache.cxx (~cache_component): Define.
+
+2001-08-03  matthew green  <mrg@redhat.com>
+
+	* cache.h (~cache_component): Add prototype.
+	* cacheutil.cxx (std::operator==, operator==): Move this into the
+	global name space.
+	(std::cerr, std::hex, std::setw, std::setfill, std::endl, std::dec):
+	Use these.
+	* cacheutil.h (std::operator==, operator==): Move this into the
+	global name space.
+
+2001-07-13  Dave Brolley  <brolley@redhat.com>
+
+        * cache.h (cache:bus::DEFN_METHOD): Generate function prototypes only.
+	(::DEFN_METHOD): Generate actual inline function bodies after
+	cache_component is defined.
+
+2001-07-13  Ben Elliston  <bje@redhat.com>
+
+	* Makefile.am (check-local): Rename target from "checkme".
+
+2001-07-11  Frank Ch. Eigler  <fche@redhat.com>
+
+	* hw-cache.xml: Add <?xml ... ?> prefix.
+
+2001-07-10  matthew green  <mrg@redhat.com>
+
+	* Makefile.in: Regenerate.
+
+2001-07-10  Ben Elliston  <bje@redhat.com>
+
+	* cacheutil.h (class cache_line): Use std::vector, not vector.
+	(class cache_set): Likewise.
+	(class cache): Likewise.
+
+2001-07-09  Ben Elliston  <bje@redhat.com>
+
+	* cache.cxx: Use std::cout and std::endl for C++ conformance.
+
+2001-07-04  Ben Elliston  <bje@redhat.com>
+
+	* hw-cache.txt: Generate.
+
+2001-07-02  Ben Elliston  <bje@redhat.com>
+
+	* hw-cache.xml: New file.
+
+2001-06-24  Ben Elliston  <bje@redhat.com>
+
+	* cache.cxx (set_hash_mask): Validate parse_attribute result.
+	(set_hash_shift): Ditto.
+
+2001-06-21  Ben Elliston  <bje@redhat.com>
+
+	* cache.h (cache_component::hit_latency): New member.
+	(cache_component::miss_latency): Likewise.
+	* cache.cxx (cache_component ctor): Add attributes for these.
+	(cache_component::write_any): Add miss latency for misaligned
+	accesses. Set latency correctly for return.
+	(cache_component::read_any): Add miss latency for misaligned
+	accesses. Set latency correctly for return.
+	(cache_component::read_line): Return the true result of reads.
+	(cache_component::write_line): Likewise for writes.
+	* hw-cache.txt: Document latency extensions.
+
+2001-06-19  Ben Elliston  <bje@redhat.com>
+
+	* cache.cxx (CacheCreate): Re-work using sidutil::tokenize.
+
+2001-06-15  Ben Elliston  <bje@redhat.com>
+
+	* cache.cxx: New file. 
+	* cache.h: Likewise.
+	* cacheutil.cxx: Likewise.
+	* cacheutil.h: Likewise.
+	* log2.h: Likewise.
+	* hw-cache.txt: Likewise.
+
+2001-06-05  Ben Elliston  <bje@redhat.com>
+
+	* Makefile.am: New file.
+	* Makefile.in: Generate.

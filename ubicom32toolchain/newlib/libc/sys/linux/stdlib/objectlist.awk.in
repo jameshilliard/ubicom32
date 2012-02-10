@@ -1,0 +1,11 @@
+collate.lo /home/art/newlib-1.16.0/newlib/libc/sys/linux/stdlib/collate.lo
+collcmp.lo /home/art/newlib-1.16.0/newlib/libc/sys/linux/stdlib/collcmp.lo
+fnmatch.lo /home/art/newlib-1.16.0/newlib/libc/sys/linux/stdlib/fnmatch.lo
+glob.lo /home/art/newlib-1.16.0/newlib/libc/sys/linux/stdlib/glob.lo
+reallocf.lo /home/art/newlib-1.16.0/newlib/libc/sys/linux/stdlib/reallocf.lo
+regcomp.lo /home/art/newlib-1.16.0/newlib/libc/sys/linux/stdlib/regcomp.lo
+regerror.lo /home/art/newlib-1.16.0/newlib/libc/sys/linux/stdlib/regerror.lo
+regexec.lo /home/art/newlib-1.16.0/newlib/libc/sys/linux/stdlib/regexec.lo
+regfree.lo /home/art/newlib-1.16.0/newlib/libc/sys/linux/stdlib/regfree.lo
+wordexp.lo /home/art/newlib-1.16.0/newlib/libc/sys/linux/stdlib/wordexp.lo
+wordfree.lo /home/art/newlib-1.16.0/newlib/libc/sys/linux/stdlib/wordfree.lo

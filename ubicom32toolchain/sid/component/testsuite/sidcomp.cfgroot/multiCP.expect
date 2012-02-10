@@ -1,0 +1,6 @@
+multiCP.badconf:32: component stdio has no input pin stdin
+multiCP.badconf:43: output pin stdin is already connected to input pin 0-control
+multiCP.badconf:44: output pin stdin is already connected to input pin 1-control
+multiCP.badconf:44: unknown command ;
+multiCP.badconf:44: output pin stdin is already connected to input pin 0-control
+Configuration error.  Aborting.

@@ -1,0 +1,20 @@
+lock 
+replacedefaultroute
+noipdefault
+defaultroute
+passive
+debug
+lcp-echo-interval 30
+lcp-echo-failure 4
+maxfail 0
+noauth
+refuse-eap
+nobsdcomp
+nodeflate
+noaccomp
+nopcomp
+novj
+novjccomp
+ipcp-accept-remote
+ipcp-accept-local
+

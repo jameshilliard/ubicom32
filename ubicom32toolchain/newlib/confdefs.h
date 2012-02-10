@@ -1,0 +1,26 @@
+#define PACKAGE_NAME "newlib"
+#define PACKAGE_TARNAME "newlib"
+#define PACKAGE_VERSION "1.16.0"
+#define PACKAGE_STRING "newlib 1.16.0"
+#define PACKAGE_BUGREPORT ""
+#define STDC_HEADERS 1
+#define HAVE_SYS_TYPES_H 1
+#define HAVE_SYS_STAT_H 1
+#define HAVE_STDLIB_H 1
+#define HAVE_STRING_H 1
+#define HAVE_MEMORY_H 1
+#define HAVE_STRINGS_H 1
+#define HAVE_INTTYPES_H 1
+#define HAVE_STDINT_H 1
+#define HAVE_UNISTD_H 1
+#define HAVE_DLFCN_H 1
+#define LT_OBJDIR ".libs/"
+#define _WANT_IO_C99_FORMATS 1
+#define _WANT_IO_LONG_LONG 1
+#define _WANT_IO_LONG_DOUBLE 1
+#define _WANT_IO_POS_ARGS 1
+#define _MB_CAPABLE 1
+#define _MB_LEN_MAX 8
+#define _NEWLIB_VERSION "1.16.0"
+#define _ATEXIT_DYNAMIC_ALLOC 1
+#define HAVE_INITFINI_ARRAY 1

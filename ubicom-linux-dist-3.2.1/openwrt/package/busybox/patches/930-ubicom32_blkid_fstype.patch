@@ -1,0 +1,388 @@
+--- a/include/volume_id.h
++++ b/include/volume_id.h
+@@ -21,6 +21,7 @@
+ char *get_devname_from_label(const char *spec);
+ char *get_devname_from_uuid(const char *spec);
+ void display_uuid_cache(void);
++int add_to_uuid_cache(const char *device);
+ 
+ /* Returns:
+  * 0: no UUID= or LABEL= prefix found
+--- a/util-linux/Config.src
++++ b/util-linux/Config.src
+@@ -38,6 +38,13 @@ config BLKID
+ 	  WARNING:
+ 	  With all submodules selected, it will add ~8k to busybox.
+ 
++config FEATURE_BLKID_TYPE
++	bool "Print filesystem type"
++	default y
++	depends on BLKID
++	help
++	  Show filesystem type additionally
++
+ config DMESG
+ 	bool "dmesg"
+ 	default y
+--- a/util-linux/blkid.c
++++ b/util-linux/blkid.c
+@@ -11,8 +11,16 @@
+ #include "volume_id.h"
+ 
+ int blkid_main(int argc, char **argv) MAIN_EXTERNALLY_VISIBLE;
+-int blkid_main(int argc UNUSED_PARAM, char **argv UNUSED_PARAM)
++int blkid_main(int argc, char **argv)
+ {
+-	display_uuid_cache();
++	int err = 0;
++
++	argv++;
++	while (--argc) {
++		err = add_to_uuid_cache(*argv++) ? err : 1;
++	}
++
++	if (!err)
++		display_uuid_cache();
+ 	return 0;
+ }
+--- a/util-linux/volume_id/cramfs.c
++++ b/util-linux/volume_id/cramfs.c
+@@ -51,7 +51,9 @@ int FAST_FUNC volume_id_probe_cramfs(str
+ 		volume_id_set_label_string(id, cs->name, 16);
+ 
+ //		volume_id_set_usage(id, VOLUME_ID_FILESYSTEM);
+-//		id->type = "cramfs";
++#if ENABLE_FEATURE_BLKID_TYPE
++		id->type = "cramfs";
++#endif
+ 		return 0;
+ 	}
+ 
+--- a/util-linux/volume_id/ext.c
++++ b/util-linux/volume_id/ext.c
+@@ -65,10 +65,12 @@ int FAST_FUNC volume_id_probe_ext(struct
+ 	volume_id_set_uuid(id, es->uuid, UUID_DCE);
+ 	dbg("ext: label '%s' uuid '%s'", id->label, id->uuid);
+ 
+-//	if ((le32_to_cpu(es->feature_compat) & EXT3_FEATURE_COMPAT_HAS_JOURNAL) != 0)
+-//		id->type = "ext3";
+-//	else
+-//		id->type = "ext2";
++#if ENABLE_FEATURE_BLKID_TYPE
++	if ((le32_to_cpu(es->feature_compat) & EXT3_FEATURE_COMPAT_HAS_JOURNAL) != 0)
++		id->type = "ext3";
++	else
++		id->type = "ext2";
++#endif
+ 
+ 	return 0;
+ }
+--- a/util-linux/volume_id/fat.c
++++ b/util-linux/volume_id/fat.c
+@@ -332,7 +332,9 @@ int FAST_FUNC volume_id_probe_vfat(struc
+ 
+  ret:
+ //	volume_id_set_usage(id, VOLUME_ID_FILESYSTEM);
+-//	id->type = "vfat";
++#if ENABLE_FEATURE_BLKID_TYPE
++	id->type = "vfat";
++#endif
+ 
+ 	return 0;
+ }
+--- a/util-linux/volume_id/get_devname.c
++++ b/util-linux/volume_id/get_devname.c
+@@ -19,6 +19,9 @@ static struct uuidCache_s {
+ 	char *device;
+ 	char *label;
+ 	char *uc_uuid; /* prefix makes it easier to grep for */
++#if ENABLE_FEATURE_BLKID_TYPE
++	const char *type;
++#endif
+ } *uuidCache;
+ 
+ /* Returns !0 on error.
+@@ -26,7 +29,7 @@ static struct uuidCache_s {
+  * (and they can't be NULL, although they can be "").
+  * NB: closes fd. */
+ static int
+-get_label_uuid(int fd, char **label, char **uuid)
++get_label_uuid(int fd, char **label, char **uuid, const char **type)
+ {
+ 	int rv = 1;
+ 	uint64_t size;
+@@ -44,7 +47,12 @@ get_label_uuid(int fd, char **label, cha
+ 	if (vid->label[0] != '\0' || vid->uuid[0] != '\0') {
+ 		*label = xstrndup(vid->label, sizeof(vid->label));
+ 		*uuid  = xstrndup(vid->uuid, sizeof(vid->uuid));
++#if ENABLE_FEATURE_BLKID_TYPE
++		*type = vid->type;
++		dbg("found label '%s', uuid '%s', type '%s' on %s", *label, *uuid, *type);
++#else
+ 		dbg("found label '%s', uuid '%s'", *label, *uuid);
++#endif
+ 		rv = 0;
+ 	}
+  ret:
+@@ -54,7 +62,7 @@ get_label_uuid(int fd, char **label, cha
+ 
+ /* NB: we take ownership of (malloc'ed) label and uuid */
+ static void
+-uuidcache_addentry(char *device, /*int major, int minor,*/ char *label, char *uuid)
++uuidcache_addentry(char *device, /*int major, int minor,*/ char *label, char *uuid, char *type)
+ {
+ 	struct uuidCache_s *last;
+ 
+@@ -72,6 +80,9 @@ uuidcache_addentry(char *device, /*int m
+ 	last->device = device;
+ 	last->label = label;
+ 	last->uc_uuid = uuid;
++#if ENABLE_FEATURE_BLKID_TYPE
++	last->type = type;
++#endif
+ }
+ 
+ /* If get_label_uuid() on device_name returns success,
+@@ -99,21 +110,16 @@ uuidcache_check_device(const char *devic
+ 	if (major(statbuf->st_rdev) == 2)
+ 		return TRUE;
+ 
+-	fd = open(device, O_RDONLY);
+-	if (fd < 0)
+-		return TRUE;
++	add_to_uuid_cache(device);
+ 
+-	/* get_label_uuid() closes fd in all cases (success & failure) */
+-	if (get_label_uuid(fd, &label, &uuid) == 0) {
+-		/* uuidcache_addentry() takes ownership of all three params */
+-		uuidcache_addentry(xstrdup(device), /*ma, mi,*/ label, uuid);
+-	}
+ 	return TRUE;
+ }
+ 
+ static void
+ uuidcache_init(void)
+ {
++	dbg("DBG: uuidCache=%x, uuidCache");
++
+ 	if (uuidCache)
+ 		return;
+ 
+@@ -223,11 +229,36 @@ void display_uuid_cache(void)
+ 			printf(" LABEL=\"%s\"", u->label);
+ 		if (u->uc_uuid[0])
+ 			printf(" UUID=\"%s\"", u->uc_uuid);
++#if ENABLE_FEATURE_BLKID_TYPE
++  		if (u->type)
++          		printf(" TYPE=\"%s\"", u->type);
++#endif
+ 		bb_putchar('\n');
+ 		u = u->next;
+ 	}
+ }
+ 
++int add_to_uuid_cache(const char *device)
++{
++	char *uuid = uuid; /* for compiler */
++	char *label = label;
++	const char *type = type;
++	int fd;
++
++	fd = open(device, O_RDONLY);
++	if (fd < 0)
++		return 0;
++
++	/* get_label_uuid() closes fd in all cases (success & failure) */
++	if (get_label_uuid(fd, &label, &uuid, &type) == 0) {
++		/* uuidcache_addentry() takes ownership of all four params */
++		uuidcache_addentry(xstrdup(device), /*ma, mi,*/ label, uuid, type);
++		return 1;
++	}
++	return 0;
++}
++
++
+ /* Used by mount and findfs */
+ 
+ char *get_devname_from_label(const char *spec)
+--- a/util-linux/volume_id/hfs.c
++++ b/util-linux/volume_id/hfs.c
+@@ -195,7 +195,9 @@ int FAST_FUNC volume_id_probe_hfs_hfsplu
+ 
+ 	volume_id_set_uuid(id, hfs->finder_info.id, UUID_HFS);
+ //	volume_id_set_usage(id, VOLUME_ID_FILESYSTEM);
+-//	id->type = "hfs";
++#if ENABLE_FEATURE_BLKID_TYPE
++	id->type = "hfs";
++#endif
+ 
+ 	return 0;
+ 
+--- a/util-linux/volume_id/iso9660.c
++++ b/util-linux/volume_id/iso9660.c
+@@ -114,7 +114,9 @@ int FAST_FUNC volume_id_probe_iso9660(st
+ 
+  found:
+ //	volume_id_set_usage(id, VOLUME_ID_FILESYSTEM);
+-//	id->type = "iso9660";
++#if ENABLE_FEATURE_BLKID_TYPE
++	id->type = "iso9660";
++#endif
+ 
+ 	return 0;
+ }
+--- a/util-linux/volume_id/jfs.c
++++ b/util-linux/volume_id/jfs.c
+@@ -54,7 +54,8 @@ int FAST_FUNC volume_id_probe_jfs(struct
+ 	volume_id_set_uuid(id, js->uuid, UUID_DCE);
+ 
+ //	volume_id_set_usage(id, VOLUME_ID_FILESYSTEM);
+-//	id->type = "jfs";
+-
++#if ENABLE_FEATURE_BLKID_TYPE
++	id->type = "jfs";
++#endif
+ 	return 0;
+ }
+--- a/util-linux/volume_id/linux_swap.c
++++ b/util-linux/volume_id/linux_swap.c
+@@ -72,7 +72,9 @@ int FAST_FUNC volume_id_probe_linux_swap
+ 
+ found:
+ //	volume_id_set_usage(id, VOLUME_ID_OTHER);
+-//	id->type = "swap";
++#if ENABLE_FEATURE_BLKID_TYPE
++	id->type = "swap";
++#endif
+ 
+ 	return 0;
+ }
+--- a/util-linux/volume_id/luks.c
++++ b/util-linux/volume_id/luks.c
+@@ -94,7 +94,9 @@ int FAST_FUNC volume_id_probe_luks(struc
+ 
+ //	volume_id_set_usage(id, VOLUME_ID_CRYPTO);
+ 	volume_id_set_uuid(id, header->uuid, UUID_DCE_STRING);
+-//	id->type = "crypto_LUKS";
++#if ENABLE_FEATURE_BLKID_TYPE
++	id->type = "crypto_LUKS";
++#endif
+ 
+ 	return 0;
+ }
+--- a/util-linux/volume_id/ntfs.c
++++ b/util-linux/volume_id/ntfs.c
+@@ -188,7 +188,9 @@ int FAST_FUNC volume_id_probe_ntfs(struc
+ 
+  found:
+ //	volume_id_set_usage(id, VOLUME_ID_FILESYSTEM);
+-//	id->type = "ntfs";
++#if ENABLE_FEATURE_BLKID_TYPE
++	id->type = "ntfs";
++#endif
+ 
+ 	return 0;
+ }
+--- a/util-linux/volume_id/ocfs2.c
++++ b/util-linux/volume_id/ocfs2.c
+@@ -101,6 +101,8 @@ int FAST_FUNC volume_id_probe_ocfs2(stru
+ 	volume_id_set_label_string(id, os->s_label, OCFS2_MAX_VOL_LABEL_LEN < VOLUME_ID_LABEL_SIZE ?
+ 					OCFS2_MAX_VOL_LABEL_LEN : VOLUME_ID_LABEL_SIZE);
+ 	volume_id_set_uuid(id, os->s_uuid, UUID_DCE);
+-//	id->type = "ocfs2";
++#if ENABLE_FEATURE_BLKID_TYPE
++	id->type = "ocfs2";
++#endif
+ 	return 0;
+ }
+--- a/util-linux/volume_id/reiserfs.c
++++ b/util-linux/volume_id/reiserfs.c
+@@ -107,7 +107,9 @@ int FAST_FUNC volume_id_probe_reiserfs(s
+ 
+  found:
+ //	volume_id_set_usage(id, VOLUME_ID_FILESYSTEM);
+-//	id->type = "reiserfs";
++#if ENABLE_FEATURE_BLKID_TYPE
++	id->type = "reiserfs";
++#endif
+ 
+ 	return 0;
+ }
+--- a/util-linux/volume_id/romfs.c
++++ b/util-linux/volume_id/romfs.c
+@@ -47,7 +47,10 @@ int FAST_FUNC volume_id_probe_romfs(stru
+ 		}
+ 
+ //		volume_id_set_usage(id, VOLUME_ID_FILESYSTEM);
+-//		id->type = "romfs";
++#if ENABLE_FEATURE_BLKID_TYPE
++		id->type = "romfs";
++#endif
++
+ 		return 0;
+ 	}
+ 
+--- a/util-linux/volume_id/sysv.c
++++ b/util-linux/volume_id/sysv.c
+@@ -99,7 +99,10 @@ int FAST_FUNC volume_id_probe_sysv(struc
+ 		if (vs->s_magic == cpu_to_le32(SYSV_MAGIC) || vs->s_magic == cpu_to_be32(SYSV_MAGIC)) {
+ //			volume_id_set_label_raw(id, vs->s_fname, 6);
+ 			volume_id_set_label_string(id, vs->s_fname, 6);
+-//			id->type = "sysv";
++#if ENABLE_FEATURE_BLKID_TYPE
++      		 	id->type = "sysv";
++#endif
++
+ 			goto found;
+ 		}
+ 	}
+@@ -112,7 +115,9 @@ int FAST_FUNC volume_id_probe_sysv(struc
+ 		if (xs->s_magic == cpu_to_le32(XENIX_MAGIC) || xs->s_magic == cpu_to_be32(XENIX_MAGIC)) {
+ //			volume_id_set_label_raw(id, xs->s_fname, 6);
+ 			volume_id_set_label_string(id, xs->s_fname, 6);
+-//			id->type = "xenix";
++#if ENABLE_FEATURE_BLKID_TYPE
++			id->type = "xenix";
++#endif
+ 			goto found;
+ 		}
+ 	}
+--- a/util-linux/volume_id/udf.c
++++ b/util-linux/volume_id/udf.c
+@@ -167,7 +167,9 @@ anchor:
+ 
+  found:
+ //	volume_id_set_usage(id, VOLUME_ID_FILESYSTEM);
+-//	id->type = "udf";
++#if ENABLE_FEATURE_BLKID_TYPE
++        id->type = "udf";
++#endif
+ 
+ 	return 0;
+ }
+--- a/util-linux/volume_id/volume_id_internal.h
++++ b/util-linux/volume_id/volume_id_internal.h
+@@ -80,7 +80,9 @@ struct volume_id {
+ //	char		type_version[VOLUME_ID_FORMAT_SIZE];
+ //	smallint	usage_id;
+ //	const char	*usage;
+-//	const char	*type;
++#if ENABLE_FEATURE_BLKID_TYPE
++        const char 	*type;
++#endif
+ };
+ 
+ struct volume_id* FAST_FUNC volume_id_open_node(int fd);
+--- a/util-linux/volume_id/xfs.c
++++ b/util-linux/volume_id/xfs.c
+@@ -54,7 +54,8 @@ int FAST_FUNC volume_id_probe_xfs(struct
+ 	volume_id_set_uuid(id, xs->uuid, UUID_DCE);
+ 
+ //	volume_id_set_usage(id, VOLUME_ID_FILESYSTEM);
+-//	id->type = "xfs";
+-
++#if ENABLE_FEATURE_BLKID_TYPE
++	id->type = "xfs";
++#endif
+ 	return 0;
+ }

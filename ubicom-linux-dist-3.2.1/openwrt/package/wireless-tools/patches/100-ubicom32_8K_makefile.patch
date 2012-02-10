@@ -1,0 +1,12 @@
+diff -ru wireless_tools.29/Makefile modified_wireless_tools.29/Makefile
+--- wireless_tools.29/Makefile	2011-01-21 12:02:30.000000000 -0800
++++ modified_wireless_tools.29/Makefile	2011-01-21 11:49:19.000000000 -0800
+@@ -145,7 +145,7 @@
+ 
+ # Compilation of the dynamic library
+ $(DYNAMIC): $(OBJS:.o=.so)
+-	$(CC) -shared -o $@ -Wl,-soname,$@ $(STRIPFLAGS) $(LIBS) -lc $^
++	$(CC) -shared $(LDFLAGS) -o $@ -Wl,-soname,$@ $(STRIPFLAGS) $(LIBS) -lc $^
+ 
+ # Compilation of the static library
+ $(STATIC): $(OBJS:.o=.so)

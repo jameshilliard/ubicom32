@@ -1,0 +1,4540 @@
+; Ubicom32 CPU description.  -*- Scheme -*-
+; Copyright (C) 2000, 2001 Red Hat, Inc.
+; This file is part of CGEN.
+; See file COPYING.CGEN for details.
+
+(include "simplify.inc")
+
+; define-arch must appear first
+(define-arch
+  (name ubicom32) ; name of cpu family
+  (comment "Ubicom IP")
+  (default-alignment aligned)
+  (insn-lsb0? #t)
+  (machs ip3035 ubicom32dsp ip3023compatibility ubicom32_ver4 ubicom32_ver5 ubicom32_oldmoveai ubicom32_newmoveai ubicom32_newmoveaisimulate)
+  (isas ubicom32)
+)
+
+; Instruction set parameters.
+
+(define-isa
+  (name ubicom32)
+  (comment "Ubicom UBICOM32 ISA")
+
+  (default-insn-word-bitsize 32)
+  (default-insn-bitsize 32)
+  (base-insn-bitsize 32)
+  ; (decode-assist (31 30 29 28 27))
+)
+
+; Cpu family definitions.
+
+(define-cpu
+  ; cpu names must be distinct from the architecture name and machine names.
+  (name ubicom32bf)
+  (comment "Ubicom IP ubicom32")
+  (endian big)
+  (word-bitsize 32)
+)
+
+(define-mach
+  (name ip3035)
+  (comment "Ubicom IP ip3035")
+  (cpu ubicom32bf)
+  (bfd-name "ubicom32")
+)
+
+(define-mach
+  (name ubicom32dsp)
+  (comment "Ubicom IP ubicom32 DSPb Variant")
+  (cpu ubicom32bf)
+  (bfd-name "ubicom32dsp")
+)
+
+(define-mach
+  (name ip3023compatibility)
+  (comment "Ubicom IP ubicom32 DSPb Variant")
+  (cpu ubicom32bf)
+  (bfd-name "ubicom32dsp")
+)
+
+(define-mach
+  (name ubicom32_ver4)
+  (comment "Ubicom IP ubicom32 DSPb Variant version 4")
+  (cpu ubicom32bf)
+  (bfd-name "ubicom32ver4")
+)
+
+(define-mach
+  (name ubicom32_ver5)
+  (comment "Ubicom IP ubicom32 DSPb Variant version 5")
+  (cpu ubicom32bf)
+  (bfd-name "ubicom32ver5")
+)
+
+(define-mach
+  (name ubicom32_oldmoveai)
+  (comment "Ubicom IP ubicom32. 5 bit Moveai major opcode")
+  (cpu ubicom32bf)
+  (bfd-name "ubicom32ver4")
+)
+
+(define-mach
+  (name ubicom32_newmoveai)
+  (comment "Ubicom IP ubicom32. 4 bit Moveai major opcode")
+  (cpu ubicom32bf)
+  (bfd-name "ubicom32ver5")
+)
+
+
+; Model descriptions.
+
+; The meaning of this value is wip but at the moment it's intended to describe
+; the implementation (i.e. what -mtune=foo does in sparc gcc).
+;
+; Notes while wip:
+; - format of pipeline entry:
+;   (pipeline name (stage1-name ...) (stage2-name ...) ...)
+;   The contents of a stage description is wip.
+; - each mach must have at least one model
+; - the default model must be the first one
+;- maybe have `retire' support update total cycle count to handle current
+;  parallel insn cycle counting problems
+
+(define-model
+  (name ip3035-200) (comment "IP3035-200") (attrs)
+  (mach ip3035)
+
+  ; XXX: UBICOM32: what to do here
+  ; UBICOM32 has 5 pipeline stages:
+  ;        (PC) - fake stage; not counted
+  ;        IF        insn fetch
+  ;        AC        decode/address caluclatoin
+  ;        DA        data access
+  ;        EX        execution
+  ;        WB        write back
+  ;(pipeline p-non-mem "" () ((fetch) (decode) (execute) (writeback)))
+  ;(pipeline p-mem "" () ((fetch) (decode) (execute) (memory) (writeback)))
+
+  ; `state' is a list of variables for recording model state
+  ; XXX: UBICOM32: what to do here
+  (state
+   ; bit mask of h-gr registers, =1 means value being loaded from memory
+   (h-gr UINT)
+   )
+
+  ; XXX: UBICOM32: what to do here
+  (unit u-exec "Execution Unit" ()
+        1 1 ; issue done
+        () ; state
+        ((sr INT -1) (dr INT -1)) ; inputs
+        ((dr INT -1)) ; outputs
+        () ; profile action (default)
+        )
+  (unit u-cmp "Compare Unit" ()
+        1 1 ; issue done
+        () ; state
+        ((src1 INT -1) (src2 INT -1)) ; inputs
+        () ; outputs
+        () ; profile action (default)
+        )
+  (unit u-mac "Multiply/Accumulate Unit" ()
+        1 1 ; issue done
+        () ; state
+        ((src1 INT -1) (src2 INT -1)) ; inputs
+        () ; outputs
+        () ; profile action (default)
+        )
+  (unit u-cti "Branch Unit" ()
+        1 1 ; issue done
+        () ; state
+        ((sr INT -1)) ; inputs
+        ((pc)) ; outputs
+        () ; profile action (default)
+        )
+  (unit u-load "Memory Load Unit" ()
+        1 1 ; issue done
+        () ; state
+        ((sr INT)
+         ;(ld-mem AI)
+         ) ; inputs
+        ((dr INT)) ; outputs
+        () ; profile action (default)
+        )
+  (unit u-store "Memory Store Unit" ()
+        1 1 ; issue done
+        () ; state
+        ((src1 INT) (src2 INT)) ; inputs
+        () ; ((st-mem AI)) ; outputs
+        () ; profile action (default)
+        )
+)
+
+
+; Instruction fields.
+;
+; Attributes:
+; PCREL-ADDR: pc relative value (for reloc and disassembly purposes)
+; ABS-ADDR: absolute address (for reloc and disassembly purposes?)
+; RESERVED: bits are not used to decode insn, must be all 0
+; RELOC: there is a relocation associated with this field (experiment)
+
+(define-pmacro (define-multi-ifield-op who bytes typename shift)
+  (begin
+    (define-multi-ifield
+      (name (.str "f-" who "-imm7-" bytes))
+      (comment (.str "7 bit immediate " typename))
+      (attrs)
+      (mode UINT)
+      (subfields (.sym "f-" who "-imm7-t") (.sym "f-" who "-imm7-b"))
+      (insert (sequence ()
+                         (set (ifield (.sym "f-" who "-imm7-t"))
+                          (and (srl
+                                (ifield (.sym "f-" who "-imm7-" bytes))
+			        (.eval (+ shift 5)))
+                             (const #x3)))
+                          (set (ifield (.sym "f-" who "-imm7-b"))
+			    (and (srl
+				(ifield (.sym "f-" who "-imm7-" bytes))
+                                shift)
+                            (const #x1f)))))
+      (extract (sequence ()
+                         (set (ifield (.sym "f-" who "-imm7-" bytes))
+                           (sll (or (sll
+                                 (ifield (.sym "f-" who "-imm7-t"))
+                                 (const 5))
+                               (ifield (.sym "f-" who "-imm7-b")))
+                             (const shift)))))
+    )
+  )
+)
+
+(define-pmacro (f-11-bit-fields-op who myname base)
+  (begin
+    (dnf (.sym "f-" who)            (.str myname)                   () base   11)
+    (dnf (.sym "f-" who "-bit10")   (.str who " top bit")           () base   1)
+    (dnf (.sym "f-" who "-type")    (.str who " next 2 bits")       () (.eval (- base 1)) 2)
+    (dnf (.sym "f-" who "-r")       (.str who " index register")    () (.eval (- base 6)) 5)
+    (dnf (.sym "f-" who "-M")       (.str who " mode select bit")   () (.eval (- base 6)) 1)
+    (df  (.sym "f-" who "-i4-1")    (.str who " 4-bit inc/dec 1")   () (.eval (- base 7)) 4 INT #f #f)
+    (df  (.sym "f-" who "-i4-2")    (.str who " 4-bit inc/dec 2")   () (.eval (- base 7)) 4 INT
+         ((value pc) (srl HI value (const 1)))
+         ((value pc) (sll HI value (const 1))))
+    (df  (.sym "f-" who "-i4-4")    (.str who " 4-bit inc/dec 4")   () (.eval (- base 7)) 4 INT
+         ((value pc) (srl HI value (const 2)))
+         ((value pc) (sll HI value (const 2))))
+    (dnf (.sym "f-" who "-An")      (.str who " address reg")       () (.eval (- base 3)) 3)
+    (df  (.sym "f-" who "-direct")  (.str who " direct address")    () (.eval (- base 3)) 8 UINT
+         ((value pc) (srl UHI value (const 2)))
+         ((value pc) (sll UHI value (const 2))))
+    (df  (.sym "f-" who "-imm8")    (.str who " 8-bit immediate")   () (.eval (- base 3)) 8 INT #f #f)
+    (dnf (.sym "f-" who "-imm7-t")  (.str who " imm7 i[6:5]")       () (.eval (- base 1)) 2)
+    (dnf (.sym "f-" who "-imm7-b")  (.str who " imm7 i[4:0]")       () (.eval (- base 6)) 5)
+    (define-multi-ifield-op who 1 "byte" 0)
+    (define-multi-ifield-op who 2 "halfword" 1)
+    (define-multi-ifield-op who 4 "word" 2)
+  )
+)
+
+; f-d, f-d-bit10, f-d-type, f-d-r, f-d-M, f-d-i4-1, f-d-i4-2, f-d-i4-4,
+; f-d-An, f-d-direct, f-d-imm8, f-d-imm7-t, f-d-imm7-b, f-d-imm7-1,
+; f-d-imm7-2, f-d-imm7-4.
+(f-11-bit-fields-op d destination 26)
+
+; f-s1, f-s1-bit10, f-s1-type, f-s1-r, f-s1-M, f-s1-i4-1, f-s1-i4-2,
+; f-s1-i4-4, f-s1-An, f-s1-direct, f-s1-imm8, f-s1-imm7-t, f-s1-imm7-b,
+; f-s1-imm7-1, f-s1-imm7-2, f-s1-imm7-4,
+(f-11-bit-fields-op s1 source-1 10)
+
+(dnf f-op1       "op1"                    () 31 5)
+(dnf f-opmoveai  "op MOVEAI"              () 31 4)
+(dnf f-op2       "op2"                    () 15 5)
+(dnf f-bit26     "bit 26"                 () 26 1)
+(dnf f-opext     "op extension"           () 25 5)
+(dnf f-cond      "cond"                   () 26 4)
+(df  f-imm16-1   "16-bit cmpi immediate"  () 26 16 INT #f #f)
+(df  f-imm16-2   "16-bit movei immediate" () 15 16 INT #f #f)
+; jmp offset - mask off lower 2 bits to ensure that offset is word-aligned
+(df  f-o21       "21 bit rel-offset"      (PCREL-ADDR) 20 21 INT
+     ((value pc) (srl SI (sub SI value pc) 2))
+     ((value pc) (and SI (add SI (sll SI value 2) pc) (const #xfffffffc)))
+)
+
+; make top sub-field f-o23-21 signed so extract for multi-field will end up signed
+(df  f-o23-21    "offset [23:21]"         () 26 3  INT #f #f)
+(dnf f-o20-0     "offset [20:0]"          () 20 21)
+(define-multi-ifield
+  (name f-o24)
+  (comment "24 bit relative offset")
+  (attrs PCREL-ADDR)
+  (mode INT)
+  (subfields f-o23-21 f-o20-0)
+  (encode (value pc) (sra SI (sub SI value pc) (const 2)))
+  (decode (value pc) (add SI (sll SI value (const 2)) pc))
+  (insert (sequence ()
+                    (set (ifield f-o23-21)  (and (srl (ifield f-o24) (const 21)) (const #x7)))
+                    (set (ifield f-o20-0)   (and (ifield f-o24) (const #x1fffff)))
+                    ))
+  (extract (sequence ()
+                     (set (ifield f-o24) (or (ifield f-o20-0)
+                                            (sll (ifield f-o23-21) (const 21))))
+                     ))
+)
+
+; make top sub-field f-imm23-21 unsigned
+(dnf f-imm23-21  "offset [23:21]"         ((MACH ubicom32_oldmoveai)) 26 3)
+(define-multi-ifield
+  (name f-imm24)
+  (comment "24 bit immediate offset")
+  (attrs (MACH ubicom32_oldmoveai))
+  (mode UINT)
+  (subfields f-imm23-21 f-o20-0)
+  (insert (sequence ()
+                    (set (ifield f-imm23-21) (and (srl (ifield f-imm24) (const 21)) (const #x7)))
+                    (set (ifield f-o20-0)   (and (ifield f-imm24) (const #x1fffff)))
+                    ))
+  (extract (sequence ()
+                     (set (ifield f-imm24) (or (ifield f-o20-0)
+                                            (sll (ifield f-imm23-21) (const 21))))
+                     ))
+)
+
+; make top sub-field f-imm24-21 unsigned
+(dnf f-imm24-21  "offset [24:21]"         ((MACH ubicom32_newmoveai)) 27 4)
+(define-multi-ifield
+  (name f-imm25)
+  (comment "25 bit immediate offset")
+  (attrs (MACH ubicom32_newmoveai))
+  (mode UINT)
+  (subfields f-imm24-21 f-o20-0)
+  (insert (sequence ()
+                    (set (ifield f-imm24-21) (and (srl (ifield f-imm25) (const 21)) (const #xf)))
+                    (set (ifield f-o20-0)   (and (ifield f-imm25) (const #x1fffff)))
+                    ))
+  (extract (sequence ()
+                     (set (ifield f-imm25) (or (ifield f-o20-0)
+                                            (sll (ifield f-imm24-21) (const 21))))
+                     ))
+)
+
+; make top sub-field f-o15-13 signed so extract for multi-field will end up signed
+(df  f-o15-13    "offset [15:13]"         () 26 3  INT #f #f)
+(dnf f-o12-8     "offset [12:8]"          () 20 5)
+(dnf f-o7-5      "offset [7:5]"           () 10 3)
+(dnf f-o4-0      "offset [4:0]"           () 4  5)
+(define-multi-ifield
+  (name f-o16)
+  (comment "16 bit relative offset")
+  (attrs)
+  (mode INT)
+  (subfields f-o15-13 f-o12-8 f-o7-5 f-o4-0)
+  (encode (value pc) (sra SI value (const 2)))
+  (decode (value pc) (sll SI value (const 2)))
+  (insert (sequence ()
+                    (set (ifield f-o15-13) (and (srl (ifield f-o16) (const 13)) (const #x7)))
+                    (set (ifield f-o12-8)  (and (srl (ifield f-o16) (const 8)) (const #x1f)))
+                    (set (ifield f-o7-5)   (and (srl (ifield f-o16) (const 5)) (const #x7)))
+                    (set (ifield f-o4-0)   (and (ifield f-o16) (const #x1f)))
+                    ))
+  (extract (sequence ()
+                     (set (ifield f-o16) (or (ifield f-o4-0)
+                                             (or (sll (ifield f-o15-13) (const 13))
+                                                 (or (sll (ifield f-o12-8) (const 8))
+                                                     (sll (ifield f-o7-5) (const 5))))))
+                     ))
+)
+
+(define-multi-ifield
+  (name f-leai-o16)
+  (comment "16 bit offset for leai")
+  (attrs)
+  (mode INT)
+  (subfields f-o15-13 f-o12-8 f-o7-5 f-o4-0)
+  (insert (sequence ()
+                    (set (ifield f-o15-13) (and (srl (ifield f-leai-o16) (const 13)) (const #x7)))
+                    (set (ifield f-o12-8)  (and (srl (ifield f-leai-o16) (const 8)) (const #x1f)))
+                    (set (ifield f-o7-5)   (and (srl (ifield f-leai-o16) (const 5)) (const #x7)))
+                    (set (ifield f-o4-0)   (and (ifield f-leai-o16) (const #x1f)))
+                    ))
+  (extract (sequence ()
+                     (set (ifield f-leai-o16) (or (ifield f-o4-0)
+                                             (or (sll (ifield f-o15-13) (const 13))
+                                                 (or (sll (ifield f-o12-8) (const 8))
+                                                     (sll (ifield f-o7-5) (const 5))))))
+                     ))
+)
+
+(dnf f-An        "An register"            () 23 3)
+(dnf f-Am        "Am register"            () 7  3)
+(dnf f-Dn        "destination reg"        () 20 5)
+(dnf f-bit5      "bit#"                   () 15 5)
+(dnf f-P         "predication bit"        () 22 1)
+(dnf f-C         "condition bit"          () 21 1)
+(dnf f-int       "interrupt"              () 5  6)
+(dnf f-dsp-C     "DSP clip bit"           ((MACH ubicom32dsp,ubicom32_ver4)) 20 1)
+(dnf f-dsp-T     "DSP Top Half bit"       ((MACH ubicom32dsp,ubicom32_ver4)) 19 1)
+(dnf f-dsp-S2-sel    "DSP Source 2 Reg selection spec"       ((MACH ubicom32dsp,ubicom32_ver4)) 18 1)
+(dnf f-dsp-R     "DSP Reserve bit"        ((MACH ubicom32dsp,ubicom32_ver4)) 17 1)
+(dnf f-dsp-destA "DSP Destination Acc."   ((MACH ubicom32dsp,ubicom32_ver4)) 16 1)
+(dnf f-dsp-b15   "DSP bit 15 "            ((MACH ubicom32dsp,ubicom32_ver4)) 15 1)
+(dnf f-dsp-S2    "DSP Source 2 Reg"       ((MACH ubicom32dsp,ubicom32_ver4)) 14 4)
+(dnf f-dsp-J     "DSP Jump Reserve bit"   ((MACH ubicom32dsp,ubicom32_ver4)) 26 1)
+(dnf f-s2        "3 op s2 field"          () 14 4)
+(dnf f-b15       "3 op Bit 15 field"      () 15 1)
+
+
+; Fields for Floating Point Unit instructions
+(dnf f-bit0	"Bit 0 is 0 for all format 12 instructions"	((MACH ubicom32_ver5)) 0 1)
+(dnf f-bit16	"Bit 16 is 0 for all format 12a instructions"	((MACH ubicom32_ver5)) 16 1)
+(dnf f-FPunused20	"3 Bit field ending at bit 20 that is unused in a few FPU instructions"	((MACH ubicom32_ver5)) 20 3)
+(dnf f-FPunused15	"5 Bit field ending at bit 15 that is unused in a few FPU instructions"	((MACH ubicom32_ver5)) 15 5)
+(dnf f-FPunused11	"7 Bit field ending at bit 11 that is unused in a few FPU instructions"	((MACH ubicom32_ver5)) 11 7)
+(dnf f-FPD32	"Floating point 32 bit destination register" ((MACH ubicom32_ver5)) 17 2)
+(dnf f-FPD64	"Floating point 64 bit destination register" ((MACH ubicom32_ver5)) 17 1)
+(dnf f-FPS2-sel	"fLOATING point S2 select 0 = data regs 1 = acc regs" ((MACH ubicom32_ver5)) 15 1)
+(dnf f-FPS2-reg32	"fLOATING point S2 32 bit register encoding" ((MACH ubicom32_ver5)) 14 4)
+(dnf f-FPS232	"fLOATING point S2 32" ((MACH ubicom32_ver5)) 15 5)
+(dnf f-FPS2-reg64	"fLOATING point S2 64 bit register encoding" ((MACH ubicom32_ver5)) 14 3)
+(dnf f-FPS264	"fLOATING point S2 64" ((MACH ubicom32_ver5)) 15 4)
+(dnf f-FPS1-sel	"fLOATING point S1 select 0 = data regs 1 = acc regs" ((MACH ubicom32_ver5)) 4 1)
+(dnf f-FPS1-reg64	"fLOATING point S1 64 bit register encoding" ((MACH ubicom32_ver5)) 3 3)
+(dnf f-FPS164	"fLOATING point S1 64" ((MACH ubicom32_ver5)) 4 4)
+
+
+; Enums.
+
+; insn-moveai: bits 31-28
+(define-normal-insn-enum insn-opmoveai "insn format enums for moveai" ((MACH ubicom32_newmoveai)) OP_MOVEAI_ f-opmoveai
+  ((MOVEAI #xe))
+)
+
+; insn-op1: bits 31-27
+(define-normal-insn-enum insn-op1 "insn format enums" () OP_ f-op1
+  (
+   (X0        #x00) (UNUSED_01 #x01) (X2        #x02) (FPU       #x03)
+   (BSET      #x04) (BCLR      #x05) (DSP       #x06) (UNUSED_07 #x07)
+   (AND_2     #x08) (AND_4     #x09) (OR_2      #x0a) (OR_4      #x0b) 
+   (XOR_2     #x0c) (XOR_4     #x0d) (ADD_2     #x0e) (ADD_4     #x0f) 
+   (ADDC      #x10) (SUB_2     #x11) (SUB_4     #x12) (SUBC      #x13)
+   (PXBLEND   #x14) (PXVI      #x15) (PXADDS    #x16) (UNUSED_17 #x17) 
+   (CMPI      #x18) (MOVEI     #x19) (JMP       #x1a) (CALL      #x1b) 
+   (MOVEAI    #x1c) (MOVEAIH   #x1d) (X1E       #x1e) (UNUSED_1f #x1f) 
+  )
+)
+
+; insn-op2: bits 15-11
+(define-normal-insn-enum insn-op2 "insn x0 opcode ext enums" () OPX0_ f-op2
+  (
+   (UNUSED_00 #x00) (SUSPEND   #x01) (FLUSH     #x02) (SYNC      #x03) 
+   (RET       #x04) (PREFETCH  #x05) (IREAD     #x06) (BKPT      #x07) 
+   (SYSRET    #x08) (SYSCALL   #x09) (NOT_4     #x0a) (NOT_2     #x0b)
+   (MOVE_4    #x0c) (MOVE_2    #x0d) (MOVEA     #x0e) (MOVE_1    #x0f)
+   (IWRITE    #x10) (FLUSHNI   #x11) (SETCSR    #x12) (TBSET     #x13)
+   (TBCLR     #x14) (EXT_2     #x15) (INVAL     #x16) (EXT_1     #x17)
+   (SWAPB_2   #x18) (SWAPB_4   #x19) (PXCNV     #x1a) (PXCNV_T   #x1b)
+   (LEA_4     #x1c) (LEA_2     #x1d) (PDEC      #x1e) (LEA_1     #x1f)
+  )
+)
+
+; insn-X1E: bits 15-11
+(define-normal-insn-enum insn-x1E "insn x1E opcode ext enums" () OPX1E_ f-op2
+  (
+   (CALLI     #x00) (LEAI      #x01) (CALLI_B    #x02) (UNUSED_03 #x03) 
+   (UNUSED_04 #x04) (UNUSED_05 #x05) (UNUSED_06  #x06) (UNUSED_07 #x07) 
+   (UNUSED_08 #x08) (UNUSED_09 #x09) (UNUSED_0a  #x0a) (UNUSED_0b #x0b)
+   (UNUSED_0c #x0c) (UNUSED_0d #x0d) (UNUSED_0e  #x0e) (UNUSED_0f #x0f)
+   (UNUSED_10 #x10) (UNUSED_11 #x11) (UNUSED_12  #x12) (UNUSED_13 #x13)
+   (UNUSED_14 #x14) (UNUSED_15 #x15) (UNUSED_16  #x16) (UNUSED_17 #x17)
+   (UNUSED_18 #x18) (UNUSED_19 #x19) (UNUSED_1a  #x1a) (UNUSED_1b #x1b)
+   (UNUSED_1c #x1c) (UNUSED_1d #x1d) (UNUSED_1e  #x1e) (UNUSED_1f #x1f)
+  )
+)
+
+; insn-opext: bits 25-21
+(define-normal-insn-enum insn-opext "insn x2 opcode ext enums" () OPX2_ f-opext
+  (
+   (PXHI      #x00) (MULS      #x01) (PXHI_S    #x02) (MULU      #x03) 
+   (UNUSED_04 #x04) (MULF      #x05) (BTST      #x06) (UNUSED_07 #x07) 
+   (CRCGEN    #x08) (MAC       #x09) (LSL_1     #x0a) (LSR_1     #x0b) 
+   (ASR_1     #x0c) (UNUSED_0d #x0d) (UNUSED_0e #x0e) (UNUSED_0f #x0f) 
+   (LSL_4     #x10) (LSL_2     #x11) (LSR_4     #x12) (LSR_2     #x13)
+   (ASR_4     #x14) (ASR_2     #x15) (BFEXTU    #x16) (UNUSED_17 #x17)
+   (BFRVRS    #x18) (UNUSED_19 #x19) (SHFTD     #x1a) (UNUSED_1b #x1b)
+   (MERGE     #x1c) (UNUSED_1d #x1d) (SHMRG_2   #x1e) (SHMRG_1   #x1f)
+  )
+)
+
+; insn-opext: bits 25-21
+(define-normal-insn-enum insn-dsp-subop "insn dsp opcode ext enums" () OPDSP_ f-opext
+  (
+   (MULS      #x00) (MACS      #x01) (MULU      #x02) (MACU      #x03) 
+   (MULF      #x04) (MACF      #x05) (MACS_4    #x06) (MACUS     #x07) 
+   (MULS_4    #x08) (MSUF      #x09) (MULU_4    #x0a) (MACU_4    #x0b) 
+   (UNUSED_0c #x0c) (UNUSED_0d #x0d) (UNUSED_0e #x0e) (UNUSED_0f #x0f) 
+   (MADD_4    #x10) (MADD_2    #x11) (MSUB_4    #x12) (MSUB_2    #x13)
+   (UNUSED_14 #x14) (UNUSED_15 #x15) (UNUSED_16 #x16) (UNUSED_17 #x17)
+   (UNUSED_18 #x18) (UNUSED_19 #x19) (UNUSED_1a #x1a) (UNUSED_1b #x1b)
+   (UNUSED_1c #x1c) (UNUSED_1d #x1d) (UNUSED_1e #x1e) (UNUSED_1f #x1f)
+  )
+)
+
+; insn-opext: bits 25-21
+(define-normal-insn-enum insn-fpu-subop "insn FPU opcode ext enums" () OPFPU_ f-opext
+  (
+   (FADDS     #x00) (FSUBS     #x01) (FMULS     #x02) (FDIVS     #x03) 
+   (FI2D      #x04) (FS2D      #x05) (FS2L      #x06) (FSQRTS    #x07) 
+   (FNEGS     #x08) (FABSS     #x09) (FI2S      #x0a) (FS2I      #x0b) 
+   (FCMPS     #x0c) (UNUSED_0d #x0d) (UNUSED_0e #x0e) (UNUSED_0f #x0f) 
+   (FADDD     #x10) (FSUBD     #x11) (FMULD     #x12) (FDIVD     #x13) 
+   (FL2S      #x14) (FD2S      #x15) (FD2I      #x16) (FSQRTD    #x17) 
+   (FNEGD     #x18) (FABSD     #x19) (FL2D      #x1a) (FD2L      #x1b) 
+   (FCMPD     #x1c) (UNUSED_1d #x1d) (UNUSED_1e #x1e) (UNUSED_1f #x1f) 
+  )
+)
+
+
+; Hardware pieces.
+; These entries list the elements of the raw hardware.
+; They're also used to provide tables and other elements of the assembly
+; language.
+
+; global registers
+(define-pmacro (defhw-reg me what sz c-name)
+  (begin
+    (define-hardware
+      (name (.sym me))
+      (comment what)
+      (attrs VIRTUAL)
+      (type register sz)
+      (get () (c-call sz (.str "get_h_" c-name)))
+      (set (newval) (c-call VOID (.str "set_h_" c-name) newval))
+    )
+  )
+)
+
+(defhw-reg h-global-control       "global control register"          USI  "glbl_ctl")
+(defhw-reg h-mt-break             "multithreading break register"    USI  "mt_break")
+(defhw-reg h-mt-active            "multithreading status register"   USI  "mt_active")
+(defhw-reg h-mt-enable            "multithreading enable register"   USI  "mt_enable")
+(defhw-reg h-mt-priority          "multithreading priority register" USI  "mt_priority")
+(defhw-reg h-mt-schedule          "multithreading schedule register" USI  "mt_schedule")
+(defhw-reg h-irq-status-0         "interrupt status 0"               USI  "irq_status_0")
+(defhw-reg h-irq-status-1         "interrupt status 1"               USI  "irq_status_1")
+
+; per-context registers
+; All registers but the PC are declared virtual and have get/set routines which are built-in.
+; A context switch will replace the current register set similar to a register window (e.g. sparc).
+
+(define-keyword
+  (name data-names)
+  (print-name h-dr)
+  (prefix "")
+  (values (d0 0) (d1 1) (d2 2) (d3 3) (d4 4) (d5 5) (d6 6) (d7 7)
+          (d8 8) (d9 9) (d10 10) (d11 11) (d12 12) (d13 13) (d14 14) (d15 15))
+)
+
+(define-hardware
+  (name h-dr)
+  (comment "data registers")
+  (attrs VIRTUAL)
+  (type register SI(32))
+  (indices extern-keyword data-names)
+  (get (index) (c-call HI "get_h_dr" index))
+  (set (index newval) (c-call VOID "set_h_dr" index newval))
+)
+
+(define-hardware
+  (name h-s1-dr)
+  (comment "source 1 data registers")
+  (attrs VIRTUAL)
+  (type register SI(32))
+  (indices extern-keyword data-names)
+  (get (index) (c-call HI "get_h_s1_dr" index))
+  (set (index newval) (nop))  ; no setter for source register
+)
+
+(define-keyword
+  (name addr-names)
+  (print-name h-ar)
+  (prefix "")
+  (values (sp 7)
+          (a0 0) (a1 1) (a2 2) (a3 3) (a4 4) (a5 5) (a6 6) (a7 7))
+)
+
+(define-hardware
+  (name h-ar)
+  (comment "address registers")
+  (attrs VIRTUAL)
+  (type register USI(8))
+  (indices extern-keyword addr-names)
+  (get (index) (c-call USI "get_h_ar" index))
+  (set (index newval) (c-call VOID "set_h_ar" index newval))
+)
+
+; following handles deferring pre/post increment of actual address registers until
+; after execution of instruction
+(dnh h-ar-inc "address register pre/post increment values"
+     () ; attributes
+     (register USI(8))
+     () ; indices
+     () ; get
+     () ; set
+)
+
+(dnh h-ar-inc-flag "address register pre/post increment flag"
+     () ; attributes
+     (register BI)
+     () ; indices
+     () ; get
+     () ; set
+)
+
+(defhw-reg h-mac-hi      "high 16-bits of MAC result"            SI  "mac_hi")
+(defhw-reg h-mac-lo      "low 32-bits of MAC result"             USI "mac_lo")
+(defhw-reg h-src-3       "source 3 register"                     SI  "src_3")
+(defhw-reg h-csr         "control & status register"             USI "csr")
+(defhw-reg h-iread       "IREAD register"                        USI "iread")
+
+
+(define-pmacro (defhw-reg-mars me what sz c-name)
+  (begin
+    (define-hardware
+      (name (.sym me))
+      (comment what)
+      (attrs VIRTUAL (MACH ubicom32dsp,ubicom32_ver4))
+      (type register sz)
+      (get () (c-call sz (.str "get_h_" c-name)))
+      (set (newval) (c-call VOID (.str "set_h_" c-name) newval))
+    )
+  )
+)
+(defhw-reg-mars h-acc1-hi     "high 16-bits of acc1"            	 SI  "acc1_hi")
+(defhw-reg-mars h-acc1-lo     "low 32-bits of acc1"             	 USI "acc1_lo")
+
+(dnh h-pc "program counter" (PC PROFILE) (pc USI) () () ())
+
+; condition-code bits
+; need separate set per context
+
+(define-hardware
+  (name h-nbit-16)
+  (comment "16-bit negative bit")
+  (attrs VIRTUAL)
+  (type register BI)
+  (get () (c-call BI "get_h_nbit_16"))
+  (set (newval) (c-call VOID "set_h_nbit_16" newval))
+)
+
+(define-hardware
+  (name h-zbit-16)
+  (comment "16-bit zero bit")
+  (attrs VIRTUAL)
+  (type register BI)
+  (get () (c-call BI "get_h_zbit_16"))
+  (set (newval) (c-call VOID "set_h_zbit_16" newval))
+)
+
+(define-hardware
+  (name h-vbit-16)
+  (comment "16-bit overflow bit")
+  (attrs VIRTUAL)
+  (type register BI)
+  (get () (c-call BI "get_h_vbit_16"))
+  (set (newval) (c-call VOID "set_h_vbit_16" newval))
+)
+
+(define-hardware
+  (name h-cbit-16)
+  (comment "16-bit carry bit")
+  (attrs VIRTUAL)
+  (type register BI)
+  (get () (c-call BI "get_h_cbit_16"))
+  (set (newval) (c-call VOID "set_h_cbit_16" newval))
+)
+
+(define-hardware
+  (name h-nbit-32)
+  (comment "32-bit negative bit")
+  (attrs VIRTUAL)
+  (type register BI)
+  (get () (c-call BI "get_h_nbit_32"))
+  (set (newval) (c-call VOID "set_h_nbit_32" newval))
+)
+
+(define-hardware
+  (name h-zbit-32)
+  (comment "32-bit zero bit")
+  (attrs VIRTUAL)
+  (type register BI)
+  (get () (c-call BI "get_h_zbit_32"))
+  (set (newval) (c-call VOID "set_h_zbit_32" newval))
+)
+
+(define-hardware
+  (name h-vbit-32)
+  (comment "32-bit overflow bit")
+  (attrs VIRTUAL)
+  (type register BI)
+  (get () (c-call BI "get_h_vbit_32"))
+  (set (newval) (c-call VOID "set_h_vbit_32" newval))
+)
+
+(define-hardware
+  (name h-cbit-32)
+  (comment "32-bit carry bit")
+  (attrs VIRTUAL)
+  (type register BI)
+  (get () (c-call BI "get_h_cbit_32"))
+  (set (newval) (c-call VOID "set_h_cbit_32" newval))
+)
+
+(define-hardware
+  (name h-prev-privbit)
+  (comment "Previous Privilege bit from CSR")
+  (attrs VIRTUAL)
+  (type register BI)
+  (get () (c-call BI "get_h_prev_privbit"))
+  (set (newval) (c-call VOID "set_h_prev_privbit" newval))
+)
+
+(define-hardware
+  (name h-privbit)
+  (comment "Privilege bit from CSR")
+  (attrs VIRTUAL)
+  (type register BI)
+  (get () (c-call BI "get_h_privbit"))
+  (set (newval) (c-call VOID "set_h_privbit" newval))
+)
+
+; (define-hardware
+;   (name h-fprm)
+;   (comment "Floating Point rounding mode bits from UCSR")
+;   (attrs VIRTUAL)
+;   (type register BI)
+;   (get () (c-call BI "get_h_fprm"))
+;   (set (newval) (c-call VOID "set_h_fprm" newval))
+; )
+
+; (define-hardware
+;   (name h-fpesb)
+;   (comment "Floating Point Exception sticky bits from UCSR")
+;   (attrs VIRTUAL)
+;   (type register BI)
+;   (get () (c-call BI "get_h_fpesb"))
+;   (set (newval) (c-call VOID "set_h_fpesb" newval))
+; )
+
+; (define-hardware
+;   (name h-fpte)
+;   (comment "Floating Point Trap enable bits from UCSR")
+;   (attrs VIRTUAL)
+;   (type register BI)
+;   (get () (c-call BI "get_h_fpte"))
+;   (set (newval) (c-call VOID "set_h_fpte" newval))
+; )
+
+; fake hardware to help parse
+(define-hardware
+  (name h-cc)
+  (comment "condition codes")
+  (attrs)
+  (type immediate (UINT 4))
+  (values keyword ""
+          (("f" 0)  ("lo" 1) ("cc" 1)  ("hs" 2)  ("cs" 2)  ("eq" 3)  ("ge" 4)  ("gt" 5) ("hi" 6)  
+           ("le" 7)
+           ("ls" 8) ("lt" 9) ("mi" 10) ("ne" 11) ("pl" 12) ("t" 13) ("vc" 14) ("vs" 15)))
+)
+
+(define-hardware
+  (name h-C)
+  (comment "condition code selection bit")
+  (attrs)
+  (type immediate (UINT 1))
+  (values keyword "" (("" 1) (".s" 0) (".w" 1)))
+)
+
+; default to "true"
+(define-hardware
+  (name h-P)
+  (comment "prediction bit")
+  (attrs)
+  (type immediate (UINT 1))
+  (values keyword "" ((".t" 1) (".f" 0) ("" 1)))
+)
+
+(define-hardware
+  (name h-DSP-C)
+  (comment "DSP Clip bit")
+  (attrs (MACH ubicom32dsp,ubicom32_ver4))
+  (type immediate (UINT 1))
+  (values keyword "" ((".c" 1) ("" 0)))
+)
+
+(define-hardware
+  (name h-FPU-acc-lo-32)
+  (comment "32 bit FPU Accumulator reg spec")
+  (attrs (MACH ubicom32_ver5))
+  (type immediate (UINT 1))
+  (values keyword "" (("acc0_lo" 0) ("acc0_hi" 1) ("acc1_lo" 2) ("acc1_hi" 3)) )
+)
+
+(define-hardware
+  (name h-DSP-T)
+  (comment "DSP Top Half bit")
+  (attrs (MACH ubicom32dsp,ubicom32_ver4))
+  (type immediate (UINT 1))
+  (values keyword "" (("" 0) (".t" 1)))
+)
+
+(define-hardware
+  (name h-DSP-T-addsub)
+  (comment "DSP Top Half bit for madd.2 msub.2")
+  (attrs (MACH ubicom32dsp,ubicom32_ver4))
+  (type immediate (UINT 1))
+  (values keyword "" (("" 0) (".t" 1)))
+)
+
+(define-keyword
+  (name acc-names)
+  (print-name accs)
+  (prefix "")
+  (values (acc0 0) (acc1 1))
+)
+
+(define-keyword
+  (name acc-lo-names)
+  (print-name acc-los)
+  (prefix "")
+  (values (acc0_lo 0) (acc0_hi 1) (acc1_lo 2) (acc1_hi 3))
+)
+
+(define-hardware
+  (name h-DSP-Dest-A)
+  (comment "DSP Destination Accumulator Select")
+  (attrs (MACH ubicom32dsp,ubicom32_ver4))
+  (type immediate (UINT 1))
+  (values keyword "" (("acc0" 0) ("acc1" 1)))
+)
+
+(define-keyword
+  (name data-names-even)
+  (print-name h-dr-even)
+  (prefix "")
+  (values (d0 0) (d2 1) (d4 2) (d6 3) (d8 4) (d10 5) (d12 6) (d14 7))
+)
+
+  
+(define-hardware
+  (name h-DSP-S2-Acc-reg-mul)
+  (comment "Accumulator Lo reg spec for DSP Source 2 register")
+  (attrs VIRTUAL (MACH ubicom32dsp,ubicom32_ver4))
+  (indices extern-keyword acc-names)
+  (type register USI(2))
+  (get (index) (c-call USI "get_acc_lo" index))
+  (set (index newval) (nop))  ; no setter for source register
+)
+
+(define-hardware
+  (name h-DSP-S2-Acc-reg-addsub)
+  (comment "Accumulator reg spec:DSP Source 2 register for madd and msub")
+  (attrs VIRTUAL (MACH ubicom32dsp,ubicom32_ver4))
+  (indices extern-keyword acc-names)
+  (type register DI(2))
+  (get (index) (c-call DI "get_acc" index))
+  (set (index newval) (nop))  ; no setter for source register
+)
+
+(define-hardware
+  (name h-FPU-acc-64)
+  (comment "64 bit FPU Accumulator reg spec")
+  (attrs VIRTUAL (MACH ubicom32_ver5))
+  (indices extern-keyword acc-names)
+  (type register DF(2))
+  (get (index) (c-call DF "get_acc_fpu_64" index))
+  (set (index newval) (c-call VOID "set_acc_fpu_64" index newval))
+)
+
+(define-hardware
+  (name h-FPU-acc-32)
+  (comment "32 bit FPU Accumulator reg spec")
+  (attrs VIRTUAL (MACH ubicom32_ver5))
+  (indices extern-keyword acc-lo-names)
+  (type register SF(4))
+  (get (index) (c-call SF "get_acc_fpu_32" index))
+  (set (index newval) (c-call VOID "set_acc_fpu_32" index newval))
+)
+
+(define-hardware
+  (name h-FPU-data-reg-32)
+  (comment "32 bit data stored in cpu d registers")
+  (attrs VIRTUAL (MACH ubicom32_ver5))
+  (indices extern-keyword data-names)
+  (type register SF(16))
+  (get (index) (c-call SF "get_fpu_32_from_data_reg" index))
+  (set (index newval) (nop))  ; no setter for source register
+)
+
+(define-hardware
+  (name h-FPU-data-reg-64)
+  (comment "64 bit data stored in cpu d registers")
+  (attrs VIRTUAL (MACH ubicom32_ver5))
+  (indices extern-keyword data-names-even)
+  (type register DF(8))
+  (get (index) (c-call DF "get_fpu_64_from_data_reg" index))
+  (set (index newval) (nop))  ; no setter for source register
+)
+
+(define-keyword
+  (name spad-names)
+  (print-name h-sp)
+  (prefix "")
+  (values (scratchpad0 0) (scratchpad1 0) (scratchpad2 0) (scratchpad3 0) (scratchpad4 0) (scratchpad5 0))
+)
+
+(define-hardware
+  (name h-sp)
+  (comment "Scratchpad registers")
+  (attrs VIRTUAL)
+  (type register SI(4))
+  (indices extern-keyword spad-names)
+  (get (index) (c-call HI "get_h_scratchpad" index))
+  (set (index newval) (c-call VOID "set_h_scratchpad" index newval))
+)
+
+; Instruction Operands.
+; These entries provide a layer between the assembler and the raw hardware
+; description, and are used to refer to hardware elements in the semantic
+; code.  Usually there's a bit of over-specification, but in more complicated
+; instruction sets there isn't.
+
+; 11 bit source/dest operand decoding.  there are the following different
+; addressing modes:
+;        - direct addressing: 8 bits
+;        - indirect addressing
+;        - indirect addressing with 7-bit unsigned offset
+;        - indirect addressing with pre- or post-increment
+;        - indirect addressing with indexing
+;        - immediate value: 8 bits that sign extend to 16 bits
+; the 11th bit it in these operands chooses between indirect with offset
+; and other addressing modes.  in all indirect addressing modes, the first 3
+; bits define which address register to use.  indirect with offset uses it's
+; remaining 8 bits (unsigned) as the offset.  indirect with pre- or post-
+; increment uses a signed 5 bit number.  indirect with index uses a 5 bit
+; addressed data register.  direct addressing uses 8 bit address.
+; note that all bit addresses are left shifted by one (as byte addresses
+; are not typically accessed and are not addressable in the normal).
+
+(dnop s2       "s2 register for op3"          () h-dr      f-s2)
+(dnop src3     "src-3 register"               () h-src-3   f-nil)
+(dnop offset24 "24-bit relative word offset"  () h-iaddr   f-o24)
+(dnop An       "An register for call"         () h-ar      f-An)
+(dnop cc       "condition code"               () h-cc      f-cond)
+(dnop C        "condition code select bits"   () h-C       f-C)
+(dnop P        "prediction bit"               () h-P       f-P)
+(dnop Am       "Am register for calli"        () h-ar      f-Am)
+(dnop Dn       "Dn reg for mac/mulu/mulf"     () h-dr      f-Dn)
+(dnop interrupt "interrupt code"              () h-uint    f-int)
+(dnop imm16-1  "16 bit immediate for cmpi"    () h-sint    f-imm16-1)
+(dnop x-op2    "ignored secondary opcode"     () h-uint    f-op2)
+(dnop x-bit26  "ignored bit 26"               () h-uint    f-bit26)
+(dnop x-s1     "ignored s1 operand"           () h-uint    f-s1)
+(dnop x-d      "ignored d operand"            () h-uint    f-d)
+(dnop x-dn     "ignored dn operand"           () h-uint    f-Dn)
+(dnop machi    "mac hi register"              () h-mac-hi  f-nil)
+(dnop maclo    "mac lo register"              () h-mac-lo  f-nil)
+(dnop acc1hi   "acc1 hi register"             ((MACH ubicom32dsp,ubicom32_ver4)) h-acc1-hi  f-nil)
+(dnop acc1lo   "acc1 lo register"             ((MACH ubicom32dsp,ubicom32_ver4)) h-acc1-lo  f-nil)
+(dnop irq-0    "irq status register 0"        () h-irq-status-0 f-nil)
+(dnop irq-1    "irq status register 1"        () h-irq-status-1 f-nil)
+(dnop iread    "iread register"               () h-iread   f-nil)
+(dnop opc1     "primary opcode"               () h-uint    f-op1)
+(dnop opc2     "secondary opcode"             () h-uint    f-op2)
+(dnop An-inc   "An pre/post inc flag"         (SEM-ONLY)  h-ar-inc-flag  f-nil)
+
+; DSP related operations
+(dnop dsp-c    "DSP Clip bit"                 ((MACH ubicom32dsp,ubicom32_ver4)) h-DSP-C  f-dsp-C)
+(dnop dsp-t    "DSP Top Half bit"             ((MACH ubicom32dsp,ubicom32_ver4)) h-DSP-T  f-dsp-T)
+(dnop dsp-destA "DSP Destination Acc Sel"     ((MACH ubicom32dsp,ubicom32_ver4)) h-DSP-Dest-A  f-dsp-destA)
+(dnop dsp-S2-sel "DSP S2 reg Select"          ((MACH ubicom32dsp,ubicom32_ver4)) h-uint  f-dsp-S2-sel)
+(dnop dsp-S2-data-reg "DSP S2 is a data reg " ((MACH ubicom32dsp,ubicom32_ver4)) h-dr f-dsp-S2)
+(dnop dsp-S2-acc-reg-mul "DSP S2 reg is a  Acc Lo reg" ((MACH ubicom32dsp,ubicom32_ver4)) h-DSP-S2-Acc-reg-mul  f-dsp-S2)
+;(dnop dsp-S2-acc-reg-addsub "DSP S2 reg is a  Acc reg for madd and msuub" ((MACH ubicom32dsp,ubicom32_ver4)) h-DSP-S2-Acc-reg-addsub  f-dsp-S2)
+(define-operand (name dsp-S2-acc-reg-addsub) (comment "DSP S2 reg is a  Acc reg for madd and msuub") (attrs (MACH ubicom32dsp,ubicom32_ver4))
+  (type h-DSP-S2-Acc-reg-addsub) (index f-dsp-S2) (handlers (parse "acc_for_addsub")))
+
+(define-operand (name dsp-S2-data-reg-addsub) (comment "DSP S2 reg is a data reg for madd and msuub") (attrs (MACH ubicom32dsp,ubicom32_ver4))
+  (type h-dr) (index f-dsp-S2) (handlers (parse "dr_for_addsub")))
+
+(define-operand (name dsp-t-addsub) (comment "DSP Top Half spec for madd.2 and msub.2") (attrs (MACH ubicom32dsp,ubicom32_ver4))
+  (type h-DSP-T-addsub) (index f-dsp-T) (handlers (parse "t_is_set_for_addsub")))
+
+(define-operand
+  (name bit5)
+  (comment "immediate bit index")
+  (type h-uint)
+  (index f-bit5)
+  (handlers (parse "bit5"))
+)
+
+(define-operand
+  (name bit5-addsub)
+  (comment "immediate bit index")
+  (type h-uint)
+  (index f-bit5)
+  (attrs (MACH ubicom32dsp,ubicom32_ver4))
+  (handlers (parse "bit5_for_addsub"))
+)
+
+;Add specioal operand to deal with the DSP Source 2 register
+(define-pmacro (dndo-attrs x-name x-mode x-args
+		     x-syntax x-base-ifield x-encoding x-ifield-assertion
+		     x-getter x-setter x-attrs)
+  "Define a normal derived operand."
+  (define-derived-operand
+    (name x-name)
+    (mode x-mode)
+    (args x-args)
+    (syntax x-syntax)
+    (base-ifield x-base-ifield)
+    (encoding x-encoding)
+    (ifield-assertion x-ifield-assertion)
+    (getter x-getter)
+    (setter x-setter)
+    (attrs x-attrs)
+    )
+)
+
+; Support for FPU Source and data registers
+(dnop fpu-32-S2-data-reg "FPU S2 is a 32 bit data register" ((MACH ubicom32_ver5)) h-FPU-data-reg-32 f-FPS2-reg32)
+(dnop fpu-32-S2-acc-reg "FPU S2 is a 32 bit accumulator register" ((MACH ubicom32_ver5)) h-FPU-acc-32 f-FPS2-reg32)
+(dnop fpu-64-S2-data-reg "FPU S2 is a 64 bit data register" ((MACH ubicom32_ver5)) h-FPU-data-reg-64 f-FPS2-reg64)
+(dnop fpu-64-S2-acc-reg "FPU S2 is a 64 bit accumulator register" ((MACH ubicom32_ver5)) h-FPU-acc-64 f-FPS2-reg64)
+(dnop fpu-64-S1-data-reg "FPU S1 is a 64 bit data register" ((MACH ubicom32_ver5)) h-FPU-data-reg-64 f-FPS1-reg64)
+(dnop fpu-64-S1-acc-reg "FPU S1 is a 64 bit accumulator register" ((MACH ubicom32_ver5)) h-FPU-acc-64 f-FPS1-reg64)
+(dnop fpu-32-dest-reg "FPU Destination is a 32 bit accumulator register" ((MACH ubicom32_ver5)) h-FPU-acc-32 f-FPD32)
+(dnop fpu-64-dest-reg "FPU Destination is a 64 bit accumulator register" ((MACH ubicom32_ver5)) h-FPU-acc-64 f-FPD64)
+
+;(define-derived-operand
+;  (name dsp-src2-reg-acc-reg)
+;  (mode SI)
+;  (args (dsp-s2-acc-lo))
+;  (syntax "${dsp-S2-acc-lo}")
+;  (base-ifield f-dsp-S2)
+;  (encoding (+ (f-dsp-S2-sel 1)  dsp-S2-acc-lo))
+;  (ifield-assertion (eq f-dsp-S2-sel 1))
+;  (getter (zext SI dsp-S2-acc-lo))
+;  (setter ())
+;  (attrs (MACH ubicom32dsp,ubicom32_ver4))
+;)
+
+(dndo-attrs fpu-32-src2-data-reg
+      SI
+      (fpu-32-S2-data-reg)
+      "${fpu-32-S2-data-reg}"
+      f-FPS232
+      (+ (f-FPS2-sel 0)  fpu-32-S2-data-reg)
+      (if (eq f-FPS2-sel 0))
+      (ext SI fpu-32-S2-data-reg)
+      ()
+      (MACH ubicom32_ver5)
+)
+
+(dndo-attrs fpu-32-src2-acc-reg
+      SI
+      (fpu-32-S2-acc-reg)
+      "${fpu-32-S2-acc-reg}"
+      f-FPS232
+      (+ (f-FPS2-sel 1) (f-bit26 0)  fpu-32-S2-acc-reg)
+      (andif (eq f-bit26 0)
+	     (eq f-FPS2-sel 1))
+      (ext SI fpu-32-S2-acc-reg)
+      ()
+      (MACH ubicom32_ver5)
+)
+
+;(dndo-attrs fpu-64-src2-data-reg
+;      DI
+;      (fpu-64-S2-data-reg)
+;      "${fpu-64-S2-data-reg}"
+;      f-FPS264
+;      (+ (f-FPS2-sel 0)  fpu-64-S2-data-reg)
+;      (if (eq f-FPS2-sel 0))
+;      (ext DI fpu-64-S2-data-reg)
+;      ()
+;      (MACH ubicom32_ver5)
+;)
+
+;(dndo-attrs fpu-64-src2-acc-reg
+;      DI
+;      (fpu-64-S2-acc-reg)
+;      "${fpu-64-S2-acc-reg}"
+;      f-FPS264
+;      (+ (f-FPS2-sel 1)  fpu-64-S2-acc-reg)
+;      (if (eq f-FPS2-sel 1))
+;      (ext DI fpu-64-S2-acc-reg)
+;      ()
+;      (MACH ubicom32_ver5)
+;)
+
+;(dndo-attrs fpu-64-src1-data-reg
+;      DI
+;      (fpu-64-S1-data-reg)
+;      "${fpu-64-S1-data-reg}"
+;      f-FPS164
+;      (+ (f-FPS1-sel 0)  fpu-64-S1-data-reg)
+;      (if (eq f-FPS1-sel 0))
+;      (ext DI fpu-64-S1-data-reg)
+;      ()
+;      (MACH ubicom32_ver5)
+;)
+
+;(dndo-attrs fpu-64-src1-acc-reg
+;      DI
+;      (fpu-64-S1-acc-reg)
+;      "${fpu-64-S1-acc-reg}"
+;      f-FPS164
+;      (+ (f-FPS1-sel 1)  fpu-64-S1-acc-reg)
+;      (if (eq f-FPS1-sel 1))
+;      (ext DI fpu-64-S1-acc-reg)
+;      ()
+;      (MACH ubicom32_ver5)
+;)
+
+(dndo-attrs dsp-src2-reg-acc-reg-mul
+      SI
+      (dsp-S2-acc-reg-mul)
+      "${dsp-S2-acc-reg-mul}"
+      f-bit5
+      (+ (f-dsp-S2-sel 1)  (f-dsp-b15 0) (f-bit26 1) dsp-S2-acc-reg-mul)
+      (andif (eq f-bit26 1)
+	     (eq f-dsp-S2-sel 1))
+      (ext SI dsp-S2-acc-reg-mul)
+      ()
+      (MACH ubicom32dsp,ubicom32_ver4)
+)
+
+(dndo-attrs dsp-src2-reg-acc-reg-addsub
+      DI
+      (dsp-S2-acc-reg-addsub)
+      "${dsp-S2-acc-reg-addsub}"
+      f-bit5
+      (+ (f-dsp-S2-sel 1)  (f-dsp-b15 0) (f-bit26 1) dsp-S2-acc-reg-addsub)
+      (andif (eq f-bit26 1)
+	     (eq f-dsp-S2-sel 1))
+      (ext DI dsp-S2-acc-reg-addsub)
+      ()
+      (MACH ubicom32dsp,ubicom32_ver4)
+)
+
+(dndo-attrs dsp-src2-data-reg
+      SI
+      (dsp-S2-data-reg)
+      "${dsp-S2-data-reg}"
+      f-bit5
+      (+ (f-dsp-S2-sel 0)  (f-dsp-b15 0) (f-bit26 1) dsp-S2-data-reg)
+      (andif (eq f-bit26 1)
+	     (eq f-dsp-S2-sel 0))
+      (ext SI dsp-S2-data-reg)
+      ()
+      (MACH ubicom32dsp,ubicom32_ver4)
+)
+
+(dndo-attrs dsp-src2-data-reg-addsub
+      SI
+      (dsp-S2-data-reg-addsub)
+      "${dsp-S2-data-reg-addsub}"
+      f-bit5
+      (+ (f-dsp-S2-sel 0)  (f-dsp-b15 0) (f-bit26 1) dsp-S2-data-reg-addsub)
+      (andif (eq f-bit26 1)
+	     (eq f-dsp-S2-sel 0))
+      (ext SI dsp-S2-data-reg)
+      ()
+      (MACH ubicom32dsp,ubicom32_ver4)
+)
+
+(dndo-attrs dsp-src2-data-reg-addsub2
+      DI
+      (dsp-S2-data-reg-addsub)
+      "${dsp-S2-data-reg-addsub}"
+      f-bit5
+      (+ (f-dsp-S2-sel 0)  (f-dsp-b15 0) (f-bit26 1) dsp-S2-data-reg-addsub)
+      (andif (eq f-bit26 1)
+	     (eq f-dsp-S2-sel 0))
+      (sequence DI ((DI tmp))
+		(if (eq dsp-t-addsub 0)
+		    (set tmp (ext DI (trunc HI dsp-S2-data-reg)))
+		    (set tmp (ext DI (trunc HI (sra dsp-S2-data-reg (const 16))))))
+		(ext DI tmp))
+      ()
+      (MACH ubicom32dsp,ubicom32_ver4)
+)
+
+(dndo-attrs dsp-imm-bit5
+      SI
+      (bit5)
+      "#${bit5}"
+      f-bit5
+      (+ (f-bit26 0) (f-dsp-S2-sel 0) bit5)
+      (eq f-bit26 0)
+      (zext SI bit5)
+      () ; no setter
+      (MACH ubicom32dsp,ubicom32_ver4)
+)
+
+(dndo-attrs dsp-imm-bit5-addsub
+      SI
+      (bit5-addsub)
+      "#${bit5-addsub}"
+      f-bit5
+      (+ (f-bit26 0) (f-dsp-S2-sel 0) bit5-addsub)
+      (eq f-bit26 0)
+      (zext SI bit5-addsub)
+      () ; no setter
+      (MACH ubicom32dsp,ubicom32_ver4)
+)
+
+(dndo-attrs dsp-imm-bit5-addsub2
+      DI
+      (bit5-addsub)
+      "#${bit5-addsub}"
+      f-bit5
+      (+ (f-bit26 0) (f-dsp-S2-sel 0) bit5-addsub)
+      (eq f-bit26 0)
+      (sequence DI ((DI tmp))
+		(if (eq dsp-t-addsub 0)
+		    (set tmp (ext DI bit5-addsub))
+		    (set tmp (ext DI (const 0))))
+		(ext DI tmp))
+      () ; no setter
+      (MACH ubicom32dsp,ubicom32_ver4)
+)
+
+; Add special operand to handle operand 3 of restricted 3-operand instructions
+(dndo imm-bit5
+      SI
+      (bit5)
+      "#${bit5}"
+      f-bit5
+      (+ (f-bit26 0) bit5)
+      (eq f-bit26 0)
+      (zext SI bit5)
+      () ; no setter
+)
+
+(dndo dyn-reg
+      SI
+      (s2)
+      "${s2}"
+      f-bit5
+      (+ (f-bit26 1) (f-b15 0) s2)
+      (eq f-bit26 1)
+      (zext SI s2)
+      () ; no setter
+)
+
+(define-anyof-operand
+  (name op3)
+  (comment "5-bit immediate value or dynamic register specification")
+  (mode SI)
+  (choices imm-bit5
+	   dyn-reg
+  )
+)
+
+;(define-anyof-operand
+;  (name fpu-32-src2)
+;  (comment "FPU 32 bit source 2 register specification")
+;  (mode SI)
+;  (attrs (MACH ubicom32_ver5))
+;  (choices fpu-32-src2-data-reg
+;	   fpu-32-src2-acc-reg
+;  )
+;)
+
+;(define-anyof-operand
+; (name fpu-64-src2)
+;  (comment "FPU 64 bit source 2 register specification")
+;  (mode DI)
+;  (attrs (MACH ubicom32_ver5))
+;  (choices fpu-64-src2-data-reg
+;	   fpu-64-src2-acc-reg
+;  )
+;)
+
+;(define-anyof-operand
+;  (name fpu-64-src1)
+;  (comment "FPU 64 bit source 1 register specification")
+;  (mode DI)
+;  (attrs (MACH ubicom32_ver5))
+;  (choices fpu-64-src1-data-reg
+;	   fpu-64-src1-acc-reg
+;  )
+;)
+
+(define-anyof-operand
+  (name dsp-src2-mul)
+  (comment "Data register or accumulator lo register specification")
+  (mode SI)
+  (attrs (MACH ubicom32dsp,ubicom32_ver4))
+  (choices dsp-src2-data-reg
+	   dsp-src2-reg-acc-reg-mul
+	   dsp-imm-bit5
+  )
+)
+
+(define-anyof-operand
+  (name dsp-compatibility-src2-mul)
+  (comment "Data register or accumulator lo register specification")
+  (mode SI)
+  (attrs (MACH ip3023compatibility))
+  (choices dsp-src2-data-reg
+	   dsp-imm-bit5
+  )
+)
+
+(define-anyof-operand
+  (name dsp-src2-addsub)
+  (comment "Data register or accumulator register specification for madd msub instructions")
+  (mode DI)
+  (attrs (MACH ubicom32dsp,ubicom32_ver4))
+  (choices dsp-src2-data-reg-addsub
+	   dsp-src2-reg-acc-reg-addsub
+	   dsp-imm-bit5-addsub
+  )
+)
+
+(define-anyof-operand
+  (name dsp-src2-addsub2)
+  (comment "Data register or accumulator register specification for madd msub instructions")
+  (mode DI)
+  (attrs (MACH ubicom32dsp,ubicom32_ver4))
+  (choices dsp-src2-data-reg-addsub2
+	   dsp-src2-reg-acc-reg-addsub
+	   dsp-imm-bit5-addsub2
+  )
+)
+
+; Support for conditional branches
+(define-operand
+  (name offset21)
+  (comment "21-bit relative offset")
+  (type h-iaddr)
+  (index f-o21)
+  (handlers (parse "offset21"))
+)
+
+(define-operand
+  (name offset16)
+  (comment "16-bit calli offset")
+  (type h-sint)
+  (index f-o16)
+  (handlers (parse "offset16"))
+)
+
+(define-operand
+  (name leai-offset16)
+  (comment "16-bit leai offset")
+  (type h-sint)
+  (index f-leai-o16)
+  (handlers (parse "leai_offset16"))
+)
+
+; Support for 24-bit immediate for moveai instruction which may be constant or
+; %hi(address)
+(define-operand
+  (name imm24)
+  (comment "24-bit immediate")
+  (type h-uint)
+  (index f-imm24)
+  (handlers (parse "imm24") (print "imm24"))
+)
+
+; Support for 25-bit immediate for moveai instruction which may be constant or
+; %hi(address) for jupiter + architectures
+(define-operand
+  (name imm25)
+  (comment "25-bit immediate")
+  (type h-uint)
+  (index f-imm25)
+  (handlers (parse "imm25") (print "imm25"))
+)
+
+; Condition code bits - 16-bit condition codes are separated from 32-bit condition codes
+(dnop nbit-16 "16-bit negative    bit"      (SEM-ONLY) h-nbit-16 f-nil)
+(dnop vbit-16 "16-bit overflow    bit"      (SEM-ONLY) h-vbit-16 f-nil)
+(dnop zbit-16 "16-bit zero        bit"      (SEM-ONLY) h-zbit-16 f-nil)
+(dnop cbit-16 "16-bit carry       bit"      (SEM-ONLY) h-cbit-16 f-nil)
+
+(dnop nbit-32 "32-bit negative    bit"      (SEM-ONLY) h-nbit-32 f-nil)
+(dnop vbit-32 "32-bit overflow    bit"      (SEM-ONLY) h-vbit-32 f-nil)
+(dnop zbit-32 "32-bit zero        bit"      (SEM-ONLY) h-zbit-32 f-nil)
+(dnop cbit-32 "32-bit carry       bit"      (SEM-ONLY) h-cbit-32 f-nil)
+
+; Privilege bits from CSR
+(dnop privilege-bit "Privilege bit from CSR"      (SEM-ONLY) h-privbit f-nil)
+(dnop prev-privilege-bit "Previous Privilege bit from CSR"      (SEM-ONLY) h-prev-privbit f-nil)
+
+; source 1 operand
+
+; source 1 imm7 unsigned operators - allow %lo() operator and validate range
+
+(define-operand
+  (name s1-imm7-1)
+  (comment "7-bit immediate byte")
+  (type h-uint)
+  (index f-s1-imm7-1)
+  (handlers (parse "imm7_1_s") (print "imm7"))
+)
+
+(define-operand
+  (name s1-imm7-2)
+  (comment "7-bit immediate halfword")
+  (type h-uint)
+  (index f-s1-imm7-2)
+  (handlers (parse "imm7_2_s") (print "imm7"))
+)
+
+(define-operand
+  (name s1-imm7-4)
+  (comment "7-bit immediate word")
+  (type h-uint)
+  (index f-s1-imm7-4)
+  (handlers (parse "imm7_4_s") (print "imm7"))
+)
+
+(define-operand
+  (name pdec-s1-imm7-4)
+  (comment "7-bit immediate word for pdec")
+  (type h-uint)
+  (index f-s1-imm7-4)
+  (handlers (parse "pdec_imm7_4_s") (print "pdec_imm7"))
+)
+
+(define-operand
+  (name s1-imm8)
+  (comment "8-bit signed immediate")
+  (type h-sint)
+  (index f-s1-imm8)
+  (handlers (parse "imm8"))
+)
+
+(dnop s1-An     "s1 address register"          () h-ar     f-s1-An)
+(dnop s1-r      "s1 index register"            () h-s1-dr  f-s1-r)
+
+; pre/post increment value for s1-An registers to be performed after insn execution
+(dnop s1-An-inc "s1 An register pre/post inc"  (SEM-ONLY)  h-ar-inc  f-s1-An)
+
+(define-pmacro (imm4-op who bytes)
+  (begin
+    (define-operand
+      (name (.sym who "-i4-" bytes))
+      (comment "4 bit signed-immediate value")
+      (type h-sint)
+      (index (.sym "f-" who "-i4-" bytes))
+      (handlers (parse (.str "imm4_" bytes)) (print "imm4"))
+    )
+  )
+)
+
+; s1-i4-1, s1-i4-2, s1-i4-4
+(imm4-op s1 1)
+(imm4-op s1 2)
+(imm4-op s1 4)
+
+(define-pmacro (s1-indirect-op bytes rtype)
+  (begin
+    (dndo (.sym "s1-indirect-" bytes)
+          rtype
+          (s1-An)
+          "(${s1-An})"
+          f-s1
+          (+ (f-s1-bit10 1) ((.sym "f-s1-imm7-" bytes) 0) s1-An)
+          (andif (eq f-s1-bit10 1)
+                 (eq (.sym "f-s1-imm7-" bytes) 0))
+          (ext SI (mem rtype s1-An))
+          () ; no setter
+    )
+  )
+)
+
+; s1-indirect-1, s1-indirect-2, s1-indirect-4
+(s1-indirect-op 1 QI)
+(s1-indirect-op 2 HI)
+(s1-indirect-op 4 SI)
+
+(define-pmacro (s1-indirect-with-offset-op bytes rtype)
+  (begin
+    (dndo (.sym "s1-indirect-with-offset-" bytes)
+          rtype
+          ((.sym "s1-imm7-" bytes) s1-An)
+          (.str "${s1-imm7-" bytes "}(${s1-An})")
+          f-s1
+          (+ (f-s1-bit10 1) (.sym "s1-imm7-" bytes) s1-An)
+          (andif (eq f-s1-bit10 1)
+                 (ne (.sym "f-s1-imm7-" bytes) 0))
+          (ext SI (mem rtype (add SI s1-An (.sym "s1-imm7-" bytes))))
+          () ; no setter
+    )
+  )
+)
+
+; s1-indirect-with-offset-1, s1-indirect-with-offset-2,
+; s1-indirect-with-offset-4
+(s1-indirect-with-offset-op 1 QI)
+(s1-indirect-with-offset-op 2 HI)
+(s1-indirect-with-offset-op 4 SI)
+
+(define-pmacro (s1-indirect-with-index-op bytes rtype)
+  (begin
+    (dndo (.sym "s1-indirect-with-index-" bytes)
+          rtype
+          (s1-r s1-An)
+          "(${s1-An},${s1-r})"
+          f-s1
+          (+ (f-s1-bit10 0) (f-s1-type 3) s1-r s1-An)
+          (andif (eq f-s1-bit10 0)
+                 (eq f-s1-type 3))
+          (ext SI (mem rtype (add s1-An (sll SI s1-r (srl SI bytes 1)))))
+          () ; no setter
+    )
+  )
+)
+
+; s1-indirect-with-index-1, s1-indirect-with-index-2,
+; s1-indirect-with-index-4
+(s1-indirect-with-index-op 1 QI)
+(s1-indirect-with-index-op 2 HI)
+(s1-indirect-with-index-op 4 SI)
+
+(define-pmacro (s1-indirect-with-post-increment-op bytes rtype)
+  (begin
+    (dndo (.sym "s1-indirect-with-post-increment-" bytes)
+          rtype
+          ((.sym "s1-i4-" bytes) s1-An)
+          (.str "(${s1-An})${s1-i4-" bytes "}++")
+          f-s1
+          (+ (f-s1-bit10 0) (f-s1-type 2) (f-s1-M 0) (.sym "s1-i4-" bytes) s1-An)
+          (andif (eq f-s1-bit10 0)
+                 (eq f-s1-type 2)
+                 (eq f-s1-M 0))
+          (sequence SI ()
+                    (set s1-An-inc (ext SI (.sym "s1-i4-" bytes)))
+                    (set An-inc 1)
+                    (ext SI (mem rtype s1-An)))
+          () ; no setter
+    )
+  )
+)
+
+; s1-indirect-with-post-increment-1, s1-indirect-with-post-increment-2,
+; s1-indirect-with-post-increment-4
+(s1-indirect-with-post-increment-op 1 QI)
+(s1-indirect-with-post-increment-op 2 HI)
+(s1-indirect-with-post-increment-op 4 SI)
+
+(define-pmacro (s1-indirect-with-pre-increment-op bytes rtype)
+  (begin
+    (dndo (.sym "s1-indirect-with-pre-increment-" bytes)
+          rtype
+          ((.sym "s1-i4-" bytes) s1-An)
+          (.str "${s1-i4-" bytes "}(${s1-An})++")
+          f-s1
+          (+ (f-s1-bit10 0) (f-s1-type 2) (f-s1-M 1) (.sym "s1-i4-" bytes) s1-An)
+          (andif (eq f-s1-bit10 0)
+                 (eq f-s1-type 2)
+                 (eq f-s1-M 1))
+          (sequence SI ((SI Atmp))
+                    (set s1-An-inc (ext SI (.sym "s1-i4-" bytes)))
+                    (set An-inc 1)
+                    (set Atmp (add s1-An s1-An-inc))
+                    (ext SI (mem rtype Atmp)))
+          () ; no setter
+    )
+  )
+)
+
+; s1-indirect-with-pre-increment-1, s1-indirect-with-pre-increment-2,
+; s1-indirect-with-pre-increment-4
+(s1-indirect-with-pre-increment-op 1 QI)
+(s1-indirect-with-pre-increment-op 2 HI)
+(s1-indirect-with-pre-increment-op 4 SI)
+
+(define-operand
+  (name s1-direct-addr)
+  (attrs)
+  (comment "s1 direct address")
+  (type h-uint)
+  (index f-s1-direct)
+  (handlers (parse "s1_direct_addr") (print "direct_addr"))
+)
+
+(dndo s1-direct
+      SI
+      (s1-direct-addr)
+      "${s1-direct-addr}"
+      f-s1
+      (+ (f-s1-bit10 0) (f-s1-type 1) s1-direct-addr)
+      (andif (eq f-s1-bit10 0)
+             (eq f-s1-type 1))
+      (c-call SI "get_s1_direct_mem" s1-direct-addr)
+      () ; no setter
+)
+
+(dndo s1-immediate
+      SI
+      (s1-imm8)
+      "#${s1-imm8}"
+      f-s1
+      (+ (f-s1-bit10 0) (f-s1-type 0) s1-imm8)
+      (andif (eq f-s1-bit10 0)
+	     (eq f-s1-type 0))
+      (ext SI s1-imm8)
+      () ; no setter
+)
+
+(define-pmacro (s1-op bytes rtype)
+  (begin
+    (define-anyof-operand
+      (name (.sym "s1-" bytes))
+      (comment (.str "source 1 operand " bytes))
+      (mode rtype)
+                                        ; Each choice must have the same base-ifield.
+      (choices s1-direct
+	       s1-immediate
+               (.sym "s1-indirect-with-index-" bytes)
+               (.sym "s1-indirect-with-offset-" bytes)
+	       (.sym "s1-indirect-" bytes)
+               (.sym "s1-indirect-with-post-increment-" bytes)
+               (.sym "s1-indirect-with-pre-increment-" bytes)
+      )
+    )
+  )
+)
+
+; s1-1, s1-2, s1-4
+(s1-op 1 QI)
+(s1-op 2 HI)
+(s1-op 4 SI)
+
+
+; source 1 EA operand
+
+(dndo s1-ea-indirect
+      SI
+      (s1-An)
+      "(${s1-An})"
+      f-s1
+      (+ (f-s1-bit10 1) (f-s1-imm7-4 0) s1-An)
+      (andif (eq f-s1-bit10 1)
+             (eq f-s1-imm7-4 0))
+      (add SI s1-An (const 0))
+      () ; no setter
+)
+
+(define-pmacro (s1-ea-indirect-with-offset-op bytes)
+  (begin
+    (dndo (.sym "s1-ea-indirect-with-offset-" bytes)
+	  SI
+	  ((.sym "s1-imm7-" bytes) s1-An)
+	  (.str "${s1-imm7-" bytes "}(${s1-An})")
+	  f-s1
+	  (+ (f-s1-bit10 1) (.sym "s1-imm7-" bytes) s1-An)
+	  (andif (eq f-s1-bit10 1)
+		 (ne (.sym "f-s1-imm7-" bytes) 0))
+	  (add SI s1-An (.sym "s1-imm7-" bytes))
+	  () ; no setter
+    )
+  )
+)
+
+; s1-ea-indirect-with-offset-1, s1-ea-indirect-with-offset-2, s1-ea-indirect-with-offset-4
+(s1-ea-indirect-with-offset-op 1)
+(s1-ea-indirect-with-offset-op 2)
+(s1-ea-indirect-with-offset-op 4)
+
+(define-pmacro (s1-ea-indirect-with-index-op bytes)
+  (begin
+    (dndo (.sym "s1-ea-indirect-with-index-" bytes)
+	  SI
+	  (s1-r s1-An)
+	  "(${s1-An},${s1-r})"
+	  f-s1
+	  (+ (f-s1-bit10 0) (f-s1-type 3) s1-r s1-An)
+	  (andif (eq f-s1-bit10 0)
+		 (eq f-s1-type 3))
+	  (add s1-An (sll SI s1-r (srl SI bytes 1)))
+	  () ; no setter
+    )
+  )
+)
+
+; s1-ea-indirect-with-index-1, s1-ea-indirect-with-index-2, s1-ea-indirect-with-index-4
+(s1-ea-indirect-with-index-op 1)
+(s1-ea-indirect-with-index-op 2)
+(s1-ea-indirect-with-index-op 4)
+
+(define-pmacro (s1-ea-indirect-with-post-increment-op bytes)
+  (begin
+    (dndo (.sym "s1-ea-indirect-with-post-increment-" bytes)
+	  SI
+	  ((.sym "s1-i4-" bytes) s1-An)
+	  (.str "(${s1-An})${s1-i4-" bytes "}++")
+	  f-s1
+	  (+ (f-s1-bit10 0) (f-s1-type 2) (f-s1-M 0) (.sym "s1-i4-" bytes) s1-An)
+	  (andif (eq f-s1-bit10 0)
+		 (eq f-s1-type 2)
+		 (eq f-s1-M 0))
+	  (sequence SI ()
+		    (set s1-An-inc (ext SI (.sym "s1-i4-" bytes)))
+                    (set An-inc 1)
+		    (add SI s1-An (const 0)))
+	  () ; no setter
+    )
+  )
+)
+
+; s1-ea-indirect-with-post-increment-1, s1-ea-indirect-with-post-increment-2, 
+; s1-ea-indirect-with-post-increment-4
+(s1-ea-indirect-with-post-increment-op 1)
+(s1-ea-indirect-with-post-increment-op 2)
+(s1-ea-indirect-with-post-increment-op 4)
+
+(define-pmacro (s1-ea-indirect-with-pre-increment-op bytes)
+  (begin
+    (dndo (.sym "s1-ea-indirect-with-pre-increment-" bytes)
+	  SI
+	  ((.sym "s1-i4-" bytes) s1-An)
+	  (.str "${s1-i4-" bytes "}(${s1-An})++")
+	  f-s1
+	  (+ (f-s1-bit10 0) (f-s1-type 2) (f-s1-M 1) (.sym "s1-i4-" bytes) s1-An)
+	  (andif (eq f-s1-bit10 0)
+		 (eq f-s1-type 2)
+		 (eq f-s1-M 1))
+	  (sequence SI ((SI Atmp))
+		    (set s1-An-inc (.sym "s1-i4-" bytes))
+                    (set An-inc 1)
+		    (set Atmp (add s1-An s1-An-inc))
+		    (add SI Atmp (const 0)))
+	  () ; no setter
+    )
+  )
+)
+
+; s1-ea-indirect-with-pre-increment-1, s1-ea-indirect-with-pre-increment-2, 
+; s1-ea-indirect-with-pre-increment-4
+(s1-ea-indirect-with-pre-increment-op 1)
+(s1-ea-indirect-with-pre-increment-op 2)
+(s1-ea-indirect-with-pre-increment-op 4)
+
+(dndo s1-ea-immediate
+      SI
+      (s1-imm8)
+      "#${s1-imm8}"
+      f-s1
+      (+ (f-s1-bit10 0) (f-s1-type 0) s1-imm8)
+      (andif (eq f-s1-bit10 0)
+	     (eq f-s1-type 0))
+      (add SI (ext SI s1-imm8) (const 0))
+      () ; no setter
+)
+
+(dndo s1-ea-direct
+      SI
+      (s1-direct-addr)
+      "${s1-direct-addr}"
+      f-s1
+      (+ (f-s1-bit10 0) (f-s1-type 1) s1-direct-addr)
+      (andif (eq f-s1-bit10 0)
+             (eq f-s1-type 1))
+      (add SI s1-direct-addr (const 0))
+      () ; no setter
+)
+
+(define-pmacro (s1-ea-op bytes)
+  (begin
+    (define-anyof-operand
+      (name (.sym "s1-ea-" bytes))
+      (comment "source 1 ea operand")
+      (mode SI)
+                                        ; Each choice must have the same base-ifield.
+      (choices s1-ea-indirect
+	       (.sym "s1-ea-indirect-with-offset-" bytes)
+	       (.sym "s1-ea-indirect-with-index-" bytes)
+	       (.sym "s1-ea-indirect-with-post-increment-" bytes)
+	       (.sym "s1-ea-indirect-with-pre-increment-" bytes)
+	       s1-ea-immediate
+      )
+    )
+  )
+)
+
+; s1-ea-1, s1-ea-2, s1-ea-4
+(s1-ea-op 1)
+(s1-ea-op 2)
+(s1-ea-op 4)
+
+; s1-pea
+(define-anyof-operand
+  (name s1-pea)
+  (comment "source 1 pea operand")
+  (mode SI)
+					; Each choice must have the same base-ifield.
+  (choices s1-ea-indirect
+	   s1-ea-indirect-with-index-4
+	   s1-ea-indirect-with-post-increment-4
+	   s1-ea-indirect-with-pre-increment-4
+	   s1-ea-indirect-with-offset-4
+  )
+)
+
+;pdec definitions
+
+;(define-pmacro (pdec-s1-ea-indirect-with-offset-op bytes)
+;  (begin
+;    (dndo (.sym "pdec-s1-ea-indirect-with-offset-" bytes)
+;	  SI
+;	  ((.sym "s1-imm7-" bytes) s1-An)
+;	  (.str "${s1-imm7-" bytes "}(${s1-An})")
+;	  f-s1
+;	  (+ (f-s1-bit10 1) (.sym "s1-imm7-" bytes) s1-An)
+;	  (andif (eq f-s1-bit10 1)
+;		 (ne (.sym "f-s1-imm7-" bytes) 0))
+;	  (sub SI s1-An (.sym "s1-imm7-" bytes))
+;	  () ; no setter
+;    )
+;  )
+;)
+
+;(pdec-s1-ea-indirect-with-offset-op 4)
+
+(dndo pdec-s1-ea-indirect-with-offset-4
+  SI
+  (pdec-s1-imm7-4 s1-An)
+  "${pdec-s1-imm7-4}(${s1-An})"
+  f-s1
+  (+ (f-s1-bit10 1) pdec-s1-imm7-4 s1-An)
+  (andif (eq f-s1-bit10 1)
+	 (ne f-s1-imm7-4 0))
+  (sub SI s1-An (and SI (add SI (const 1) (inv pdec-s1-imm7-4)) (const #x1fc)))
+  () ; no setter
+)
+
+; pdec-s1-pea
+(define-anyof-operand
+  (name pdec-pea-s1)
+  (comment "source 1 pea operand for pdec instruction")
+  (mode SI)
+					; Each choice must have the same base-ifield.
+  (choices pdec-s1-ea-indirect-with-offset-4
+  )
+)
+
+
+; destination operand
+
+; destination imm7 unsigned operators - allow %lo() operator and validate range
+
+(define-operand
+  (name d-imm7-1)
+  (comment "7-bit immediate byte")
+  (type h-uint)
+  (index f-d-imm7-1)
+  (handlers (parse "imm7_1_d") (print "imm7"))
+)
+
+(define-operand
+  (name d-imm7-2)
+  (comment "7-bit immediate halfword")
+  (type h-uint)
+  (index f-d-imm7-2)
+  (handlers (parse "imm7_2_d") (print "imm7"))
+)
+
+(define-operand
+  (name d-imm7-4)
+  (comment "7-bit immediate word")
+  (type h-uint)
+  (index f-d-imm7-4)
+  (handlers (parse "imm7_4_d") (print "imm7"))
+)
+
+(define-operand
+  (name d-imm8)
+  (comment "8-bit signed immediate")
+  (type h-sint)
+  (index f-d-imm8)
+  (handlers (parse "imm8"))
+)
+
+(dnop d-An     "d address register"         () h-ar   f-d-An)
+(dnop d-r      "d index register"           () h-dr   f-d-r)
+
+; pre/post increment value for d-An registers to be performed after insn execution
+(dnop d-An-inc "d An register pre/post inc" (SEM-ONLY) h-ar-inc f-d-An)
+
+
+; d-i4-1, d-i4-2, d-i4-4
+(imm4-op d 1)
+(imm4-op d 2)
+(imm4-op d 4)
+
+(define-pmacro (d-indirect-op bytes rtype)
+  (begin
+    (dndo (.sym "d-indirect-" bytes)
+          rtype
+          (d-An)
+          "(${d-An})"
+          f-d
+          (+ (f-d-bit10 1) ((.sym "f-d-imm7-" bytes) 0) d-An)
+          (andif (eq f-d-bit10 1)
+                 (eq (.sym "f-d-imm7-" bytes) 0))
+          () ; no getter
+          (set (mem rtype d-An) (trunc rtype newval))
+    )
+  )
+)
+
+; d-indirect-1, d-indirect-2, d-indirect-4
+(d-indirect-op 1 QI)
+(d-indirect-op 2 HI)
+(d-indirect-op 4 SI)
+
+(define-pmacro (d-indirect-with-offset-op bytes rtype)
+  (begin
+    (dndo (.sym "d-indirect-with-offset-" bytes)
+          rtype
+          ((.sym "d-imm7-" bytes) d-An)
+          (.str "${d-imm7-" bytes "}(${d-An})")
+          f-d
+          (+ (f-d-bit10 1) (.sym "d-imm7-" bytes) d-An)
+          (andif (eq f-d-bit10 1)
+                 (ne (.sym "f-d-imm7-" bytes) 0))
+          () ; no getter
+          (set (mem rtype (add SI d-An (zext SI (.sym "d-imm7-" bytes)))) (trunc rtype newval))
+    )
+  )
+)
+
+; d-indirect-with-offset-1, d-indirect-with-offset-2,
+; d-indirect-with-offset-4
+(d-indirect-with-offset-op 1 QI)
+(d-indirect-with-offset-op 2 HI)
+(d-indirect-with-offset-op 4 SI)
+
+(define-pmacro (d-indirect-with-index-op bytes rtype)
+  (begin
+    (dndo (.sym "d-indirect-with-index-" bytes)
+          rtype
+          (d-r d-An)
+          "(${d-An},${d-r})"
+          f-d
+          (+ (f-d-bit10 0) (f-d-type 3) d-r d-An)
+          (andif (eq f-d-bit10 0)
+                 (eq f-d-type 3))
+          () ; no getter
+          (set (mem rtype (add d-An (sll SI d-r (srl SI bytes 1)))) (trunc rtype newval))
+    )
+  )
+)
+
+; d-indirect-with-index-1, d-indirect-with-index-2,
+; d-indirect-with-index-4
+(d-indirect-with-index-op 1 QI)
+(d-indirect-with-index-op 2 HI)
+(d-indirect-with-index-op 4 SI)
+
+(define-pmacro (d-indirect-with-post-increment-op bytes rtype)
+  (begin
+    (dndo (.sym "d-indirect-with-post-increment-" bytes)
+          rtype
+          ((.sym "d-i4-" bytes) d-An)
+          (.str "(${d-An})${d-i4-" bytes "}++")
+          f-d
+          (+ (f-d-bit10 0) (f-d-type 2) (f-d-M 0) (.sym "d-i4-" bytes) d-An)
+          (andif (eq f-d-bit10 0)
+                 (eq f-d-type 2)
+                 (eq f-d-M 0))
+          () ; no getter
+          (sequence ()
+                    (set d-An-inc (ext SI (.sym "d-i4-" bytes)))
+                    (set An-inc 1)
+                    (set (mem rtype d-An) (trunc rtype newval)))
+    )
+  )
+)
+
+; d-indirect-with-post-increment-1, d-indirect-with-post-increment-2,
+; d-indirect-with-post-increment-4
+(d-indirect-with-post-increment-op 1 QI)
+(d-indirect-with-post-increment-op 2 HI)
+(d-indirect-with-post-increment-op 4 SI)
+
+(define-pmacro (d-indirect-with-pre-increment-op bytes rtype)
+  (begin
+    (dndo (.sym "d-indirect-with-pre-increment-" bytes)
+          rtype
+          ((.sym "d-i4-" bytes) d-An)
+          (.str "${d-i4-" bytes "}(${d-An})++")
+          f-d
+          (+ (f-d-bit10 0) (f-d-type 2) (f-d-M 1) (.sym "d-i4-" bytes) d-An)
+          (andif (eq f-d-bit10 0)
+                 (eq f-d-type 2)
+                 (eq f-d-M 1))
+          () ; no getter
+          (sequence ((SI Atmp))
+                    (set d-An-inc (ext SI (.sym "d-i4-" bytes)))
+                    (set An-inc 1)
+                    (set Atmp (add d-An d-An-inc))
+                    (set (mem rtype Atmp) (trunc rtype newval)))
+    )
+  )
+)
+
+; d-indirect-with-pre-increment-1, d-indirect-with-pre-increment-2,
+; d-indirect-with-pre-increment-4
+(d-indirect-with-pre-increment-op 1 QI)
+(d-indirect-with-pre-increment-op 2 HI)
+(d-indirect-with-pre-increment-op 4 SI)
+
+(define-operand
+  (name d-direct-addr)
+  (attrs)
+  (comment "dest direct address")
+  (type h-uint)
+  (index f-d-direct)
+  (handlers (parse "d_direct_addr") (print "direct_addr"))
+)
+
+(dndo d-direct
+      SI
+      (d-direct-addr)
+      "${d-direct-addr}"
+      f-d
+      (+ (f-d-bit10 0) (f-d-type 1) d-direct-addr)
+      (andif (eq f-d-bit10 0)
+             (eq f-d-type 1))
+      () ; no getter
+      (c-call VOID "set_d_direct_mem" d-direct-addr (zext SI newval))
+)
+
+(define-pmacro (d-immediate-op bytes rtype)
+  (begin
+    (dndo (.sym "d-immediate-" bytes)
+          rtype
+          (d-imm8)
+          "#${d-imm8}"
+          f-d
+          (+ (f-d-bit10 0) (f-d-type 0) d-imm8)
+          (andif (eq f-d-bit10 0)
+                 (eq f-d-type 0))
+          () ; no getter
+          (nop)
+    )
+  )
+)
+
+; d-immediate-1, d-immediate-2, d-immediate-4
+(d-immediate-op 1 QI)
+(d-immediate-op 2 HI)
+(d-immediate-op 4 SI)
+
+(define-pmacro (d-op bytes rtype)
+  (begin
+    (define-anyof-operand
+      (name (.sym "d-" bytes))
+      (comment (.str "destination operand " bytes))
+      (mode rtype)
+                                        ; Each choice must have the same base-ifield.
+      (choices d-direct 
+               (.sym "d-immediate-" bytes)
+               (.sym "d-indirect-with-index-" bytes)
+               (.sym "d-indirect-with-offset-" bytes)
+	       (.sym "d-indirect-" bytes)
+               (.sym "d-indirect-with-post-increment-" bytes)
+               (.sym "d-indirect-with-pre-increment-" bytes)
+      )
+    )
+  )
+)
+
+; d-1, d-2, d-4
+(d-op 1 QI)
+(d-op 2 HI)
+(d-op 4 SI)
+
+; destination pea operand
+
+(dndo d-pea-indirect
+      SI
+      (d-An)
+      "(${d-An})"
+      f-d
+      (+ (f-d-bit10 1) (f-d-imm7-4 0) d-An)
+      (andif (eq f-d-bit10 1)
+             (eq f-d-imm7-4 0))
+      (add SI d-An (const 0))
+      () ; no setter
+)
+
+(dndo d-pea-indirect-with-offset
+      SI
+      (d-imm7-4 d-An)
+      "${d-imm7-4}(${d-An})"
+      f-d
+      (+ (f-d-bit10 1) d-imm7-4 d-An)
+      (andif (eq f-d-bit10 1)
+             (ne f-d-imm7-4 0))
+      (add SI d-An d-imm7-4)
+      () ; no setter
+)
+
+(dndo d-pea-indirect-with-post-increment
+      SI
+      (d-i4-4 d-An)
+      "(${d-An})${d-i4-4}++"
+      f-d
+      (+ (f-d-bit10 0) (f-d-type 2) (f-d-M 0) d-i4-4 d-An)
+      (andif (eq f-d-bit10 0)
+             (eq f-d-type 2)
+             (eq f-d-M 0))
+      (sequence SI ()
+                (set d-An-inc d-i4-4)
+		(set An-inc 1)
+                (add d-An (const 0)))
+      () ; no setter
+)
+
+(dndo d-pea-indirect-with-pre-increment
+      SI
+      (d-i4-4 d-An)
+      "${d-i4-4}(${d-An})++"
+      f-d
+      (+ (f-d-bit10 0) (f-d-type 2) (f-d-M 1) d-i4-4 d-An)
+      (andif (eq f-d-bit10 0)
+             (eq f-d-type 2)
+             (eq f-d-M 1))
+      (sequence SI ((SI Atmp))
+                (set d-An-inc d-i4-4)
+		(set An-inc 1)
+                (set Atmp (add d-An (ext SI d-i4-4)))
+                (add SI Atmp (const 0)))
+      () ; no setter
+)
+
+(dndo d-pea-indirect-with-index
+      SI
+      (d-r d-An)
+      "(${d-An},${d-r})"
+      f-d
+      (+ (f-d-bit10 0) (f-d-type 3) d-r d-An)
+      (andif (eq f-d-bit10 0)
+	     (eq f-d-type 3))
+      (add d-An (sll SI d-r 2))
+      () ; no setter
+)
+
+(define-anyof-operand
+  (name d-pea)
+  (comment "destination 1 pea operand")
+  (mode SI)
+                                        ; Each choice must have the same base-ifield.
+  (choices d-pea-indirect-with-index
+           d-pea-indirect-with-offset
+	   d-pea-indirect
+           d-pea-indirect-with-post-increment
+           d-pea-indirect-with-pre-increment
+  )
+)
+
+; Support for %hi(foo) and %lo(foo), for movei insn
+(define-operand
+  (name imm16-2)
+  (comment "16 bit immediate, for movei")
+  (attrs)
+  (type h-sint)
+  (index f-imm16-2)
+  (handlers (parse "imm16"))
+)
+
+
+; Instruction definitions.
+;
+; Notes while wip:
+; - dni is a cover macro to the real "this is an instruction" keyword.
+;   The syntax of the real one is yet to be determined.
+;   At the lowest level (i.e. the "real" one) it will probably take a variable
+;   list of arguments where each argument [perhaps after the standard three of
+;   name, comment, attrs] is "(keyword arg-to-keyword)".  This syntax is simple
+;   and yet completely upward extensible.  And given the macro facility, one
+;   needn't code at that low a level so even though it'll be more verbose than
+;   necessary it won't matter.  This same reasoning can be applied to most
+;   types of entries in this file.
+;
+; - no instruction may reference s1 or d operands more than once because the
+;   the pre-increment and post-increment forms change the value each access
+
+
+; Useful macros
+(define-pmacro (set-z x)
+  (sequence ()
+            (set zbit-16 (eq HI (trunc HI x) (const 0)))
+            (set zbit-32 (eq SI x (const 0))))
+       
+)
+
+(define-pmacro (set-n x)
+  (sequence ()
+            (set nbit-16 (lt HI (trunc HI x) (const 0)))
+            (set nbit-32 (lt SI x (const 0))))
+)
+ 
+(define-pmacro (set-z-and-n x)
+  (sequence ()
+            (set-z x)
+            (set-n x))
+)
+
+(define-pmacro (set-z-qi x)
+  (sequence ()
+            (set zbit-16 (eq QI (trunc QI x) (const 0)))
+            (set zbit-32 (eq SI x (const 0))))
+       
+)
+
+(define-pmacro (set-n-qi x)
+  (sequence ()
+            (set nbit-16 (lt QI (trunc QI x) (const 0)))
+            (set nbit-32 (lt SI x (const 0))))
+)
+ 
+(define-pmacro (set-z-and-n-qi x)
+  (sequence ()
+            (set-z-qi x)
+            (set-n-qi x))
+)
+
+; for addc / subc only set z-flag - never clear
+(define-pmacro (set-z-and-n-c x)
+  (sequence ()
+            (if (not(eq HI (trunc HI x) (const 0)))
+		(set zbit-16 0))
+	    (if (not(eq SI x (const 0)))
+		(set zbit-32 0))
+            (set-n x))
+)
+
+; and-2 / and-4 / or.2 / or.4 / xor.2 / xor.4
+(define-pmacro (logical-op-3 op bytes opc dest src1 rtype)
+  (begin
+    (dni (.sym op "." bytes)
+         (.str op "." bytes "d,s1,s2")
+         ()
+         (.str op "." bytes " ${" dest "},${" src1 "},$s2")
+         (+ opc dest src1 (f-b15 0) s2)
+         (sequence ((SI result))
+                   (set result (op SI src1 s2))
+                   (set dest result)
+                   (set-z-and-n result))
+         ()
+         
+    )
+  )
+)
+
+(logical-op-3 and 2 OP_AND_2 d-2 s1-2 HI)
+(logical-op-3 and 4 OP_AND_4 d-4 s1-4 SI)
+(logical-op-3 or  2 OP_OR_2  d-2 s1-2 HI)
+(logical-op-3 or  4 OP_OR_4  d-4 s1-4 SI)
+(logical-op-3 xor 2 OP_XOR_2 d-2 s1-2 HI)
+(logical-op-3 xor 4 OP_XOR_4 d-4 s1-4 SI)
+
+(dni (and.1)
+     ("and.1 d,s1,s2")
+     ((MACH ubicom32_ver4))
+     ("and.1 ${d-1},${s1-1},$s2")
+     (+ OP_AND_2 d-1 s1-1 (f-b15 1) s2)
+     (sequence ((SI result))
+               (set result (and SI s1-1 s2))
+               (set d-1 result)
+               (set-z-and-n-qi result))
+     ()
+)
+
+(dni (or.1)
+     ("or.1 d,s1,s2")
+     ((MACH ubicom32_ver4))
+     ("or.1 ${d-1},${s1-1},$s2")
+     (+ OP_OR_2 d-1 s1-1 (f-b15 1) s2)
+     (sequence ((SI result))
+               (set result (or SI s1-1 s2))
+               (set d-1 result)
+               (set-z-and-n-qi result))
+     ()
+)
+
+(dni (xor.1)
+     ("xor.1 d,s1,s2")
+     ((MACH ubicom32_ver4))
+     ("xor.1 ${d-1},${s1-1},$s2")
+     (+ OP_XOR_2 d-1 s1-1 (f-b15 1) s2)
+     (sequence ((SI result))
+               (set result (xor SI s1-1 s2))
+               (set d-1 result)
+               (set-z-and-n-qi result))
+     ()
+)
+
+; not.2 / not.4
+(define-pmacro (not-op bytes op2c dest src1 rtype)
+  (begin
+    (dni (.sym not "." bytes)
+         (.str "not." bytes " d,s")
+         ()
+         (.str "not." bytes " ${" dest "},${" src1 "}")
+         (+ OP_X0 op2c dest src1)
+         (sequence ((SI result))
+                   (set result (inv SI src1))
+                   (set dest result)
+                   (set-z-and-n result))
+         ()
+    )
+  )
+)
+
+(not-op 2 OPX0_NOT_2 d-2 s1-2 HI)
+(not-op 4 OPX0_NOT_4 d-4 s1-4 SI)
+
+; add-2 / add-4
+(define-pmacro (add-op-3 bytes opc dest src1 rtype)
+  (begin
+    (dni (.sym "add." bytes)
+         (.str "add." bytes "d,s1,s2")
+         ()
+         (.str "add." bytes " ${" dest "},${" src1 "},$s2")
+         (+ opc dest src1 (f-b15 0) s2)
+         (sequence ((SI result) (SI s1))
+		   (set s1 (ext SI src1))
+                   (set vbit-32 (add-oflag SI s1 s2 (const 0)))
+                   (set cbit-32 (add-cflag SI s1 s2 (const 0)))
+                   (set vbit-16 (add-oflag HI (trunc HI s1) (trunc HI s2) (const 0)))
+                   (set cbit-16 (add-cflag HI (trunc HI s1) (trunc HI s2) (const 0)))
+                   (set result (add SI s1 s2))
+                   (set dest result)
+                   (set-z-and-n result))
+         ()
+    )
+  )
+)
+
+(add-op-3 2 OP_ADD_2 d-2 s1-2 HI)
+(add-op-3 4 OP_ADD_4 d-4 s1-4 SI)
+
+(dni (add.1)
+     ("add.1 d,s1,s2")
+     ((MACH ubicom32_ver4))
+     ("add.1 ${d-1},${s1-1},$s2")
+     (+ OP_ADD_2 d-1 s1-1 (f-b15 1) s2)
+     (sequence ((SI result) (SI s1))
+	       (set s1 (ext SI s1-1))
+               (set vbit-32 (add-oflag SI s1 s2 (const 0)))
+               (set cbit-32 (add-cflag SI s1 s2 (const 0)))
+               (set vbit-16 (add-oflag QI (trunc QI s1) (trunc QI s2) (const 0)))
+               (set cbit-16 (add-cflag QI (trunc QI s1) (trunc QI s2) (const 0)))
+               (set result (add SI s1 s2))
+               (set d-1 result)
+               (set-z-and-n-qi result))
+     ()
+         
+)
+
+
+; sub-2 / sub-4
+(define-pmacro (sub-op-3 bytes opc dest src1 rtype)
+  (begin
+    (dni (.sym "sub." bytes)
+         (.str "sub." bytes "d,s1,s2")
+         ()
+         (.str "sub." bytes " ${" dest "},${" src1 "},$s2")
+         (+ opc dest src1 (f-b15 0) s2)
+         (sequence ((SI result) (SI s1))
+		   (set s1 (ext SI src1))
+                   (set vbit-32 (sub-oflag SI s1 s2 (const 0)))
+                   (set cbit-32 (not (sub-cflag SI s1 s2 (const 0))))
+                   (set vbit-16 (sub-oflag HI (trunc HI s1) (trunc HI s2) (const 0)))
+                   (set cbit-16 (not (sub-cflag HI (trunc HI s1) (trunc HI s2) (const 0))))
+                   (set result (sub SI s1 s2))
+                   (set dest result)
+                   (set-z-and-n result))
+         ()
+    )
+  )
+)
+
+(sub-op-3 2 OP_SUB_2 d-2 s1-2 HI)
+(sub-op-3 4 OP_SUB_4 d-4 s1-4 SI)
+
+(dni (sub.1)
+     ("sub.1 d,s1,s2")
+     ((MACH ubicom32_ver4))
+     ("sub.1 ${d-1},${s1-1},$s2")
+     (+ OP_SUB_2 d-1 s1-1 (f-b15 1) s2)
+     (sequence ((SI result) (SI s1))
+     	       (set s1 (ext SI s1-1))
+               (set vbit-32 (sub-oflag SI s1 s2 (const 0)))
+               (set cbit-32 (not (sub-cflag SI s1 s2 (const 0))))
+               (set vbit-16 (sub-oflag QI (trunc QI s1) (trunc QI s2) (const 0)))
+               (set cbit-16 (not (sub-cflag QI (trunc QI s1) (trunc QI s2) (const 0))))
+               (set result (sub SI s1 s2))
+               (set d-1 result)
+               (set-z-and-n-qi result))
+     ()
+)
+
+; addc
+(dni (addc)
+     ("addc d,s1,s2")
+     ()
+     ("addc ${d-4},${s1-4},$s2")
+     (+ OP_ADDC d-4 s1-4 (f-b15 0) s2)
+     (sequence ((SI result) (SI s1))
+	       (set s1 s1-4)
+	       (set vbit-16 (add-oflag HI (trunc HI s1) (trunc HI s2) cbit-32))
+	       (set cbit-16 (add-cflag HI (trunc HI s1) (trunc HI s2) cbit-32))
+	       (set vbit-32 (add-oflag SI s1 s2 cbit-32))
+	       (set result (addc SI s1 s2 cbit-32))
+	       (set cbit-32 (add-cflag SI s1 s2 cbit-32))
+	       (set d-4 result)
+	       (set-z-and-n-c result))
+     ()
+         
+)
+
+; subc
+(dni (subc)
+     ("subc d,s1,s2")
+     ()
+     ("subc ${d-4},${s1-4},$s2")
+     (+ OP_SUBC d-4 s1-4 (f-b15 0) s2)
+     (sequence ((SI result) (SI s1) (BI borrow))
+	       (set borrow (not cbit-32))
+	       (set s1 s1-4)
+	       (set vbit-16 (sub-oflag HI (trunc HI s1) (trunc HI s2) borrow))
+	       (set cbit-16 (not (sub-cflag HI (trunc HI s1) (trunc HI s2) borrow)))
+	       (set vbit-32 (sub-oflag SI s1 s2 borrow))
+	       (set cbit-32 (not (sub-cflag SI s1 s2 borrow)))
+	       (set result (subc SI s1 s2 borrow))
+	       (set d-4 result)
+	       (set-z-and-n-c result))
+     ()
+)
+
+; pxcnv
+(dni (pxcnv)
+     ("pxcnv d,s")
+     ((MACH ubicom32_ver4))
+     ("pxcnv ${d-2},${s1-4}")
+     (+ OP_X0 OPX0_PXCNV d-2 s1-4)
+     (sequence ((UHI result))
+               (set result (c-call UHI "pixel_convert" 0 s1-4))
+               (set d-2 result))
+     ()
+)
+
+;pxcnv.t
+(dni (pxcnv.t)
+     ("pxcnv.t d,s")
+     ((MACH ubicom32_ver4))
+     ("pxcnv.t ${d-2},${s1-4}")
+     (+ OP_X0 OPX0_PXCNV_T d-2 s1-4)
+     (sequence ((UHI result))
+               (set result (c-call UHI "pixel_convert" 1 s1-4))
+               (set d-2 result))
+     ()
+)
+
+; pxblend
+(dni (pxblend)
+     ("pxblend d,s1,s2")
+     ((MACH ubicom32_ver4))
+     ("pxblend ${d-4},${s1-4},$s2")
+     (+ OP_PXBLEND d-4 s1-4 (f-b15 0) s2)
+     (sequence ((USI result))
+               (set result (c-call USI "pixel_blend" 0 s1-4 s2 src3))
+	       (set d-4 result))
+     ()
+)
+
+; pxblend.t
+(dni (pxblend.t)
+     ("pxblend.t d,s1,s2")
+     ((MACH ubicom32_ver4))
+     ("pxblend.t ${d-4},${s1-4},$s2")
+     (+ OP_PXBLEND d-4 s1-4 (f-b15 1) s2)
+     (sequence ((USI result))
+               (set result (c-call USI "pixel_blend" 1 s1-4 s2 src3))
+	       (set d-4 result))
+     ()
+)
+
+; pxvi
+(dni (pxvi)
+     ("pxvi d,s1,s2")
+     ((MACH ubicom32_ver4))
+     ("pxvi ${d-4},${s1-4},$s2")
+     (+ OP_PXVI d-4 s1-4 (f-b15 0) s2)
+     (sequence ((USI result))
+               (set result (c-call USI "vertical_interpolation" 0 s1-4 s2 src3))
+	       (set d-4 result))
+     ()
+)
+
+; pxvi.s
+(dni (pxvi.s)
+     ("pxvi.s d,s1,s2")
+     ((MACH ubicom32_ver4))
+     ("pxvi.s ${d-4},${s1-4},$s2")
+     (+ OP_PXVI d-4 s1-4 (f-b15 1) s2)
+     (sequence ((USI result))
+               (set result (c-call USI "vertical_interpolation" 1 s1-4 s2 src3))
+	       (set d-4 result))
+     ()
+)
+
+; pxhi
+(dni (pxhi)
+     ("pxhi d,s1,s2")
+     ((MACH ubicom32_ver4))
+     ("pxhi ${Dn},${s1-4},$s2")
+     (+ OP_X2 OPX2_PXHI Dn s1-4 (f-bit26 1) (f-b15 0) s2)
+     (sequence ((USI result))
+               (set result (c-call USI "horizontal_interpolation" 0 s1-4 s2 src3))
+	       (set Dn result))
+     ()
+)
+
+; pxhi.s
+(dni (pxhi.s)
+     ("pxhi.s d,s1,s2")
+     ((MACH ubicom32_ver4))
+     ("pxhi.s ${Dn},${s1-4},$s2")
+     (+ OP_X2 OPX2_PXHI_S Dn s1-4 (f-bit26 1) (f-b15 1) s2)
+     (sequence ((USI result))
+               (set result (c-call USI "horizontal_interpolation" 1 s1-4 s2 src3))
+	       (set Dn result))
+     ()
+)
+
+; pxadds
+(dni (pxadds)
+     ("pxadds d,s1,s2")
+     ((MACH ubicom32_ver4))
+     ("pxadds ${d-2},${s1-4},$s2")
+     (+ OP_PXADDS d-2 s1-4 (f-b15 0) s2)
+     (sequence ((USI result))
+               (set result (c-call USI "add_and_saturate" 0 s1-4 s2 src3))
+	       (set d-2 result))
+     ()
+)
+
+; pxadds.u
+(dni (pxadds.u)
+     ("pxadds.u d,s1,s2")
+     ((MACH ubicom32_ver4))
+     ("pxadds.u ${d-2},${s1-4},$s2")
+     (+ OP_PXADDS d-2 s1-4 (f-b15 1) s2)
+     (sequence ((USI result))
+               (set result (c-call USI "add_and_saturate" 1 s1-4 s2 src3))
+	       (set d-2 result))
+     ()
+)
+
+; cmpi
+(dni (cmpi)
+     ("cmpi s,#imm-16")
+     ()
+     ("cmpi ${s1-2},#${imm16-1}")
+     (+ OP_CMPI s1-2 imm16-1)
+     (sequence ((SI tmp) (SI s1))
+	       (set s1 s1-2)
+               (set vbit-16 (sub-oflag HI (trunc HI s1) imm16-1 (const 0)))
+               (set cbit-16 (not (sub-cflag HI (trunc HI s1) imm16-1 (const 0))))
+               (set vbit-32 (sub-oflag SI s1 (ext SI imm16-1) (const 0)))
+               (set cbit-32 (not (sub-cflag SI s1 (ext SI imm16-1) (const 0))))
+               (set tmp (sub SI s1 (ext SI imm16-1)))
+               (set-z-and-n tmp))
+     ()
+)
+
+
+; lea.1, lea.2, lea.4
+(define-pmacro (lea-op bytes op2 dest source)
+  (begin
+    (dni (.sym "lea." bytes)
+	 (.str "lea." bytes " d,s1")
+	 ()
+	 (.str "lea." bytes " ${" dest "},${" source "}")
+	 (+ OP_X0 op2 dest source)
+	 (sequence ()
+		   (c-call VOID "is_lea_pdec" 1)
+		   (set dest source)
+		   (c-call VOID "is_lea_pdec" 0))
+	 ()
+    )
+  )
+)
+
+(lea-op 1 OPX0_LEA_1 d-4 s1-ea-1)
+(lea-op 2 OPX0_LEA_2 d-4 s1-ea-2)
+(lea-op 4 OPX0_LEA_4 d-4 s1-ea-4)
+
+; leai
+(dni (leai)
+     ("leai An,offset(Am)")
+     ()
+     ("leai ${An},${leai-offset16}(${Am})")
+     (+ OP_X1E OPX1E_LEAI Am An leai-offset16)
+     (sequence ((SI tmp))
+               (set tmp (add SI Am leai-offset16))
+	       (set An tmp))
+     ()
+)
+
+
+;pdec
+(dni (pdec)
+     ("pdec d,bull")
+     ()
+     ("pdec ${d-4},${pdec-pea-s1}")
+     (+ OP_X0 OPX0_PDEC d-4 pdec-pea-s1)
+     (sequence ()
+               (c-call VOID "is_lea_pdec" 1)
+	       (set d-4 pdec-s1-ea-indirect-with-offset-4)
+               (c-call VOID "is_lea_pdec" 0))
+     ()
+)
+
+(dni (swapb.2)
+     ("swapb.2 d,s")
+     ((MACH ubicom32_ver4))
+     ("swapb.2 ${d-2},${s1-2}")
+     (+ OP_X0 OPX0_SWAPB_2 d-2 s1-2)
+     (sequence ((UHI result) (SI final_result) (UQI byte1) (UQI byte0))
+               (set result (trunc UHI s1-2))
+	       (set byte1 (subword UQI result 1))
+	       (set byte0 (subword UQI result 0))
+	       (set final_result (or SI (sll SI byte1 8) byte0))
+               (set d-2 final_result))
+     ()
+)
+
+(dni (swapb.4)
+     ("swapb.4 d,s")
+     ((MACH ubicom32_ver4))
+     ("swapb.4 ${d-4},${s1-4}")
+     (+ OP_X0 OPX0_SWAPB_4 d-4 s1-4)
+     (sequence ((SI result) (UQI byte3) (UQI byte2) (UQI byte1) (UQI byte0))
+               (set result s1-4)
+	       (set byte3 (subword QI result 3))
+	       (set byte2 (subword QI result 2))
+	       (set byte1 (subword QI result 1))
+	       (set byte0 (subword QI result 0))
+	       (set result (or SI (sll SI byte3 24) (or SI (sll SI byte2 16) (or SI (sll SI byte1 8) byte0))))
+               (set d-4 result))
+     ()
+)
+
+; muls
+(dni (muls)
+     ("muls s1,op3")
+     ((MACH ip3035))
+     ("muls ${s1-2},${op3}")
+     (+ OP_X2 OPX2_MULS (f-Dn 0) s1-2 op3)
+     (sequence ((SI result) (SI tmp1) (SI tmp2))
+	       (set tmp1 (ext SI (trunc HI s1-2)))
+	       (set tmp2 (ext SI (trunc HI op3)))
+	       (set result (mul tmp1 tmp2))
+	       (set machi (and SI (const #xffff) (ext SI (trunc HI (sra result (const 31))))))
+	       (set maclo result)
+               (c-call VOID "finish_multiply"))
+      ()
+)
+
+
+; muls
+(dni (compatibility-muls)
+     ("muls s1, data-register")
+     ((MACH ip3023compatibility))
+     ("muls ${s1-2},${dsp-compatibility-src2-mul}")
+     (+ OP_DSP OPDSP_MULS  (f-dsp-destA 0) s1-2 dsp-compatibility-src2-mul (f-dsp-T 0) (f-dsp-C 0) (f-dsp-R 0) )
+     (sequence ((SI result) (SI tmp1) (SI tmp2))
+	       (set tmp1 (ext SI (trunc HI s1-2)))
+	       (set tmp2 (ext SI (trunc HI dsp-compatibility-src2-mul)))
+	       (set result (mul tmp1 tmp2))
+	       (set machi (and SI (const #xffff) (ext SI (trunc HI (sra result (const 31))))))
+	       (set maclo result)
+               (c-call VOID "finish_multiply"))
+      ()
+)
+
+; mulu
+(dni (mulu)
+     ("mulu s1,op3")
+     ((MACH ip3035))
+     ("mulu ${s1-2},${op3}")
+     (+ OP_X2 OPX2_MULU (f-Dn 0) s1-2 op3)
+     (sequence ((USI result) (USI tmp1) (USI tmp2))
+	       (set tmp1 (and USI s1-2 (const #xffff)))
+	       (set tmp2 (and USI op3 (const #xffff)))
+	       (set result (mul tmp1 tmp2))
+	       (set machi (const 0))
+	       (set maclo result)
+               (c-call VOID "finish_multiply"))
+     ()
+)
+
+(dni (compatibility-mulu)
+     ("mulu s1, data-register")
+     ((MACH ip3023compatibility))
+     ("mulu ${s1-2},${dsp-compatibility-src2-mul}")
+     (+ OP_DSP OPDSP_MULU  (f-dsp-destA 0) s1-2 dsp-compatibility-src2-mul (f-dsp-T 0) (f-dsp-C 0) (f-dsp-R 0))
+     (sequence ((USI result) (USI tmp1) (USI tmp2))
+	       (set tmp1 (and USI s1-2 (const #xffff)))
+	       (set tmp2 (and USI dsp-compatibility-src2-mul (const #xffff)))
+	       (set result (mul tmp1 tmp2))
+	       (set machi (const 0))
+	       (set maclo result)
+               (c-call VOID "finish_multiply"))
+     ()
+)
+
+; mulf
+(dni (mulf)
+     ("mulf s1,op3")
+     ((MACH ip3035))
+     ("mulf ${s1-2},${op3}")
+     (+ OP_X2 OPX2_MULF (f-Dn 0) s1-2 op3)
+     (sequence ((SI result) (SI tmp1) (SI tmp2))
+	       (set tmp1 (ext SI (trunc HI s1-2)))
+	       (set tmp2 (ext SI (trunc HI op3)))
+	       (if (or (ne tmp1 (const #xffff8000))
+		       (ne tmp2 (const #xffff8000)))
+		   (sequence ()
+			     (set result (sll (mul tmp1 tmp2) (const 1)))
+			     (set machi (and SI (const #xffff) (ext SI (trunc HI (sra result (const 31))))))
+			     )
+		   (sequence ()
+			     (set result (const #x80000000))
+			     (set machi (const 0))
+			     )
+		   )
+	       (set maclo result)
+               (c-call VOID "finish_multiply"))
+     ()
+)
+
+(dni (compatibility-mulf)
+     ("mulf s1, data-register")
+     ((MACH ip3023compatibility))
+     ("mulf ${s1-2},${dsp-compatibility-src2-mul}")
+     (+ OP_DSP OPDSP_MULF  (f-dsp-destA 0) s1-2 dsp-compatibility-src2-mul (f-dsp-T 0) (f-dsp-C 0) (f-dsp-R 0))
+     (sequence ((SI result) (SI tmp1) (SI tmp2))
+	       (set tmp1 (ext SI (trunc HI s1-2)))
+	       (set tmp2 (ext SI (trunc HI dsp-compatibility-src2-mul)))
+	       (if (or (ne tmp1 (const #xffff8000))
+		       (ne tmp2 (const #xffff8000)))
+		   (sequence ()
+			     (set result (sll (mul tmp1 tmp2) (const 1)))
+			     (set machi (and SI (const #xffff) (ext SI (trunc HI (sra result (const 31))))))
+			     )
+		   (sequence ()
+			     (set result (const #x80000000))
+			     (set machi (const 0))
+			     )
+		   )
+	       (set maclo result)
+               (c-call VOID "finish_multiply"))
+     ()
+)
+
+; mac
+(dni (mac)
+     ("mac s1,op3")
+     ((MACH ip3035))
+     ("mac ${s1-2},${op3}")
+     (+ OP_X2 OPX2_MAC (f-Dn 0) s1-2 op3)
+     (sequence ((SI result) (HI resulthi) (SI tmp1) (SI tmp2) (BI carry) (BI ov))
+	       (set tmp1 (ext SI (trunc HI s1-2)))
+	       (set tmp2 (ext SI (trunc HI op3)))
+	       (if (or (ne tmp1 (const #xffff8000))
+		       (ne tmp2 (const #xffff8000)))
+		   (sequence ()
+			     (set result (sll (mul tmp1 tmp2) (const 1)))
+			     (set resulthi (trunc HI (sra result (const 31))))
+			     )
+		   (sequence ()
+			     (set result (const #x80000000))
+			     (set resulthi (const 0))
+			     )
+		   )
+	       (set carry (add-cflag maclo result (const 0)))
+	       (set maclo (add maclo result))
+	       (set ov (add-oflag HI machi resulthi carry))
+	       (set machi (and SI (const #xffff) (ext SI (addc HI machi resulthi carry))))
+;	       (if (ne ov (const 0))
+;		   (if (lt resulthi (const 0))
+;		       (sequence ()
+;				 (set machi (const #x8000))
+;				 (set maclo (const 0)))
+;		       (sequence ()
+;				 (set machi (const #x7fff))
+;				 (set maclo (const #xffffffff)))
+;	           )
+;	       )
+               (c-call VOID "finish_multiply"))
+     ()
+)
+
+(dni (compatibility-mac)
+     ("macs s1, data-register")
+     ((MACH ip3023compatibility))
+     ("mac ${s1-2},${dsp-compatibility-src2-mul}")
+     (+ OP_DSP OPDSP_MACS  (f-dsp-destA 0) s1-2 dsp-compatibility-src2-mul (f-dsp-T 0) (f-dsp-C 0) (f-dsp-R 0))
+     (sequence ((SI result) (HI resulthi) (SI tmp1) (SI tmp2) (BI carry) (BI ov))
+	       (set tmp1 (ext SI (trunc HI s1-2)))
+	       (set tmp2 (ext SI (trunc HI dsp-compatibility-src2-mul)))
+	       (if (or (ne tmp1 (const #xffff8000))
+		       (ne tmp2 (const #xffff8000)))
+		   (sequence ()
+			     (set result (sll (mul tmp1 tmp2) (const 1)))
+			     (set resulthi (trunc HI (sra result (const 31))))
+			     )
+		   (sequence ()
+			     (set result (const #x80000000))
+			     (set resulthi (const 0))
+			     )
+		   )
+	       (set carry (add-cflag maclo result (const 0)))
+	       (set maclo (add maclo result))
+	       (set ov (add-oflag HI machi resulthi carry))
+	       (set machi (and SI (const #xffff) (ext SI (addc HI machi resulthi carry))))
+;	       (if (ne ov (const 0))
+;		   (if (lt resulthi (const 0))
+;		       (sequence ()
+;				 (set machi (const #x8000))
+;				 (set maclo (const 0)))
+;		       (sequence ()
+;				 (set machi (const #x7fff))
+;				 (set maclo (const #xffffffff)))
+;	           )
+;	       )
+               (c-call VOID "finish_multiply"))
+     ()
+)
+
+
+; lsr.4 / asr.4 / lsl.4
+(define-pmacro (shift-op-4 op opc cgenop src1)
+  (begin
+    (dni (.sym op ".4")
+         (.str op ".4 d,s,op3")
+         ()
+         (.str op ".4 ${Dn},${" src1 "},${op3}")
+         (+ OP_X2 opc Dn op3 src1)
+         (sequence ((SI result) (SI s1))
+		   (set s1 src1)
+                   (set result (cgenop SI s1 (and USI op3 (const #x1f))))
+                   (set Dn result)
+                   (set-z-and-n result))
+         ()
+    )
+  )
+)
+
+(shift-op-4 lsr OPX2_LSR_4 srl s1-4)
+(shift-op-4 lsl OPX2_LSL_4 sll s1-4)
+(shift-op-4 asr OPX2_ASR_4 sra s1-4)
+
+; lsr.2 / lsl.2
+(define-pmacro (shift-op-2 op opc cgenop src1)
+  (begin
+    (dni (.sym op ".2")
+         (.str op ".2 d,s,op3")
+         ()
+         (.str op ".2 ${Dn},${" src1 "},${op3}")
+         (+ OP_X2 opc Dn op3 src1)
+         (sequence ((SI result) (SI s1) (USI uresult) (USI us1))
+		   (set s1 src1)
+                   (set result (cgenop SI s1 (and USI op3 (const #x1f))))
+		   (set us1 (zext USI src1))
+                   (set uresult (cgenop USI us1 (and USI op3 (const #x1f))))
+                   (set s1 (c-call USI "finish_lshift_2" result uresult))
+                   (set Dn s1)
+                   (set-z-and-n s1))
+         ()
+    )
+  )
+)
+(shift-op-2 lsr OPX2_LSR_2 srl s1-2)
+(shift-op-2 lsl OPX2_LSL_2 sll s1-2)
+
+(dni ("asr.2")
+     ("asr.2 d,s,op3")
+     ()
+     ("asr.2 ${Dn},${s1-2},${op3}")
+     (+ OP_X2 OPX2_ASR_2 Dn op3 s1-2)
+     (sequence ((SI result) (SI s1))
+     	       (set s1 s1-2)
+               (set result (sra SI s1 (and USI op3 (const #x1f))))
+               (set Dn result)
+               (set-z-and-n result))
+     ()
+)
+
+; lsr.1 / lsl.1
+(define-pmacro (shift-op-1 op opc cgenop src1)
+  (begin
+    (dni (.sym op ".1")
+         (.str op ".1 d,s,op3")
+         ((MACH ubicom32_ver4))
+         (.str op ".1 ${Dn},${" src1 "},${op3}")
+         (+ OP_X2 opc Dn op3 src1)
+         (sequence ((SI result) (USI s1))
+		   (set s1 (zext USI src1))
+                   (set result (cgenop USI s1 (and USI op3 (const #x1f))))
+                   (set Dn result)
+                   (set-z-and-n-qi result))
+         ()
+    )
+  )
+)
+(shift-op-1 lsr OPX2_LSR_1 srl s1-1)
+(shift-op-1 lsl OPX2_LSL_1 sll s1-1)
+
+(dni ("asr.1")
+     ("asr.1 d,s,op3")
+     ((MACH ubicom32_ver4))
+     ("asr.1 ${Dn},${s1-1},${op3}")
+     (+ OP_X2 OPX2_ASR_1 Dn op3 s1-1)
+     (sequence ((SI result) (SI s1))
+     	       (set s1 s1-1)
+               (set result (sra SI s1 (and USI op3 (const #x1f))))
+               (set Dn result)
+               (set-z-and-n-qi result))
+     ()
+)
+
+; shftd
+(dni (shftd)
+     ("shftd d,s1,op3")
+     ()
+     ("shftd ${Dn},${s1-4},${op3}")
+     (+ OP_X2 OPX2_SHFTD Dn s1-4 op3)
+     (sequence ((SI tmp) (SI result) (SI s1) (SI shift))
+	       (set s1 s1-4)
+	       (set shift (and op3 (const #x1f)))
+	       (if (gt shift (const 31))
+		   (set result (srl SI src3 (sub shift (const 32))))
+		   (if (gt shift (const 0))
+		       (sequence ()
+				 (set tmp (srl s1 op3))
+				 (set result (or tmp (sll src3 (sub (const 32) shift)))))
+		       (set result s1)
+		       )
+		   )
+	       (set Dn result)
+	       (set-z-and-n result))
+     ()
+)
+
+; merge
+(dni (merge)
+     (.str "merge d,s1,op3")
+     ()
+     ("merge ${Dn},${s1-4},${op3}")
+     (+ OP_X2 OPX2_MERGE Dn s1-4 op3)
+     (sequence ((SI tmp1) (SI tmp2) (SI result))
+	       (set tmp1 (and SI s1-4 src3))
+	       (set tmp2 (and SI op3 (inv SI src3)))
+	       (set result (or SI tmp1 tmp2))
+	       (set Dn result)
+	       (set-z-and-n result))
+     ()
+)
+
+; bfrvrs
+(dni (bfrvrs)
+     ("bfrvrs d,s1,op3")
+     ()
+     ("bfrvrs ${Dn},${s1-4},${op3}")
+     (+ OP_X2 OPX2_BFRVRS Dn s1-4 op3)
+     (sequence ((SI result))
+	       (set result (c-call SI "bfrvrs" op3 s1-4))
+	       (set Dn result)
+	       (set-z-and-n result))
+     ()
+)
+
+; bfextu
+(dni (bfextu)
+     ("bfextu d,s1,op3")
+     ()
+     ("bfextu ${Dn},${s1-4},${op3}")
+     (+ OP_X2 OPX2_BFEXTU Dn s1-4 op3)
+     (sequence ((SI tmp) (SI numzeroes) (SI start))
+	       (set start (and SI (srl SI op3 (const 8)) (const #x1f)))
+	       (set tmp (srl SI s1-4 start))
+	       (set numzeroes (sub SI (const 32) (and SI op3 (const #x1f))))
+	       (if (eq numzeroes (const 32))
+		   (set tmp (const 0))
+		   (sequence ()
+			     (set tmp (sll SI tmp numzeroes))
+			     (set tmp (srl SI tmp numzeroes))
+			     )
+		   )
+	       (set Dn tmp)
+	       (set-z-and-n tmp))
+     ()
+)
+
+; crcgen
+(dni (crcgen)
+     ("crcgen s1,op3")
+     ()
+     ("crcgen ${s1-1},${op3}")
+     (+ OP_X2 OPX2_CRCGEN (f-Dn 0) s1-1 op3)
+     (sequence ()
+               (set machi (c-call USI "crcgen" s1-1 op3))
+               (c-call VOID "finish_multiply"))
+     ()
+)
+
+; shmrg.1 / shmrg.2
+(define-pmacro (shmrg-op bytes opc src1)
+  (begin
+    (dni (.sym "shmrg." bytes)
+         (.str "shmrg." bytes " d,s,op3")
+         ()
+         (.str "shmrg." bytes " ${Dn},${" src1 "},${op3}")
+         (+ OP_X2 opc Dn op3 src1)
+         (sequence ((SI result) (SI s1) (SI shift) (SI numzeroes))
+		   (set shift (sll SI bytes 3))
+		   (set numzeroes (sub SI 32 shift))
+		   (set s1 (srl SI (sll SI src1 numzeroes) numzeroes))
+                   (set result (or SI s1 (sll SI op3 shift)))
+                   (set Dn result)
+                   (set-z-and-n result))
+         ()
+    )
+  )
+)
+
+(shmrg-op 1 OPX2_SHMRG_1 s1-1)
+(shmrg-op 2 OPX2_SHMRG_2 s1-2)
+
+; btst
+(dni (btst)
+     ("btst d,s1,op3")
+     ()
+     ("btst ${s1-4},${op3}")
+     (+ OP_X2 OPX2_BTST (f-Dn 0) s1-4 op3)
+     (sequence ((SI mask))
+	       (set mask (sll SI (const 1) (and USI op3 (const #x1f))))
+	       (set zbit-32 (eq (and SI mask s1-4) 0))
+	       (set zbit-16 zbit-32))
+     ()
+)               
+
+; bset
+(dni (bset)
+     ("bset d,s1,#bit_number")
+     ()
+     ("bset ${d-4},${s1-4},#${bit5}")
+     (+ OP_BSET d-4 bit5 s1-4)
+     (sequence ((SI mask) (SI s1))
+	       (set s1 s1-4)
+               (set mask (sll SI (const 1) (zext SI bit5)))
+               (set zbit-32 (eq (and SI mask s1) 0))
+	       (set zbit-16 zbit-32)
+               (set d-4 (or SI s1 mask)))
+     ()
+)               
+
+; bclr
+(dni (bclr)
+     ("bclr d,s1,#bit_number")
+     ()
+     ("bclr ${d-4},${s1-4},#${bit5}")
+     (+ OP_BCLR d-4 bit5 s1-4)
+     (sequence ((SI mask) (SI s1))
+	       (set s1 s1-4)
+               (set mask (sll SI (const 1) (zext SI bit5)))
+               (set zbit-32 (eq (and SI mask s1) 0))
+	       (set zbit-16 zbit-32)
+               (set d-4 (and SI s1 (inv SI mask))))
+     ()
+)               
+
+; movei
+(dni (movei)
+     ("movei d,#imm-16")
+     ()
+     ("movei ${d-2},#${imm16-2}")
+     (+ OP_MOVEI d-2 imm16-2)
+     (sequence ((SI result))
+               (set result (ext SI (trunc HI imm16-2)))
+               (set d-2 result))
+     ()
+)
+
+; moveai
+(dni (moveai_v5)
+     ("moveai An,#imm-25")
+     ((MACH ubicom32_newmoveai))
+     ("moveai ${An},#${imm25}")
+     (+ OP_MOVEAI_MOVEAI An imm25)
+     (sequence ()
+	       (set An (sll (zext SI imm25) 7)))
+     ()
+)
+
+; moveaiH
+(dni (moveaih)
+     ("moveaih An,#imm-24")
+     ((MACH ubicom32_newmoveaisimulate))
+     ("moveaih ${An},#${imm24}")
+     (+ OP_MOVEAIH An imm24)
+     (sequence ()
+	       (set An (or SI (sll (zext SI imm24) 7) (const #x80000000))))
+     ()
+)
+
+; moveai
+(dni (moveai)
+     ("moveai An,#imm-24")
+     ((MACH ubicom32_oldmoveai))
+     ("moveai ${An},#${imm24}")
+     (+ OP_MOVEAI An imm24)
+     (sequence ()
+	       (set An (sll (zext SI imm24) 7)))
+     ()
+)
+
+; ext.1
+(dni (ext.1)
+     ("ext.1 d,s")
+     ()
+     ("ext.1 ${d-1},${s1-1}")
+     (+ OP_X0 OPX0_EXT_1 d-1 s1-1)
+     (sequence ((SI result))
+               (set result (ext SI (trunc QI s1-1)))
+               (set d-1 result)
+               (set-z-and-n result))
+     ()
+)
+
+; ext.2
+(dni (ext.2)
+     ("ext.2 d,s")
+     ()
+     ("ext.2 ${d-2},${s1-2}")
+     (+ OP_X0 OPX0_EXT_2 d-2 s1-2)
+     (sequence ((SI result))
+               (set result (ext SI (trunc HI s1-2)))
+               (set d-2 result)
+               (set-z-and-n result))
+     ()
+)
+
+; move.1
+(dni (move.1)
+     ("move.1 d,s")
+     ()
+     ("move.1 ${d-1},${s1-1}")
+     (+ OP_X0 OPX0_MOVE_1 d-1 s1-1)
+     (sequence ((SI result))
+               (set result (zext SI (trunc QI s1-1)))
+               (set d-1 result))
+     ()
+)
+
+; move.2
+;               (set-z-and-n result))
+(dni (move.2)
+     ("move.2 d,s")
+     ()
+     ("move.2 ${d-2},${s1-2}")
+     (+ OP_X0 OPX0_MOVE_2 d-2 s1-2)
+     (sequence ((SI result))
+               (set result (zext SI (trunc HI s1-2)))
+               (set d-2 result))
+     ()
+)
+
+(dni (compatibility-iwrite)
+     ("iwrite pea_d,s1")
+     ((MACH ip3023compatibility))
+     ("iwrite ${d-pea},${s1-4}")
+     (+ OP_X0 OPX0_MOVE_4 d-pea s1-4)
+     (sequence ()
+               (c-call VOID "iwrite" d-pea s1-4))
+     ()
+)
+
+(dni (compatibility-iread)
+     ("iread pea_s1")
+     ((MACH ip3023compatibility))
+     ("iread ${s1-pea}")
+     (+ OP_X0 OPX0_MOVE_4 (f-d #x12f) s1-pea)
+     (sequence ()
+               (set iread (c-call USI "iread" s1-pea)))
+     ()
+)
+
+
+; move.4
+;               (set-z-and-n result))
+(dni (move.4)
+     ("move.4 d,s")
+     ()
+     ("move.4 ${d-4},${s1-4}")
+     (+ OP_X0 OPX0_MOVE_4 d-4 s1-4)
+     (sequence ((SI result))
+               (set result s1-4)
+               (set d-4 result))
+     ()
+)
+
+; movea
+;               (set-z-and-n result))
+(dni (movea)
+     ("movea d,s")
+     ((MACH ubicom32dsp,ubicom32_ver4))
+     ("movea ${d-4},${s1-4}")
+     (+ OP_X0 OPX0_MOVEA d-4 s1-4)
+     (sequence ((SI result))
+               (set result s1-4)
+               (set d-4 result))
+     ()
+)
+
+; nop virtual insn equivalent to move.4 #0,#0.  The virtual insn by-passes a problem cgen has 
+; emitting insns with derived operands
+(dni (nop-insn) 
+     ("nop-insn")
+     ()
+     ("__nop__")
+     (+ OP_MOVEI (f-d 0) (f-imm16-2 0))
+     (sequence ()
+	       (nop))
+     ()
+)
+
+; jmp<cc>
+(dni (jmpcc)
+     ("jmp<cc>.C.T/F offset")
+     ()
+     ("jmp${cc}${C}${P} $offset21")
+     (+ OP_JMP cc C P offset21)
+     (sequence ((SI mask))
+               (set mask (c-call SI "check_mask" C cc))
+               (if (eq mask (const 0))
+                   (nop)
+                   (set pc offset21)))
+     ()
+)
+
+; call
+(dni (call)
+     ("call An,offset")
+     ()
+     ("call $An,$offset24")
+     (+ OP_CALL An offset24)
+     (sequence ()
+               (set An (add SI pc (const 4)))
+               (set pc offset24))
+     ()
+)
+
+; calli
+(dni (calli)
+     ("calli An,offset(Am)")
+     ()
+     ("calli ${An},${offset16}(${Am})")
+     (+ OP_X1E OPX1E_CALLI Am An offset16)
+     (sequence ((SI tmp))
+               (set tmp (add SI pc (const 4)))
+               (set pc (and SI (add SI Am offset16) (inv SI 3)))
+	       (set An tmp))
+     ()
+)
+
+; calli.b
+(dni (calli_b)
+     ("calli.b An,offset(Am)")
+     ()
+     ("calli.b ${An},${offset16}(${Am})")
+     (+ OP_X1E OPX1E_CALLI_B Am An offset16)
+     (sequence ((SI tmp))
+               (set tmp (add SI pc (const 4)))
+               (set pc (and SI (add SI Am offset16) (inv SI 3)))
+	       (set An tmp))
+     ()
+)
+
+; ret
+(dni (ret)
+     ("ret s1")
+     ()
+     ("ret ${s1-4}")
+     (+ OP_X0 OPX0_RET (f-d 0) s1-4)
+     (set pc (and SI s1-4 (inv SI 3)))
+     ()
+)
+
+; suspend
+(dni (suspend)
+     ("suspend")
+     ()
+     ("suspend")
+     (+ OP_X0 OPX0_SUSPEND (f-d 0) (f-s1 0))
+     (sequence ()
+               (c-call VOID "suspend"))
+     ()
+)
+
+; bkpt
+(dni (bkpt)
+     ("bkpt s1")
+     ()
+     ("bkpt ${s1-4}")
+     (+ OP_X0 OPX0_BKPT (f-d 0) s1-4)
+     (sequence ()
+               (c-call VOID "bkpt" s1-4)
+	       (set pc pc))
+     ()
+
+)
+
+; setcsr
+(dni (setcsr)
+     ("setcsr s1")
+     ()
+     ("setcsr ${s1-4}")
+     (+ OP_X0 OPX0_SETCSR (f-d #x12d) s1-4)
+     (sequence ()
+               (c-call VOID "setcsr" s1-4))
+     ()
+)
+
+; tbset
+(dni (tbset)
+     ("tbset d,s")
+     ((MACH ubicom32_ver5))
+     ("tbset ${d-4},${s1-4}")
+     (+ OP_X0 OPX0_TBSET d-4 s1-4)
+     (sequence ((USI tid) (USI s1) (USI mask))
+	       (set s1 s1-4)
+	       (set tid (c-call USI "thread_get_self"))
+               (set mask (sll USI (const 1) tid))
+               (set zbit-32 (eq (and USI mask s1) 0))
+	       (set zbit-16 zbit-32)
+               (set d-4 (or USI s1 mask)))
+     ()
+)
+
+; tbclr
+(dni (tbclr)
+     ("tbclr d,s")
+     ((MACH ubicom32_ver5))
+     ("tbclr ${d-4},${s1-4}")
+     (+ OP_X0 OPX0_TBCLR d-4 s1-4)
+     (sequence ((USI tid) (USI s1) (USI mask))
+	       (set s1 s1-4)
+	       (set tid (c-call USI "thread_get_self"))
+               (set mask (sll USI (const 1) tid))
+               (set zbit-32 (eq (and USI mask s1) 0))
+	       (set zbit-16 zbit-32)
+               (set d-4 (and USI s1 (inv USI mask))))
+     ()
+)
+
+; nop
+(dnmi (nop) 
+      ("nop")
+      ()
+      ("nop")
+      (emit nop-insn)
+)
+             
+; iwrite
+(dni (iwrite)
+     ("iwrite pea_d,s1")
+     ((MACH ip3035))
+     ("iwrite ${d-pea},${s1-4}")
+     (+ OP_X0 OPX0_IWRITE d-pea s1-4)
+     (sequence ()
+               (c-call VOID "iwrite" d-pea s1-4))
+     ()
+)
+
+; iread - note that the single operand actually refers to the program space, however,
+;         the format and calculations of the address are identical to that of s1-ea-2
+(dni (iread)
+     ("iread pea_s1")
+     ((MACH ip3035))
+     ("iread ${s1-pea}")
+     (+ OP_X0 OPX0_IREAD (f-d 0) s1-pea)
+     (sequence ()
+               (set iread (c-call USI "iread" s1-pea)))
+     ()
+)
+                                         
+; ierase
+;(dni (ierase)
+;     ("ierase pea_d")
+;     ((MACH ip3035))
+;     ("ierase ${d-pea}")
+;     (+ OP_X0 OPX0_IERASE d-pea (f-s1 0))
+;     (sequence ()
+;               (c-call VOID "ierase" d-pea))
+;     ()
+;)
+;               (c-call VOID "flush" d-4))
+;               (nop))
+
+(dni (flush)
+     ("flush d")
+     ((MACH ubicom32_ver5))
+     ("flush ${d-4}")
+     (+ OP_X0 OPX0_FLUSH d-4 (f-s1 0))
+     (sequence ()
+               (c-call VOID "side_effect" x-d))
+     ()
+)
+
+(dni (flushni)
+     ("flushni d")
+     ((MACH ubicom32_ver5))
+     ("flushni ${d-4}")
+     (+ OP_X0 OPX0_FLUSHNI d-4 (f-s1 0))
+     (sequence ()
+               (c-call VOID "side_effect" x-d))
+     ()
+)
+
+(dni (inval)
+     ("inval d")
+     ((MACH ubicom32_ver5))
+     ("inval ${d-4}")
+     (+ OP_X0 OPX0_INVAL d-4 (f-s1 0))
+     (sequence ()
+               (c-call VOID "side_effect" x-d))
+     ()
+)
+
+(dni (sync)
+     ("sync d")
+     ((MACH ubicom32_ver5))
+     ("sync ${d-4}")
+     (+ OP_X0 OPX0_SYNC d-4 (f-s1 0))
+     (sequence ()
+               (c-call VOID "side_effect" x-d))
+     ()
+)
+
+(dni (prefetch)
+     ("prefetch d")
+     ((MACH ubicom32_ver5))
+     ("prefetch ${d-4}")
+     (+ OP_X0 OPX0_PREFETCH d-4 (f-s1 0))
+     (sequence ()
+               (c-call VOID "side_effect" x-d))
+     ()
+)
+
+(dni (syscall)
+     ("syscall d")
+     ((MACH ubicom32_ver5))
+     ("syscall ${d-4}")
+     (+ OP_X0 OPX0_SYSCALL d-4 (f-s1 0))
+     (sequence ((SI tmp) (SI sep))
+               (set tmp (add SI pc (const 4)))
+               (set pc (and SI (c-call SI "get_h_sep") (inv SI 3)))
+               (set prev-privilege-bit privilege-bit)
+               (set privilege-bit (const 0))
+	       (set d-4 tmp))
+     ()
+)
+
+(dni (sysret)
+     ("sysret d, s")
+     ((MACH ubicom32_ver5))
+     ("sysret ${d-4},${s1-4}")
+     (+ OP_X0 OPX0_SYSRET d-4 s1-4)
+     (sequence ()
+	       (set pc (and SI s1-4 (inv SI 3)))
+	       (set d-4 (const 0))
+               (set privilege-bit prev-privilege-bit))
+     ()
+)
+
+; DSP instructions
+; Assembly format is	Op.c.t	acc, src1, src2
+(dni (dsp-muls)
+     ("muls.t acc, src1, src2")
+     ((MACH ubicom32dsp,ubicom32_ver4))
+     ("muls${dsp-t} ${dsp-destA},${s1-2},${dsp-src2-mul}")
+     (+ OP_DSP OPDSP_MULS dsp-t dsp-destA s1-2 dsp-src2-mul (f-dsp-C 0) (f-dsp-R 0) )
+     (sequence ((SI result) (SI tmp1) (SI tmp2))
+	       (set tmp1 (ext SI (trunc HI s1-2)))
+	       (if (eq dsp-t (const 0))
+		   (set tmp2 (ext SI (trunc HI dsp-src2-mul)))
+		   (set tmp2 (ext SI (trunc HI (sra dsp-src2-mul (const 16))))))
+	       (set result (mul tmp1 tmp2))
+	       (if (eq dsp-destA (const 0))
+		   (sequence ()
+			     (set machi (and SI (const #xffff) (ext SI (trunc HI (sra result (const 31))))))
+			     (set maclo result)
+			     (c-call VOID "finish_multiply"))
+		   (sequence ()
+			     (set acc1hi (and SI (const #xffff) (ext SI (trunc HI (sra result (const 31))))))
+			     (set acc1lo result))
+		   )
+               )
+     ()
+)
+
+(dni (dsp-muls.4)
+     ("muls.4 acc, src1, src2")
+     ((MACH ubicom32_ver4))
+     ("muls.4 ${dsp-destA},${s1-4},${dsp-src2-mul}")
+     (+ OP_DSP OPDSP_MULS_4 dsp-destA s1-4 dsp-src2-mul (f-dsp-C 0) (f-dsp-R 0) (f-dsp-T 0) )
+     (sequence ((DI result) (DI tmp1) (DI tmp2))
+	       (set tmp1 (ext DI s1-4))
+	       (set tmp2 (ext DI dsp-src2-mul))
+	       (set result (mul tmp1 tmp2))
+	       (if (eq dsp-destA (const 0))
+		   (sequence ()
+			     (set machi (trunc SI (sra result (const 32))))
+			     (set maclo (trunc SI result))
+			     (c-call VOID "finish_multiply"))
+		   (sequence ()
+			     (set acc1hi (trunc SI (sra result (const 32))))
+			     (set acc1lo (trunc SI result)))
+		   )
+               )
+     ()
+)
+
+(dni (dsp-macs.4)
+     ("macs.4 acc, src1, src2")
+     ((MACH ubicom32_ver5))
+     ("macs.4 ${dsp-destA},${s1-4},${dsp-src2-mul}")
+     (+ OP_DSP OPDSP_MACS_4 dsp-destA s1-4 dsp-src2-mul (f-dsp-C 0) (f-dsp-R 0) (f-dsp-T 0) )
+     (sequence ((DI result) (DI hires) (DI tmp1) (DI tmp2))
+	       (set tmp1 (ext DI s1-4))
+	       (set tmp2 (ext DI dsp-src2-mul))
+	       (set result (mul tmp1 tmp2))
+	       (set hires (ext DI (trunc SI result)))
+	       (if (eq dsp-destA (const 0))
+		   (sequence ()
+			     (set hires (add DI hires (ext DI maclo)))
+			     (set maclo (add (trunc SI result) maclo))
+			     (set machi (and USI (const #xffff) (trunc USI (srl hires (const 32)))))
+			     (c-call VOID "finish_multiply"))
+		   (sequence ()
+			     (set hires (add DI hires (ext DI acc1lo)))
+			     (set acc1lo (add (trunc SI result) acc1lo))
+			     (set acc1hi (and USI (const #xffff) (trunc USI (srl hires (const 32))))))
+		   )
+               )
+     ()
+)
+
+(define-pmacro (store-accumulator dsp-destA tmp_acc)
+  (if (eq dsp-destA (const 0))
+      (sequence ()
+		(set machi (and SI (const #xffff) (trunc HI (sra tmp_acc (const 32)))))
+		(set maclo (and SI (const #xffffffff) tmp_acc))
+		(c-call VOID "finish_multiply"))
+      (sequence ()
+		(set acc1hi (and SI (const #xffff) (trunc HI (sra tmp_acc (const 32)))))
+		(set acc1lo (and SI (const #xffffffff) tmp_acc)))
+      )
+)
+
+(define-pmacro (extract-signed-dsp-src2 dest src dsp-t)
+  (if (eq dsp-t (const 0))
+      (set dest (ext SI (trunc HI src)))
+      (set dest (ext SI (trunc HI (sra src (const 16))))))
+)
+
+(define-pmacro (extract-unsigned-dsp-src2 dest src dsp-t)
+  (if (eq dsp-t (const 0))
+      (set dest (and USI src (const #xffff)))
+      (set dest (and USI (sra src (const 16)) (const #xffff))))
+)
+
+(define-pmacro (mul-fract-sat-check tmp1 tmp2 mul_result)
+  (if (and (eq tmp1 (const #xffff8000)) (eq tmp2 (const #xffff8000)))
+      (sequence ()
+		(c-call VOID "my_set_h_dsp_obit" 1)
+		(set mul_result (const #x80000000)))
+      (set mul_result (sll DI (mul DI tmp1 tmp2) (const 1))))
+)
+
+(dni (dsp-macs)
+     ("macs.c.t acc, src1, src2")
+     ((MACH ubicom32dsp,ubicom32_ver4))
+     ("macs${dsp-c}${dsp-t} ${dsp-destA},${s1-2},${dsp-src2-mul}")
+     (+ OP_DSP OPDSP_MACS dsp-c dsp-t dsp-destA s1-2 dsp-src2-mul (f-dsp-R 0))
+     (sequence ((DI mul_result) (SI tmp1) (SI tmp2) (DI tmp_acc) (DI tmp_clip_result))
+	       (set tmp1 (ext SI (trunc HI s1-2)))
+	       (extract-signed-dsp-src2 tmp2 dsp-src2-mul dsp-t)
+	       (set mul_result (mul DI tmp1 tmp2))
+	       (set tmp_acc (add (c-call DI "my_get_acc" dsp-destA) (ext DI mul_result)))
+	       (set tmp_clip_result (c-call DI "dsp_clip32" tmp_acc))
+	       (if (eq dsp-c (const 1))
+		   (set tmp_acc tmp_clip_result))
+	       (store-accumulator dsp-destA tmp_acc)
+               )
+     ()
+)
+
+(dni (dsp-mulu)
+     ("mulu.t acc, src1, src2")
+     ((MACH ubicom32dsp,ubicom32_ver4))
+     ("mulu${dsp-t} ${dsp-destA},${s1-2},${dsp-src2-mul}")
+     (+ OP_DSP OPDSP_MULU dsp-t dsp-destA s1-2 dsp-src2-mul (f-dsp-C 0) (f-dsp-R 0))
+     (sequence ((USI result) (USI tmp1) (USI tmp2))
+	       (set tmp1 (and USI s1-2 (const #xffff)))
+	       (if (eq dsp-t (const 0))
+		   (set tmp2 (and USI dsp-src2-mul (const #xffff)))
+		   (set tmp2 (and USI (sra dsp-src2-mul (const 16)) (const #xffff ))))
+	       (set result (mul tmp1 tmp2))
+	       (if (eq dsp-destA (const 0))
+		   (sequence ()
+			     (set machi (const 0))
+			     (set maclo result)
+			     (c-call VOID "finish_multiply"))
+		   (sequence ()
+			     (set acc1hi (const 0))
+			     (set acc1lo result))
+		   )
+               )
+     ()
+)
+
+(dni (dsp-mulu.4)
+     ("mulu.4 acc, src1, src2")
+     ((MACH ubicom32_ver4))
+     ("mulu.4 ${dsp-destA},${s1-4},${dsp-src2-mul}")
+     (+ OP_DSP OPDSP_MULU_4 dsp-destA s1-4 dsp-src2-mul (f-dsp-C 0) (f-dsp-R 0) (f-dsp-T 0))
+     (sequence ((UDI result) (UDI tmp1) (UDI tmp2))
+	       (set tmp1 (zext UDI s1-4))
+	       (set tmp2 (zext UDI dsp-src2-mul))
+	       (set result (mul tmp1 tmp2))
+	       (if (eq dsp-destA (const 0))
+		   (sequence ()
+			     (set machi (trunc USI (srl result (const 32))))
+			     (set maclo (trunc USI result))
+			     (c-call VOID "finish_multiply"))
+		   (sequence ()
+			     (set acc1hi (trunc USI (srl result (const 32))))
+			     (set acc1lo (trunc USI result)))
+		   )
+               )
+     ()
+)
+
+(dni (dsp-macu.4)
+     ("macu.4 acc, src1, src2")
+     ((MACH ubicom32_ver5))
+     ("macu.4 ${dsp-destA},${s1-4},${dsp-src2-mul}")
+     (+ OP_DSP OPDSP_MACU_4 dsp-destA s1-4 dsp-src2-mul (f-dsp-C 0) (f-dsp-R 0) (f-dsp-T 0))
+     (sequence ((UDI result) (UDI hires) (UDI tmp1) (UDI tmp2))
+	       (set tmp1 (zext UDI s1-4))
+	       (set tmp2 (zext UDI dsp-src2-mul))
+	       (set result (mul tmp1 tmp2))
+	       (set hires (zext UDI (trunc USI result)))
+	       (if (eq dsp-destA (const 0))
+		   (sequence ()
+			     (set hires (add UDI hires (zext UDI maclo)))
+			     (set maclo (add USI (trunc USI result) maclo))
+			     (set machi (trunc USI (srl hires (const 32))))
+			     (c-call VOID "finish_multiply"))
+		   (sequence ()
+			     (set hires (add UDI hires (zext UDI acc1lo)))
+			     (set acc1lo (add USI (trunc USI result) acc1lo))
+			     (set acc1hi (trunc USI (srl hires (const 32)))))
+		   )
+               )
+     ()
+)
+
+(dni (dsp-macu)
+     ("macu.c.t acc, src1, src2")
+     ((MACH ubicom32dsp,ubicom32_ver4))
+     ("macu${dsp-c}${dsp-t} ${dsp-destA},${s1-2},${dsp-src2-mul}")
+     (+ OP_DSP OPDSP_MACU dsp-c dsp-t dsp-destA s1-2 dsp-src2-mul (f-dsp-R 0) )
+     (sequence ((UDI mul_result) (USI tmp1) (USI tmp2) (DI tmp_acc) (DI tmp_clip_result))
+	       (set tmp1 (and USI s1-2 (const #xffff)))
+	       (extract-unsigned-dsp-src2 tmp2 dsp-src2-mul dsp-t)
+	       (set mul_result (mul tmp1 tmp2))
+	       (set tmp_acc (add (c-call DI "my_get_acc"  dsp-destA) (ext DI mul_result)))
+	       (set tmp_clip_result (and DI (const #xffffffff) tmp_acc))
+	       (if (gt (and UDI (const #xffffffff) (sra tmp_acc (const 32))) (const 0))
+		   (sequence ()
+			     (c-call VOID "my_set_h_dsp_obit" 1)
+			     (set tmp_clip_result (const #xffffffff))))
+	       (if (eq dsp-c (const 1))
+		   (set tmp_acc tmp_clip_result))
+	       (store-accumulator dsp-destA tmp_acc)
+               )
+     ()
+)
+
+(dni (dsp-mulf)
+     ("mulf.c.t acc, src1, src2")
+     ((MACH ubicom32dsp,ubicom32_ver4))
+     ("mulf${dsp-c}${dsp-t} ${dsp-destA},${s1-2},${dsp-src2-mul}")
+     (+ OP_DSP OPDSP_MULF dsp-c dsp-t dsp-destA s1-2 dsp-src2-mul (f-dsp-R 0) )
+     (sequence ((DI mul_result) (SI tmp1) (SI tmp2) (DI tmp_acc) (DI tmp_clip_result))
+	       (set tmp1 (ext SI (trunc HI s1-2)))
+	       (extract-signed-dsp-src2 tmp2 dsp-src2-mul dsp-t)
+	       (mul-fract-sat-check tmp1 tmp2 mul_result)
+	       (set tmp_acc (ext DI mul_result)) 
+	       (set tmp_clip_result (c-call DI "dsp_clip32" tmp_acc))
+	       (if (eq dsp-c (const 1))
+		   (set tmp_acc tmp_clip_result))
+	       (store-accumulator dsp-destA tmp_acc)
+               )
+     ()
+)
+
+(dni (dsp-macf)
+     ("macf.c.t acc, src1, src2")
+     ((MACH ubicom32dsp,ubicom32_ver4))
+     ("macf${dsp-c}${dsp-t} ${dsp-destA},${s1-2},${dsp-src2-mul}")
+     (+ OP_DSP OPDSP_MACF dsp-c dsp-t dsp-destA s1-2 dsp-src2-mul (f-dsp-R 0))
+     (sequence ((DI mul_result) (SI tmp1) (SI tmp2) (DI tmp_acc) (DI tmp_clip_result))
+	       (set tmp1 (ext SI (trunc HI s1-2)))
+	       (extract-signed-dsp-src2 tmp2 dsp-src2-mul dsp-t)
+	       (mul-fract-sat-check tmp1 tmp2 mul_result)
+	       (set tmp_acc (add (c-call DI "my_get_acc"  dsp-destA) (ext DI mul_result)))
+	       (set tmp_clip_result (c-call DI "dsp_clip32" tmp_acc))
+	       (if (eq dsp-c (const 1))
+		   (set tmp_acc tmp_clip_result))
+	       (store-accumulator dsp-destA tmp_acc)
+               )
+     ()
+)
+
+(dni (dsp-macus)
+     ("macus.c.t acc, src1, src2")
+     ((MACH ubicom32dsp,ubicom32_ver4))
+     ("macus${dsp-c}${dsp-t} ${dsp-destA},${s1-2},${dsp-src2-mul}")
+     (+ OP_DSP OPDSP_MACUS dsp-c dsp-t dsp-destA s1-2 dsp-src2-mul (f-dsp-R 0) )
+     (sequence ((UDI mul_result) (USI tmp1) (USI tmp2) (DI tmp_acc) (DI tmp_clip_result))
+	       (set tmp1 (and USI s1-2 (const #xffff)))
+	       (extract-unsigned-dsp-src2 tmp2 dsp-src2-mul dsp-t)
+	       (set mul_result (mul tmp1 tmp2))
+	       (set tmp_acc (add (c-call DI "my_get_acc"  dsp-destA) 
+				 (sll DI (ext DI mul_result) (const 16))))
+	       (set tmp_clip_result (and DI (const #xffffffff) tmp_acc))
+	       (if (gt (and UDI (const #xffffffff) (sra tmp_acc (const 32))) (const 0))
+		   (sequence ()
+			     (c-call VOID "my_set_h_dsp_obit" 1)
+			     (set tmp_clip_result (const #xffffffff))))
+	       (if (eq dsp-c (const 1))
+		   (set tmp_acc tmp_clip_result))
+	       (store-accumulator dsp-destA tmp_acc)
+               )
+     ()
+)
+
+(dni (dsp-msuf)
+     ("msuf.c.t acc, src1, src2")
+     ((MACH ubicom32dsp,ubicom32_ver4))
+     ("msuf${dsp-c}${dsp-t} ${dsp-destA},${s1-2},${dsp-src2-mul}")
+     (+ OP_DSP OPDSP_MSUF dsp-c dsp-t dsp-destA s1-2 dsp-src2-mul (f-dsp-R 0) )
+     (sequence ((DI mul_result) (SI tmp1) (SI tmp2) (DI tmp_acc) (DI tmp_clip_result))
+	       (set tmp1 (ext SI (trunc HI s1-2)))
+	       (extract-signed-dsp-src2 tmp2 dsp-src2-mul dsp-t)
+	       (mul-fract-sat-check tmp1 tmp2 mul_result)
+	       (set tmp_acc (sub (c-call DI "my_get_acc" dsp-destA) (ext DI mul_result)))
+	       (set tmp_clip_result (c-call DI "dsp_clip32" tmp_acc))
+	       (if (eq dsp-c (const 1))
+		   (set tmp_acc tmp_clip_result))
+	       (store-accumulator dsp-destA tmp_acc)
+               )
+     ()
+)
+
+(dni (dsp-madd.4)
+     ("madd.4.c acc, src1, src2")
+     ((MACH ubicom32dsp,ubicom32_ver4))
+     ("madd.4${dsp-c} ${dsp-destA},${s1-4},${dsp-src2-addsub}")
+     (+ OP_DSP OPDSP_MADD_4 dsp-c dsp-destA s1-4 dsp-src2-addsub (f-dsp-T 0) (f-dsp-R 0) )
+     (sequence ((DI tmp1) (DI tmp2))
+	       (set tmp1 (ext DI s1-4))
+	       (set tmp2 (ext DI dsp-src2-addsub))
+	       (c-call VOID "dsp_addsub" tmp1 tmp2 dsp-destA 1 32 dsp-c)
+	       )
+     ()
+)
+
+(dni (dsp-madd.2)
+     ("madd.2.c.t acc, src1, src2")
+     ((MACH ubicom32dsp,ubicom32_ver4))
+     ("madd.2${dsp-c}${dsp-t-addsub} ${dsp-destA},${s1-2},${dsp-src2-addsub2}")
+     (+ OP_DSP OPDSP_MADD_2 dsp-c dsp-t-addsub dsp-destA s1-2 dsp-src2-addsub2 (f-dsp-R 0) )
+     (sequence ((DI tmp1) (DI tmp2) (DI tmp3))
+	       (set tmp1 (ext DI s1-2))
+	       (set tmp2 (ext DI dsp-src2-addsub2))
+	       (if (eq dsp-t (const 0))
+		   (set tmp3 (ext DI (trunc HI tmp2)))
+		   (set tmp3 (ext DI (trunc HI (sra tmp2 (const 16))))))
+	       (c-call VOID "dsp_addsub" tmp1 tmp2 dsp-destA 1 16 dsp-c)
+	       )
+     ()
+)
+
+(dni (dsp-msub.4)
+     ("msub.4.c acc, src1, src2")
+     ((MACH ubicom32dsp,ubicom32_ver4))
+     ("msub.4${dsp-c} ${dsp-destA},${s1-4},${dsp-src2-addsub}")
+     (+ OP_DSP OPDSP_MSUB_4 dsp-c dsp-destA s1-4 dsp-src2-addsub (f-dsp-T 0) (f-dsp-R 0) )
+     (sequence ((DI tmp1) (DI tmp2))
+	       (set tmp1 (ext DI s1-4))
+	       (set tmp2 (ext DI dsp-src2-addsub))
+	       (c-call VOID "dsp_addsub" tmp1 tmp2 dsp-destA -1 32 dsp-c)
+	       )
+     ()
+)
+
+(dni (dsp-msub.2)
+     ("msub.2.c.t acc, src1, src2")
+     ((MACH ubicom32dsp,ubicom32_ver4))
+     ("msub.2${dsp-c}${dsp-t-addsub} ${dsp-destA},${s1-2},${dsp-src2-addsub2}")
+     (+ OP_DSP OPDSP_MSUB_2 dsp-c dsp-t-addsub dsp-destA s1-2 dsp-src2-addsub2 (f-dsp-R 0) )
+     (sequence ((DI tmp1) (DI tmp2) (DI tmp3))
+	       (set tmp1 (ext DI s1-2))
+	       (set tmp2 (ext DI dsp-src2-addsub2))
+	       (if (eq dsp-t (const 0))
+		   (set tmp3 (ext DI (trunc HI tmp2)))
+		   (set tmp3 (ext DI (trunc HI (sra tmp2 (const 16))))))
+	       (c-call VOID "dsp_addsub" tmp1 tmp2 dsp-destA -1 16 dsp-c)
+	       )
+     ()
+)
+
+(dni (dsp-clracc)
+      ("clracc acc0/acc1")
+      ((MACH ubicom32dsp,ubicom32_ver4))
+      ("__clracc__ ${dsp-destA}")
+      (+ OP_DSP OPDSP_MSUB_4 dsp-destA (f-s1 #x100) (f-dsp-S2-sel 0) (f-bit5 0) (f-dsp-T 0) (f-dsp-C 0) (f-bit26 1) (f-dsp-R 0) )
+      (sequence ()
+		(store-accumulator dsp-destA (const DI 0))
+		)
+      ()
+)
+
+(dnmi (dsp-clracc-macro) 
+      ("clracc acc0/acc1")
+      ((MACH ubicom32dsp,ubicom32_ver4))
+      ("clracc ${dsp-destA}")
+      (emit dsp-clracc dsp-destA)
+)
+
+; Floating point instructions.
+; FADDS
+(dni (fadds_data)
+     ("fadds acc, src1, src2_data_reg")
+     ((MACH ubicom32_ver5))
+     ("fadds ${fpu-32-dest-reg},${s1-4},${fpu-32-S2-data-reg}")
+     (+ OP_FPU OPFPU_FADDS fpu-32-dest-reg s1-4 (f-FPS2-sel 0) (f-bit26 0)  fpu-32-S2-data-reg  (f-FPunused20 0))
+     (sequence ((SF result))
+	       (set fpu-32-dest-reg (c-call SF "fadds" s1-4 fpu-32-S2-data-reg)))
+     ()
+)
+
+; FADDS
+(dni (fadds_acc)
+     ("fadds acc, src1, src2_acc_reg")
+     ((MACH ubicom32_ver5))
+     ("fadds ${fpu-32-dest-reg},${s1-4},${fpu-32-S2-acc-reg}")
+     (+ OP_FPU OPFPU_FADDS fpu-32-dest-reg s1-4 (f-FPS2-sel 1) (f-bit26 0)  fpu-32-S2-acc-reg  (f-FPunused20 0))
+     (sequence ((SF result))
+	       (set fpu-32-dest-reg (c-call SF "fadds" s1-4 fpu-32-S2-acc-reg)))
+     ()
+)
+
+; FADDD
+(dni (faddd_data_data)
+     ("faddd acc, src1_data_reg, src2_data_reg")
+     ((MACH ubicom32_ver5))
+     ("faddd ${fpu-64-dest-reg},${fpu-64-S1-data-reg},${fpu-64-S2-data-reg}")
+     (+ OP_FPU OPFPU_FADDD fpu-64-dest-reg (f-FPS1-sel 0) fpu-64-S1-data-reg (f-FPS2-sel 0) fpu-64-S2-data-reg (f-bit26 0) (f-FPunused20 0) (f-FPunused11 0) (f-bit16 0) (f-bit0 0) )
+     (sequence ((DF result))
+	       (set fpu-64-dest-reg (c-call DF "faddd" fpu-64-S1-data-reg fpu-64-S2-data-reg)))
+     ()
+)
+
+; FADDD
+(dni (faddd_data_acc)
+     ("faddd acc, src1_data_reg, src2_acc_reg")
+     ((MACH ubicom32_ver5))
+     ("faddd ${fpu-64-dest-reg},${fpu-64-S1-data-reg},${fpu-64-S2-acc-reg}")
+     (+ OP_FPU OPFPU_FADDD fpu-64-dest-reg (f-FPS1-sel 0) fpu-64-S1-data-reg (f-FPS2-sel 1) fpu-64-S2-acc-reg (f-bit26 0) (f-FPunused20 0) (f-FPunused11 0) (f-bit16 0) (f-bit0 0) )
+     (sequence ((DF result))
+	       (set fpu-64-dest-reg (c-call DF "faddd" fpu-64-S1-data-reg fpu-64-S2-acc-reg)))
+     ()
+)
+
+; FADDD
+(dni (faddd_acc_data)
+     ("faddd acc, src1_acc_reg, src2_data_reg")
+     ((MACH ubicom32_ver5))
+     ("faddd ${fpu-64-dest-reg},${fpu-64-S1-acc-reg},${fpu-64-S2-data-reg}")
+     (+ OP_FPU OPFPU_FADDD fpu-64-dest-reg (f-FPS1-sel 1) fpu-64-S1-acc-reg (f-FPS2-sel 0) fpu-64-S2-data-reg (f-bit26 0) (f-FPunused20 0) (f-FPunused11 0) (f-bit16 0) (f-bit0 0) )
+     (sequence ((DF result))
+	       (set fpu-64-dest-reg (c-call DF "faddd" fpu-64-S1-acc-reg fpu-64-S2-data-reg)))
+     ()
+)
+
+; FADDD
+(dni (faddd_acc_acc)
+     ("faddd acc, src1_acc_reg, src2_acc_reg")
+     ((MACH ubicom32_ver5))
+     ("faddd ${fpu-64-dest-reg},${fpu-64-S1-acc-reg},${fpu-64-S2-acc-reg}")
+     (+ OP_FPU OPFPU_FADDD fpu-64-dest-reg (f-FPS1-sel 1) fpu-64-S1-acc-reg (f-FPS2-sel 1) fpu-64-S2-acc-reg (f-bit26 0) (f-FPunused20 0) (f-FPunused11 0) (f-bit16 0) (f-bit0 0) )
+     (sequence ((DF result))
+	       (set fpu-64-dest-reg (c-call DF "faddd" fpu-64-S1-acc-reg fpu-64-S2-acc-reg)))
+     ()
+)
+
+; FSUBS
+(dni (fsubs_data)
+     ("fsubs acc, src1, src2_data_reg")
+     ((MACH ubicom32_ver5))
+     ("fsubs ${fpu-32-dest-reg},${s1-4},${fpu-32-S2-data-reg}")
+     (+ OP_FPU OPFPU_FSUBS fpu-32-dest-reg s1-4 (f-FPS2-sel 0) (f-bit26 0)  fpu-32-S2-data-reg  (f-FPunused20 0))
+     (sequence ((SF result))
+	       (set fpu-32-dest-reg (c-call SF "fsubs" s1-4 fpu-32-S2-data-reg)))
+     ()
+)
+
+; FSUBS
+(dni (fsubs_acc)
+     ("fsubs acc, src1, src2_acc_reg")
+     ((MACH ubicom32_ver5))
+     ("fsubs ${fpu-32-dest-reg},${s1-4},${fpu-32-S2-acc-reg}")
+     (+ OP_FPU OPFPU_FSUBS fpu-32-dest-reg s1-4 (f-FPS2-sel 1) (f-bit26 0)  fpu-32-S2-acc-reg  (f-FPunused20 0))
+     (sequence ((SF result))
+	       (set fpu-32-dest-reg (c-call SF "fsubs" s1-4 fpu-32-S2-acc-reg)))
+     ()
+)
+
+; FSUBD
+(dni (fsubd_data_data)
+     ("fsubd acc, src1_data_reg, src2_data_reg")
+     ((MACH ubicom32_ver5))
+     ("fsubd ${fpu-64-dest-reg},${fpu-64-S1-data-reg},${fpu-64-S2-data-reg}")
+     (+ OP_FPU OPFPU_FSUBD fpu-64-dest-reg (f-FPS1-sel 0) fpu-64-S1-data-reg (f-FPS2-sel 0) fpu-64-S2-data-reg (f-bit26 0) (f-FPunused20 0) (f-FPunused11 0) (f-bit16 0) (f-bit0 0) )
+     (sequence ((DF result))
+	       (set fpu-64-dest-reg (c-call DF "fsubd" fpu-64-S1-data-reg fpu-64-S2-data-reg)))
+     ()
+)
+
+; FSUBD
+(dni (fsubd_data_acc)
+     ("fsubd acc, src1_data_reg, src2_acc_reg")
+     ((MACH ubicom32_ver5))
+     ("fsubd ${fpu-64-dest-reg},${fpu-64-S1-data-reg},${fpu-64-S2-acc-reg}")
+     (+ OP_FPU OPFPU_FSUBD fpu-64-dest-reg (f-FPS1-sel 0) fpu-64-S1-data-reg (f-FPS2-sel 1) fpu-64-S2-acc-reg (f-bit26 0) (f-FPunused20 0) (f-FPunused11 0) (f-bit16 0) (f-bit0 0) )
+     (sequence ((DF result))
+	       (set fpu-64-dest-reg (c-call DF "fsubd" fpu-64-S1-data-reg fpu-64-S2-acc-reg)))
+     ()
+)
+
+; FSUBD
+(dni (fsubd_acc_data)
+     ("fsubd acc, src1_acc_reg, src2_data_reg")
+     ((MACH ubicom32_ver5))
+     ("fsubd ${fpu-64-dest-reg},${fpu-64-S1-acc-reg},${fpu-64-S2-data-reg}")
+     (+ OP_FPU OPFPU_FSUBD fpu-64-dest-reg (f-FPS1-sel 1) fpu-64-S1-acc-reg (f-FPS2-sel 0) fpu-64-S2-data-reg (f-bit26 0) (f-FPunused20 0) (f-FPunused11 0) (f-bit16 0) (f-bit0 0) )
+     (sequence ((DF result))
+	       (set fpu-64-dest-reg (c-call DF "fsubd" fpu-64-S1-acc-reg fpu-64-S2-data-reg)))
+     ()
+)
+
+; FSUBD
+(dni (fsubd_acc_acc)
+     ("fsubd acc, src1_acc_reg, src2_acc_reg")
+     ((MACH ubicom32_ver5))
+     ("fsubd ${fpu-64-dest-reg},${fpu-64-S1-acc-reg},${fpu-64-S2-acc-reg}")
+     (+ OP_FPU OPFPU_FSUBD fpu-64-dest-reg (f-FPS1-sel 1) fpu-64-S1-acc-reg (f-FPS2-sel 1) fpu-64-S2-acc-reg (f-bit26 0) (f-FPunused20 0) (f-FPunused11 0) (f-bit16 0) (f-bit0 0) )
+     (sequence ((DF result))
+	       (set fpu-64-dest-reg (c-call DF "fsubd" fpu-64-S1-acc-reg fpu-64-S2-acc-reg)))
+     ()
+)
+
+; FMULS
+(dni (fmuls_data)
+     ("fmuls acc, src1, src2_data_reg")
+     ((MACH ubicom32_ver5))
+     ("fmuls ${fpu-32-dest-reg},${s1-4},${fpu-32-S2-data-reg}")
+     (+ OP_FPU OPFPU_FMULS fpu-32-dest-reg s1-4 (f-FPS2-sel 0) (f-bit26 0)  fpu-32-S2-data-reg  (f-FPunused20 0))
+     (sequence ((SF result))
+	       (set fpu-32-dest-reg (c-call SF "fmuls" s1-4 fpu-32-S2-data-reg)))
+     ()
+)
+
+; FMULS
+(dni (fmuls_acc)
+     ("fmuls acc, src1, src2_acc_reg")
+     ((MACH ubicom32_ver5))
+     ("fmuls ${fpu-32-dest-reg},${s1-4},${fpu-32-S2-acc-reg}")
+     (+ OP_FPU OPFPU_FMULS fpu-32-dest-reg s1-4 (f-FPS2-sel 1) (f-bit26 0)  fpu-32-S2-acc-reg  (f-FPunused20 0))
+     (sequence ((SF result))
+	       (set fpu-32-dest-reg (c-call SF "fmuls" s1-4 fpu-32-S2-acc-reg)))
+     ()
+)
+
+; FMULD
+(dni (fmuld_data_data)
+     ("fmuld acc, src1_data_reg, src2_data_reg")
+     ((MACH ubicom32_ver5))
+     ("fmuld ${fpu-64-dest-reg},${fpu-64-S1-data-reg},${fpu-64-S2-data-reg}")
+     (+ OP_FPU OPFPU_FMULD fpu-64-dest-reg (f-FPS1-sel 0) fpu-64-S1-data-reg (f-FPS2-sel 0) fpu-64-S2-data-reg (f-bit26 0) (f-FPunused20 0) (f-FPunused11 0) (f-bit16 0) (f-bit0 0) )
+     (sequence ((DF result))
+	       (set fpu-64-dest-reg (c-call DF "fmuld" fpu-64-S1-data-reg fpu-64-S2-data-reg)))
+     ()
+)
+
+; FMULD
+(dni (fmuld_data_acc)
+     ("fmuld acc, src1_data_reg, src2_acc_reg")
+     ((MACH ubicom32_ver5))
+     ("fmuld ${fpu-64-dest-reg},${fpu-64-S1-data-reg},${fpu-64-S2-acc-reg}")
+     (+ OP_FPU OPFPU_FMULD fpu-64-dest-reg (f-FPS1-sel 0) fpu-64-S1-data-reg (f-FPS2-sel 1) fpu-64-S2-acc-reg (f-bit26 0) (f-FPunused20 0) (f-FPunused11 0) (f-bit16 0) (f-bit0 0) )
+     (sequence ((DF result))
+	       (set fpu-64-dest-reg (c-call DF "fmuld" fpu-64-S1-data-reg fpu-64-S2-acc-reg)))
+     ()
+)
+
+; FMULD
+(dni (fmuld_acc_data)
+     ("fmuld acc, src1_acc_reg, src2_data_reg")
+     ((MACH ubicom32_ver5))
+     ("fmuld ${fpu-64-dest-reg},${fpu-64-S1-acc-reg},${fpu-64-S2-data-reg}")
+     (+ OP_FPU OPFPU_FMULD fpu-64-dest-reg (f-FPS1-sel 1) fpu-64-S1-acc-reg (f-FPS2-sel 0) fpu-64-S2-data-reg (f-bit26 0) (f-FPunused20 0) (f-FPunused11 0) (f-bit16 0) (f-bit0 0) )
+     (sequence ((DF result))
+	       (set fpu-64-dest-reg (c-call DF "fmuld" fpu-64-S1-acc-reg fpu-64-S2-data-reg)))
+     ()
+)
+
+; FMULD
+(dni (fmuld_acc_acc)
+     ("fmuld acc, src1_acc_reg, src2_acc_reg")
+     ((MACH ubicom32_ver5))
+     ("fmuld ${fpu-64-dest-reg},${fpu-64-S1-acc-reg},${fpu-64-S2-acc-reg}")
+     (+ OP_FPU OPFPU_FMULD fpu-64-dest-reg (f-FPS1-sel 1) fpu-64-S1-acc-reg (f-FPS2-sel 1) fpu-64-S2-acc-reg (f-bit26 0) (f-FPunused20 0) (f-FPunused11 0) (f-bit16 0) (f-bit0 0) )
+     (sequence ((DF result))
+	       (set fpu-64-dest-reg (c-call DF "fmuld" fpu-64-S1-acc-reg fpu-64-S2-acc-reg)))
+     ()
+)
+
+; FDIVS
+(dni (fdivs_data)
+     ("fdivs acc, src1, src2_data_reg")
+     ((MACH ubicom32_ver5))
+     ("fdivs ${fpu-32-dest-reg},${s1-4},${fpu-32-S2-data-reg}")
+     (+ OP_FPU OPFPU_FDIVS fpu-32-dest-reg s1-4 (f-FPS2-sel 0) (f-bit26 0)  fpu-32-S2-data-reg  (f-FPunused20 0))
+     (sequence ((SF result))
+	       (set fpu-32-dest-reg (c-call SF "fdivs" s1-4 fpu-32-S2-data-reg)))
+     ()
+)
+
+; FDIVS
+(dni (fdivs_acc)
+     ("fdivs acc, src1, src2_acc_reg")
+     ((MACH ubicom32_ver5))
+     ("fdivs ${fpu-32-dest-reg},${s1-4},${fpu-32-S2-acc-reg}")
+     (+ OP_FPU OPFPU_FDIVS fpu-32-dest-reg s1-4 (f-FPS2-sel 1) (f-bit26 0)  fpu-32-S2-acc-reg  (f-FPunused20 0))
+     (sequence ((SF result))
+	       (set fpu-32-dest-reg (c-call SF "fdivs" s1-4 fpu-32-S2-acc-reg)))
+     ()
+)
+
+; FDIVD
+(dni (fdivd_data_data)
+     ("fdivd acc, src1_data_reg, src2_data_reg")
+     ((MACH ubicom32_ver5))
+     ("fdivd ${fpu-64-dest-reg},${fpu-64-S1-data-reg},${fpu-64-S2-data-reg}")
+     (+ OP_FPU OPFPU_FDIVD fpu-64-dest-reg (f-FPS1-sel 0) fpu-64-S1-data-reg (f-FPS2-sel 0) fpu-64-S2-data-reg (f-bit26 0) (f-FPunused20 0) (f-FPunused11 0) (f-bit16 0) (f-bit0 0) )
+     (sequence ((DF result))
+	       (set fpu-64-dest-reg (c-call DF "fdivd" fpu-64-S1-data-reg fpu-64-S2-data-reg)))
+     ()
+)
+
+; FDIVD
+(dni (fdivd_data_acc)
+     ("fdivd acc, src1_data_reg, src2_acc_reg")
+     ((MACH ubicom32_ver5))
+     ("fdivd ${fpu-64-dest-reg},${fpu-64-S1-data-reg},${fpu-64-S2-acc-reg}")
+     (+ OP_FPU OPFPU_FDIVD fpu-64-dest-reg (f-FPS1-sel 0) fpu-64-S1-data-reg (f-FPS2-sel 1) fpu-64-S2-acc-reg (f-bit26 0) (f-FPunused20 0) (f-FPunused11 0) (f-bit16 0) (f-bit0 0) )
+     (sequence ((DF result))
+	       (set fpu-64-dest-reg (c-call DF "fdivd" fpu-64-S1-data-reg fpu-64-S2-acc-reg)))
+     ()
+)
+
+; FDIVD
+(dni (fdivd_acc_data)
+     ("fdivd acc, src1_acc_reg, src2_data_reg")
+     ((MACH ubicom32_ver5))
+     ("fdivd ${fpu-64-dest-reg},${fpu-64-S1-acc-reg},${fpu-64-S2-data-reg}")
+     (+ OP_FPU OPFPU_FDIVD fpu-64-dest-reg (f-FPS1-sel 1) fpu-64-S1-acc-reg (f-FPS2-sel 0) fpu-64-S2-data-reg (f-bit26 0) (f-FPunused20 0) (f-FPunused11 0) (f-bit16 0) (f-bit0 0) )
+     (sequence ((DF result))
+	       (set fpu-64-dest-reg (c-call DF "fdivd" fpu-64-S1-acc-reg fpu-64-S2-data-reg)))
+     ()
+)
+
+; FDIVD
+(dni (fdivd_acc_acc)
+     ("fdivd acc, src1_acc_reg, src2_acc_reg")
+     ((MACH ubicom32_ver5))
+     ("fdivd ${fpu-64-dest-reg},${fpu-64-S1-acc-reg},${fpu-64-S2-acc-reg}")
+     (+ OP_FPU OPFPU_FDIVD fpu-64-dest-reg (f-FPS1-sel 1) fpu-64-S1-acc-reg (f-FPS2-sel 1) fpu-64-S2-acc-reg (f-bit26 0) (f-FPunused20 0) (f-FPunused11 0) (f-bit16 0) (f-bit0 0) )
+     (sequence ((DF result))
+	       (set fpu-64-dest-reg (c-call DF "fdivd" fpu-64-S1-acc-reg fpu-64-S2-acc-reg)))
+     ()
+)
+
+; FSQRTS
+(dni (fsqrts)
+     ("fsqrts acc, src1")
+     ((MACH ubicom32_ver5))
+     ("fsqrts ${fpu-32-dest-reg},${s1-4}")
+     (+ OP_FPU OPFPU_FSQRTS fpu-32-dest-reg s1-4 (f-bit26 0) (f-FPunused15 0) (f-FPunused20 0))
+     (sequence ((SF result))
+	       (set fpu-32-dest-reg (c-call SF "fsqrts" s1-4)))
+     ()
+)
+
+; FSQRTD
+(dni (fsqrtd_data)
+     ("fsqrtd acc, src1_data_reg")
+     ((MACH ubicom32_ver5))
+     ("fsqrtd ${fpu-64-dest-reg},${fpu-64-S1-data-reg}")
+     (+ OP_FPU OPFPU_FSQRTD fpu-64-dest-reg (f-FPS1-sel 0) fpu-64-S1-data-reg (f-FPS2-sel 0) (f-FPS2-reg64 0) (f-bit26 0) (f-FPunused20 0) (f-FPunused11 0) (f-bit16 0) (f-bit0 0) )
+     (sequence ((DF result))
+	       (set fpu-64-dest-reg (c-call DF "fsqrtd" fpu-64-S1-data-reg)))
+     ()
+)
+
+; FSQRTD
+(dni (fsqrtd_acc)
+     ("fsqrtd acc, src1_acc_reg")
+     ((MACH ubicom32_ver5))
+     ("fsqrtd ${fpu-64-dest-reg},${fpu-64-S1-acc-reg}")
+     (+ OP_FPU OPFPU_FSQRTD fpu-64-dest-reg (f-FPS1-sel 1) fpu-64-S1-acc-reg (f-FPS2-sel 0) (f-FPS2-reg64 0) (f-bit26 0) (f-FPunused20 0) (f-FPunused11 0) (f-bit16 0) (f-bit0 0) )
+     (sequence ((DF result))
+	       (set fpu-64-dest-reg (c-call DF "fsqrtd" fpu-64-S1-acc-reg)))
+     ()
+)
+
+; FNEGS
+(dni (fnegs)
+     ("fnegs acc, src1")
+     ((MACH ubicom32_ver5))
+     ("fnegs ${fpu-32-dest-reg},${s1-4}")
+     (+ OP_FPU OPFPU_FNEGS fpu-32-dest-reg s1-4 (f-bit26 0) (f-FPunused15 0) (f-FPunused20 0))
+     (sequence ((SF result))
+	       (set fpu-32-dest-reg (c-call SF "fnegs" s1-4)))
+     ()
+)
+
+; FNEGD
+(dni (fnegd_data)
+     ("fnegd acc, src1_data_reg")
+     ((MACH ubicom32_ver5))
+     ("fnegd ${fpu-64-dest-reg},${fpu-64-S1-data-reg}")
+     (+ OP_FPU OPFPU_FNEGD fpu-64-dest-reg (f-FPS1-sel 0) fpu-64-S1-data-reg (f-FPS2-sel 0) (f-FPS2-reg64 0) (f-bit26 0) (f-FPunused20 0) (f-FPunused11 0) (f-bit16 0) (f-bit0 0) )
+     (sequence ((DF result))
+	       (set fpu-64-dest-reg (c-call DF "fnegd" fpu-64-S1-data-reg)))
+     ()
+)
+
+; FNEGD
+(dni (fnegd_acc)
+     ("fnegd acc, src1_acc_reg")
+     ((MACH ubicom32_ver5))
+     ("fnegd ${fpu-64-dest-reg},${fpu-64-S1-acc-reg}")
+     (+ OP_FPU OPFPU_FNEGD fpu-64-dest-reg (f-FPS1-sel 1) fpu-64-S1-acc-reg (f-FPS2-sel 0) (f-FPS2-reg64 0) (f-bit26 0) (f-FPunused20 0) (f-FPunused11 0) (f-bit16 0) (f-bit0 0) )
+     (sequence ((DF result))
+	       (set fpu-64-dest-reg (c-call DF "fnegd" fpu-64-S1-acc-reg)))
+     ()
+)
+
+; FABSS
+(dni (fabss)
+     ("fabss acc, src1")
+     ((MACH ubicom32_ver5))
+     ("fabss ${fpu-32-dest-reg},${s1-4}")
+     (+ OP_FPU OPFPU_FABSS fpu-32-dest-reg s1-4 (f-bit26 0) (f-FPunused15 0) (f-FPunused20 0))
+     (sequence ((SF result))
+	       (set fpu-32-dest-reg (c-call SF "fabss" s1-4)))
+     ()
+)
+
+; FABSD
+(dni (fabsd_data)
+     ("fabsd acc, src1_data_reg")
+     ((MACH ubicom32_ver5))
+     ("fabsd ${fpu-64-dest-reg},${fpu-64-S1-data-reg}")
+     (+ OP_FPU OPFPU_FABSD fpu-64-dest-reg (f-FPS1-sel 0) fpu-64-S1-data-reg (f-FPS2-sel 0) (f-FPS2-reg64 0) (f-bit26 0) (f-FPunused20 0) (f-FPunused11 0) (f-bit16 0) (f-bit0 0) )
+     (sequence ((DF result))
+	       (set fpu-64-dest-reg (c-call DF "fabsd" fpu-64-S1-data-reg)))
+     ()
+)
+
+; FABSD
+(dni (fabsd_acc)
+     ("fabsd acc, src1_acc_reg")
+     ((MACH ubicom32_ver5))
+     ("fabsd ${fpu-64-dest-reg},${fpu-64-S1-acc-reg}")
+     (+ OP_FPU OPFPU_FABSD fpu-64-dest-reg (f-FPS1-sel 1) fpu-64-S1-acc-reg (f-FPS2-sel 0) (f-FPS2-reg64 0) (f-bit26 0) (f-FPunused20 0) (f-FPunused11 0) (f-bit16 0) (f-bit0 0) )
+     (sequence ((DF result))
+	       (set fpu-64-dest-reg (c-call DF "fabsd" fpu-64-S1-acc-reg)))
+     ()
+)
+
+; FI2S
+(dni (fi2s)
+     ("fi2s acc, src1")
+     ((MACH ubicom32_ver5))
+     ("fi2s ${fpu-32-dest-reg},${s1-4}")
+     (+ OP_FPU OPFPU_FI2S fpu-32-dest-reg s1-4 (f-bit26 0) (f-FPunused15 0) (f-FPunused20 0))
+     (sequence ((SF result))
+	       (set fpu-32-dest-reg (c-call SF "fi2s" s1-4)))
+     ()
+)
+
+; FI2D
+(dni (fi2d)
+     ("fi2d acc, src1")
+     ((MACH ubicom32_ver5))
+     ("fi2d ${fpu-64-dest-reg},${s1-4}")
+     (+ OP_FPU OPFPU_FI2D fpu-64-dest-reg s1-4 (f-bit26 0) (f-FPunused15 0) (f-FPunused20 0) (f-bit16 0))
+     (sequence ((SF result))
+	       (set fpu-64-dest-reg (c-call DF "fi2d" s1-4)))
+     ()
+)
+
+; FL2S
+(dni (fl2s_data)
+     ("fl2s acc, src1_data_reg")
+     ((MACH ubicom32_ver5))
+     ("fl2s ${fpu-32-dest-reg},${fpu-64-S1-data-reg}")
+     (+ OP_FPU OPFPU_FL2S fpu-32-dest-reg (f-FPS1-sel 0) fpu-64-S1-data-reg (f-FPS2-sel 0) (f-FPS2-reg64 0) (f-bit26 0) (f-FPunused20 0) (f-FPunused11 0) (f-bit0 0) )
+     (sequence ((DF result))
+	       (set fpu-32-dest-reg (c-call SF "fl2s" fpu-64-S1-data-reg)))
+     ()
+)
+
+; FL2S
+(dni (fl2s_acc)
+     ("fl2s acc, src1_acc_reg")
+     ((MACH ubicom32_ver5))
+     ("fl2s ${fpu-32-dest-reg},${fpu-64-S1-acc-reg}")
+     (+ OP_FPU OPFPU_FL2S fpu-32-dest-reg (f-FPS1-sel 1) fpu-64-S1-acc-reg (f-FPS2-sel 0) (f-FPS2-reg64 0) (f-bit26 0) (f-FPunused20 0) (f-FPunused11 0) (f-bit0 0) )
+     (sequence ((DF result))
+	       (set fpu-32-dest-reg (c-call SF "fl2s" fpu-64-S1-acc-reg)))
+     ()
+)
+
+; FL2D
+(dni (fl2d_data)
+     ("fl2d acc, src1_data_reg")
+     ((MACH ubicom32_ver5))
+     ("fl2d ${fpu-64-dest-reg},${fpu-64-S1-data-reg}")
+     (+ OP_FPU OPFPU_FL2D fpu-64-dest-reg (f-FPS1-sel 0) fpu-64-S1-data-reg (f-FPS2-sel 0) (f-FPS2-reg64 0) (f-bit26 0) (f-FPunused20 0) (f-FPunused11 0) (f-bit16 0) (f-bit0 0) )
+     (sequence ((DF result))
+	       (set fpu-64-dest-reg (c-call DF "fl2d" fpu-64-S1-data-reg)))
+     ()
+)
+
+; FL2D
+(dni (fl2d_acc)
+     ("fl2d acc, src1_acc_reg")
+     ((MACH ubicom32_ver5))
+     ("fl2d ${fpu-64-dest-reg},${fpu-64-S1-acc-reg}")
+     (+ OP_FPU OPFPU_FL2D fpu-64-dest-reg (f-FPS1-sel 1) fpu-64-S1-acc-reg (f-FPS2-sel 0) (f-FPS2-reg64 0) (f-bit26 0) (f-FPunused20 0) (f-FPunused11 0) (f-bit16 0) (f-bit0 0) )
+     (sequence ((DF result))
+	       (set fpu-64-dest-reg (c-call DF "fl2d" fpu-64-S1-acc-reg)))
+     ()
+)
+
+; FS2D
+(dni (fs2d)
+     ("fs2d acc, src1")
+     ((MACH ubicom32_ver5))
+     ("fs2d ${fpu-64-dest-reg},${s1-4}")
+     (+ OP_FPU OPFPU_FS2D fpu-64-dest-reg s1-4 (f-bit26 0) (f-FPunused15 0) (f-FPunused20 0) (f-bit16 0))
+     (sequence ((SF result))
+	       (set fpu-64-dest-reg (c-call DF "fs2d" s1-4)))
+     ()
+)
+
+; FD2S
+(dni (fd2s_data)
+     ("fd2s acc, src1_data_reg")
+     ((MACH ubicom32_ver5))
+     ("fd2s ${fpu-32-dest-reg},${fpu-64-S1-data-reg}")
+     (+ OP_FPU OPFPU_FD2S fpu-32-dest-reg (f-FPS1-sel 0) fpu-64-S1-data-reg (f-FPS2-sel 0) (f-FPS2-reg64 0) (f-bit26 0) (f-FPunused20 0) (f-FPunused11 0) (f-bit0 0) )
+     (sequence ((DF result))
+	       (set fpu-32-dest-reg (c-call SF "fd2s" fpu-64-S1-data-reg)))
+     ()
+)
+
+; FD2S
+(dni (fd2s_acc)
+     ("fd2s acc, src1_acc_reg")
+     ((MACH ubicom32_ver5))
+     ("fd2s ${fpu-32-dest-reg},${fpu-64-S1-acc-reg}")
+     (+ OP_FPU OPFPU_FD2S fpu-32-dest-reg (f-FPS1-sel 1) fpu-64-S1-acc-reg (f-FPS2-sel 0) (f-FPS2-reg64 0) (f-bit26 0) (f-FPunused20 0) (f-FPunused11 0) (f-bit0 0) )
+     (sequence ((DF result))
+	       (set fpu-32-dest-reg (c-call SF "fd2s" fpu-64-S1-acc-reg)))
+     ()
+)
+
+; FS2I
+(dni (fs2i)
+     ("fs2i acc, src1")
+     ((MACH ubicom32_ver5))
+     ("fs2i ${fpu-32-dest-reg},${s1-4}")
+     (+ OP_FPU OPFPU_FS2I fpu-32-dest-reg s1-4 (f-bit26 0) (f-FPunused15 0) (f-FPunused20 0))
+     (sequence ((SF result))
+	       (set fpu-32-dest-reg (c-call SF "fs2i" s1-4)))
+     ()
+)
+
+; FD2I
+(dni (fd2i_data)
+     ("fd2i acc, src1_data_reg")
+     ((MACH ubicom32_ver5))
+     ("fd2i ${fpu-32-dest-reg},${fpu-64-S1-data-reg}")
+     (+ OP_FPU OPFPU_FD2I fpu-32-dest-reg (f-FPS1-sel 0) fpu-64-S1-data-reg (f-FPS2-sel 0) (f-FPS2-reg64 0) (f-bit26 0) (f-FPunused20 0) (f-FPunused11 0) (f-bit0 0) )
+     (sequence ((DF result))
+	       (set fpu-32-dest-reg (c-call SF "fd2i" fpu-64-S1-data-reg)))
+     ()
+)
+
+; FD2I
+(dni (fd2i_acc)
+     ("fd2i acc, src1_acc_reg")
+     ((MACH ubicom32_ver5))
+     ("fd2i ${fpu-32-dest-reg},${fpu-64-S1-acc-reg}")
+     (+ OP_FPU OPFPU_FD2I fpu-32-dest-reg (f-FPS1-sel 1) fpu-64-S1-acc-reg (f-FPS2-sel 0) (f-FPS2-reg64 0) (f-bit26 0) (f-FPunused20 0) (f-FPunused11 0) (f-bit0 0) )
+     (sequence ((DF result))
+	       (set fpu-32-dest-reg (c-call SF "fd2i" fpu-64-S1-acc-reg)))
+     ()
+)
+
+; FS2L
+(dni (fs2l)
+     ("fs2l acc, src1")
+     ((MACH ubicom32_ver5))
+     ("fs2l ${fpu-64-dest-reg},${s1-4}")
+     (+ OP_FPU OPFPU_FS2L fpu-64-dest-reg s1-4 (f-bit26 0) (f-FPunused15 0) (f-FPunused20 0) (f-bit16 0))
+     (sequence ((SF result))
+	       (set fpu-64-dest-reg (c-call DF "fs2l" s1-4)))
+     ()
+)
+
+; FD2L
+(dni (fd2l_data)
+     ("fd2l acc, src1_data_reg")
+     ((MACH ubicom32_ver5))
+     ("fd2l ${fpu-64-dest-reg},${fpu-64-S1-data-reg}")
+     (+ OP_FPU OPFPU_FD2L fpu-64-dest-reg (f-FPS1-sel 0) fpu-64-S1-data-reg (f-FPS2-sel 0) (f-FPS2-reg64 0) (f-bit26 0) (f-FPunused20 0) (f-FPunused11 0) (f-bit16 0) (f-bit0 0) )
+     (sequence ((DF result))
+	       (set fpu-64-dest-reg (c-call DF "fd2l" fpu-64-S1-data-reg)))
+     ()
+)
+
+; FD2L
+(dni (fd2l_acc)
+     ("fd2l acc, src1_acc_reg")
+     ((MACH ubicom32_ver5))
+     ("fd2l ${fpu-64-dest-reg},${fpu-64-S1-acc-reg}")
+     (+ OP_FPU OPFPU_FD2L fpu-64-dest-reg (f-FPS1-sel 1) fpu-64-S1-acc-reg (f-FPS2-sel 0) (f-FPS2-reg64 0) (f-bit26 0) (f-FPunused20 0) (f-FPunused11 0) (f-bit16 0) (f-bit0 0) )
+     (sequence ((DF result))
+	       (set fpu-64-dest-reg (c-call DF "fd2l" fpu-64-S1-acc-reg)))
+     ()
+)
+
+; FCMPS
+(dni (fcmps_data)
+     ("fcmps src1, src2_data_reg")
+     ((MACH ubicom32_ver5))
+     ("fcmps ${s1-4},${fpu-32-S2-data-reg}")
+     (+ OP_FPU OPFPU_FCMPS (f-FPD32 0) s1-4 (f-FPS2-sel 0) (f-bit26 0)  fpu-32-S2-data-reg  (f-FPunused20 0))
+     (sequence ((SF result))
+	       (set result (c-call SF "fcmps" s1-4 fpu-32-S2-data-reg)))
+     ()
+)
+
+; FCMPS
+(dni (fcmps_acc)
+     ("fcmps src1, src2_acc_reg")
+     ((MACH ubicom32_ver5))
+     ("fcmps ${s1-4},${fpu-32-S2-acc-reg}")
+     (+ OP_FPU OPFPU_FCMPS (f-FPD32 0) s1-4 (f-FPS2-sel 1) (f-bit26 0)  fpu-32-S2-acc-reg  (f-FPunused20 0))
+     (sequence ((SF result))
+	       (set result (c-call SF "fcmps" s1-4 fpu-32-S2-acc-reg)))
+     ()
+)
+
+; FCMPD
+(dni (fcmpd_data_data)
+     ("fcmpd src1_data_reg, src2_data_reg")
+     ((MACH ubicom32_ver5))
+     ("fcmpd ${fpu-64-S1-data-reg},${fpu-64-S2-data-reg}")
+     (+ OP_FPU OPFPU_FCMPD (f-FPD64 0) (f-FPS1-sel 0) fpu-64-S1-data-reg (f-FPS2-sel 0) fpu-64-S2-data-reg (f-bit26 0) (f-FPunused20 0) (f-FPunused11 0) (f-bit16 0) (f-bit0 0) )
+     (sequence ((DF result))
+	       (set result (c-call DF "fcmpd" fpu-64-S1-data-reg fpu-64-S2-data-reg)))
+     ()
+)
+
+; FCMPD
+(dni (fcmpd_data_acc)
+     ("fcmpd src1_data_reg, src2_acc_reg")
+     ((MACH ubicom32_ver5))
+     ("fcmpd ${fpu-64-S1-data-reg},${fpu-64-S2-acc-reg}")
+     (+ OP_FPU OPFPU_FCMPD (f-FPD64 0) (f-FPS1-sel 0) fpu-64-S1-data-reg (f-FPS2-sel 1) fpu-64-S2-acc-reg (f-bit26 0) (f-FPunused20 0) (f-FPunused11 0) (f-bit16 0) (f-bit0 0) )
+     (sequence ((DF result))
+	       (set result (c-call DF "fcmpd" fpu-64-S1-data-reg fpu-64-S2-acc-reg)))
+     ()
+)
+
+; FCMPD
+(dni (fcmpd_acc_acc)
+     ("fcmpd src1_acc_reg, src2_acc_reg")
+     ((MACH ubicom32_ver5))
+     ("fcmpd ${fpu-64-S1-acc-reg},${fpu-64-S2-acc-reg}")
+     (+ OP_FPU OPFPU_FCMPD (f-FPD64 0) (f-FPS1-sel 1) fpu-64-S1-acc-reg (f-FPS2-sel 1) fpu-64-S2-acc-reg (f-bit26 0) (f-FPunused20 0) (f-FPunused11 0) (f-bit16 0) (f-bit0 0) )
+     (sequence ((DF result))
+	       (set result (c-call DF "fcmpd" fpu-64-S1-acc-reg fpu-64-S2-acc-reg)))
+     ()
+)
+
+; FCMPD
+(dni (fcmpd_acc_data)
+     ("fcmpd src1_acc_reg, src2_data_reg")
+     ((MACH ubicom32_ver5))
+     ("fcmpd ${fpu-64-S1-acc-reg},${fpu-64-S2-data-reg}")
+     (+ OP_FPU OPFPU_FCMPD (f-FPD64 0) (f-FPS1-sel 1) fpu-64-S1-acc-reg (f-FPS2-sel 0) fpu-64-S2-data-reg (f-bit26 0) (f-FPunused20 0) (f-FPunused11 0) (f-bit16 0) (f-bit0 0) )
+     (sequence ((DF result))
+	       (set result (c-call DF "fcmpd" fpu-64-S1-acc-reg fpu-64-S2-data-reg)))
+     ()
+)
+
+; unused instructions
+(define-pmacro (unused-op opc opc2 code)
+  (begin
+    (dni (.sym "unused." code)
+         (.str "UNUSED " code)
+         (NO-DIS)
+         (.str "__unused__" code)
+         (+ opc opc2 x-d x-s1)
+	 (sequence ()
+		   (c-call VOID "unused_insn"))
+         ()
+    )
+  )
+)
+
+(define-pmacro (unused-op2 opc opc2 code)
+  (begin
+    (dni (.sym "unused." code)
+         (.str "UNUSED " code)
+         (NO-DIS)
+         (.str "__unused__" code)
+         (+ opc opc2 Dn x-bit26 x-op2 x-s1)
+	 (sequence ()
+		   (c-call VOID "unused_insn"))
+         ()
+    )
+  )
+)
+
+;(unused-op OP_X0 OPX0_UNUSED_11 00_11)
+;(unused-op OP_X0 OPX0_UNUSED_13 00_13)
+;(unused-op OP_X0 OPX0_UNUSED_14 00_14)
+;(unused-op OP_X0 OPX0_UNUSED_16 00_16)
+;(unused-op OP_X0 OPX0_UNUSED_18 00_18)
+;(unused-op OP_X0 OPX0_UNUSED_19 00_19)
+;(unused-op OP_X0 OPX0_UNUSED_1a 00_1A)
+;(unused-op OP_X0 OPX0_UNUSED_1b 00_1B)
+;(unused-op OP_X0 OPX0_UNUSED_1e 00_1E)
+
+;(unused-op2 OP_X2 OPX2_UNUSED_00 02_00)
+;(unused-op2 OP_X2 OPX2_UNUSED_02 02_02)
+(unused-op2 OP_X2 OPX2_UNUSED_04 02_04)
+(unused-op2 OP_X2 OPX2_UNUSED_07 02_07)
+;(unused-op2 OP_X2 OPX2_UNUSED_0a 02_0A)
+;(unused-op2 OP_X2 OPX2_UNUSED_0b 02_0B)
+;(unused-op2 OP_X2 OPX2_UNUSED_0c 02_0C)
+(unused-op2 OP_X2 OPX2_UNUSED_0d 02_0D)
+(unused-op2 OP_X2 OPX2_UNUSED_0e 02_0E)
+(unused-op2 OP_X2 OPX2_UNUSED_0f 02_0F)
+(unused-op2 OP_X2 OPX2_UNUSED_17 02_17)
+(unused-op2 OP_X2 OPX2_UNUSED_19 02_19)
+(unused-op2 OP_X2 OPX2_UNUSED_1b 02_1B)
+(unused-op2 OP_X2 OPX2_UNUSED_1d 02_1D)
+
+(unused-op OP_UNUSED_01 x-op2 "01")
+;(unused-op OP_UNUSED_03 x-op2 "03")
+(unused-op OP_UNUSED_07 x-op2 "07")
+;(unused-op OP_UNUSED_14 x-op2 14)
+;(unused-op OP_UNUSED_15 x-op2 15)
+;(unused-op OP_UNUSED_16 x-op2 16)
+(unused-op OP_UNUSED_17 x-op2 17)
+;(unused-op OP_UNUSED_1d x-op2 1D)
+(unused-op OP_UNUSED_1f x-op2 1F)
+         
+(define-pmacro (unused-dsp opc opc2 code)
+  (begin
+    (dni (.sym "unused." code)
+         (.str "UNUSED " code)
+         (NO-DIS)
+         (.str "__unused__" code)
+         (+ opc opc2 x-dn x-bit26 x-op2 x-s1)
+	 (sequence ()
+		   (c-call VOID "unused_insn"))
+         ()
+    )
+  )
+)
+
+;(unused-dsp OP_DSP  OPDSP_UNUSED_06 "DSP_06")
+;(unused-dsp OP_DSP  OPDSP_UNUSED_0b "DSP_0b")
+(unused-dsp OP_DSP  OPDSP_UNUSED_0c "DSP_0c")
+(unused-dsp OP_DSP  OPDSP_UNUSED_0d "DSP_0d")
+(unused-dsp OP_DSP  OPDSP_UNUSED_0e "DSP_0e")
+(unused-dsp OP_DSP  OPDSP_UNUSED_0f "DSP_0f")
+(unused-dsp OP_DSP  OPDSP_UNUSED_14 "DSP_14")
+(unused-dsp OP_DSP  OPDSP_UNUSED_15 "DSP_15")
+(unused-dsp OP_DSP  OPDSP_UNUSED_16 "DSP_16")
+(unused-dsp OP_DSP  OPDSP_UNUSED_17 "DSP_17")
+(unused-dsp OP_DSP  OPDSP_UNUSED_18 "DSP_18")
+(unused-dsp OP_DSP  OPDSP_UNUSED_19 "DSP_19")
+(unused-dsp OP_DSP  OPDSP_UNUSED_1a "DSP_1a")
+(unused-dsp OP_DSP  OPDSP_UNUSED_1b "DSP_1b")
+(unused-dsp OP_DSP  OPDSP_UNUSED_1c "DSP_1c")
+(unused-dsp OP_DSP  OPDSP_UNUSED_1d "DSP_1d")
+(unused-dsp OP_DSP  OPDSP_UNUSED_1e "DSP_1e")
+(unused-dsp OP_DSP  OPDSP_UNUSED_1f "DSP_1f")

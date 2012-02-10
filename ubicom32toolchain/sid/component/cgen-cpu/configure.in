@@ -1,0 +1,101 @@
+dnl Process this file with autoconf to produce a configure script.
+AC_INIT(compCGEN.cxx)
+AC_CONFIG_AUX_DIR(../../config)
+AM_INIT_AUTOMAKE(sidcomp,0.1)
+AM_CONFIG_HEADER(config.h:config.in)
+
+dnl automake support
+AM_MAINTAINER_MODE
+AC_LIBTOOL_WIN32_DLL
+AM_PROG_LIBTOOL
+AC_PROG_CXX
+AC_PROG_CXXCPP
+AC_EXEEXT
+AC_LANG_CPLUSPLUS
+
+AC_CHECK_LIB(m, main)
+AC_CHECK_LIB(pthread, pthread_create)
+AC_CHECK_FUNCS(getopt)
+
+dnl Need extra defines for Solaris threads
+case "$host" in
+  sparc-sun-solaris*)
+    # Note: If _REENTRANT isn't defined, then Solaris
+    # won't define thread-safe library routines.
+    cpu_defs="-D_REENTRANT -D_POSIX_PTHREAD_SEMANTICS"
+    ;;
+  *)
+    cpu_defs=
+    ;;
+esac
+
+dnl Check if we need libintl.
+AC_MSG_CHECKING([whether libintl is required for gettext])
+AC_LANG_SAVE
+AC_LANG_C
+AC_TRY_LINK_FUNC([textdomain],
+  [INTLLIBS=; AC_MSG_RESULT([no])],
+  [INTLLIBS='-L../../../intl -lintl']; AC_MSG_RESULT([yes]))
+AC_LANG_RESTORE
+
+dnl Perform --target/--enable-targets processing.
+CY_SIDTARGET_CHECK
+
+# Add per-target-family subdirectories here
+cpu_subdirs=
+cpu_libs=
+cpu_incl=
+if test $sidtarget_arm -eq 1; then
+	cpu_subdirs="$cpu_subdirs arm7t"
+        AC_CONFIG_SUBDIRS(arm7t)
+fi
+if test $sidtarget_m32r -eq 1; then
+	cpu_subdirs="$cpu_subdirs m32r"
+        AC_CONFIG_SUBDIRS(m32r)
+fi
+if test $sidtarget_mep -eq 1; then
+	cpu_subdirs="$cpu_subdirs mep"
+        AC_CONFIG_SUBDIRS(mep)
+fi
+if test $sidtarget_mt -eq 1; then
+	cpu_subdirs="$cpu_subdirs mt"
+        AC_CONFIG_SUBDIRS(mt)
+fi
+if test $sidtarget_sh -eq 1 -o $sidtarget_sh64 -eq 1; then
+	cpu_subdirs="$cpu_subdirs sh"
+        AC_CONFIG_SUBDIRS(sh)
+fi
+if test $sidtarget_xstormy16 -eq 1; then
+	cpu_subdirs="$cpu_subdirs xstormy16"
+fi
+
+if test $sidtarget_ubicom32 -eq 1; then
+	cpu_subdirs="$cpu_subdirs ubicom32"
+        AC_CONFIG_SUBDIRS(ubicom32)
+fi
+
+for dir in $cpu_subdirs; do
+	cpu_libs="$cpu_libs $dir/lib$dir.la"
+	cpu_incl="$cpu_incl -I$srcdir/$dir"
+done
+
+AC_SUBST(cpu_subdirs)
+AC_SUBST(cpu_defs)
+AC_SUBST(cpu_incl)
+AC_SUBST(cpu_libs)
+AC_SUBST(cpu_defs)
+AC_SUBST(INTLLIBS)
+
+dnl Look for GUILE in install tree
+AC_CHECK_PROGS(GUILE, guile, false)
+
+dnl building docs
+RH_DOCBUILD_CHECK
+
+gcc_AC_CHECK_DECLS([vasprintf asprintf basename getopt], [], [], [
+#include <stdio.h>
+#include <string.h>
+])
+
+dnl Outputs
+AC_OUTPUT(Makefile CGEN.sh)

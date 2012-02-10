@@ -1,0 +1,11 @@
+--- a/ldso/libdl/libdl.c
++++ b/ldso/libdl/libdl.c
+@@ -667,7 +667,7 @@
+ 	tpnt = NULL;
+ 	if (handle == _dl_symbol_tables)
+ 		tpnt = handle->dyn; /* Only search RTLD_GLOBAL objs if global object */
+-	ret = _dl_find_hash(name2, handle, NULL, 0, &tls_tpnt);
++	ret = _dl_find_hash(name2, handle, tpnt, ELF_RTYPE_CLASS_DLSYM, &tls_tpnt);
+ 
+ #if defined(USE_TLS) && USE_TLS && defined SHARED
+ 	if (tls_tpnt) {

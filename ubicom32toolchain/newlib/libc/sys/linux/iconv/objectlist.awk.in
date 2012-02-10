@@ -1,0 +1,13 @@
+libiconv_la-gconv_builtin.lo /home/art/newlib-1.16.0/newlib/libc/sys/linux/iconv/libiconv_la-gconv_builtin.lo
+libiconv_la-gconv_cache.lo /home/art/newlib-1.16.0/newlib/libc/sys/linux/iconv/libiconv_la-gconv_cache.lo
+libiconv_la-gconv_close.lo /home/art/newlib-1.16.0/newlib/libc/sys/linux/iconv/libiconv_la-gconv_close.lo
+libiconv_la-gconv_conf.lo /home/art/newlib-1.16.0/newlib/libc/sys/linux/iconv/libiconv_la-gconv_conf.lo
+libiconv_la-gconv_db.lo /home/art/newlib-1.16.0/newlib/libc/sys/linux/iconv/libiconv_la-gconv_db.lo
+libiconv_la-gconv_dl.lo /home/art/newlib-1.16.0/newlib/libc/sys/linux/iconv/libiconv_la-gconv_dl.lo
+libiconv_la-gconv.lo /home/art/newlib-1.16.0/newlib/libc/sys/linux/iconv/libiconv_la-gconv.lo
+libiconv_la-gconv_open.lo /home/art/newlib-1.16.0/newlib/libc/sys/linux/iconv/libiconv_la-gconv_open.lo
+libiconv_la-gconv_simple.lo /home/art/newlib-1.16.0/newlib/libc/sys/linux/iconv/libiconv_la-gconv_simple.lo
+libiconv_la-gconv_trans.lo /home/art/newlib-1.16.0/newlib/libc/sys/linux/iconv/libiconv_la-gconv_trans.lo
+libiconv_la-iconv_close.lo /home/art/newlib-1.16.0/newlib/libc/sys/linux/iconv/libiconv_la-iconv_close.lo
+libiconv_la-iconv.lo /home/art/newlib-1.16.0/newlib/libc/sys/linux/iconv/libiconv_la-iconv.lo
+libiconv_la-iconv_open.lo /home/art/newlib-1.16.0/newlib/libc/sys/linux/iconv/libiconv_la-iconv_open.lo

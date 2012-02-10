@@ -1,0 +1,14 @@
+diff -urN libpcap-1.0.0-orig/Makefile.in libpcap-1.0.0/Makefile.in
+--- libpcap-1.0.0-orig/Makefile.in	2011-01-18 11:39:25.079552613 +0200
++++ libpcap-1.0.0/Makefile.in	2011-01-18 11:39:46.236052696 +0200
+@@ -63,8 +63,8 @@
+ PROG=libpcap
+ 
+ # Standard CFLAGS
+-CFLAGS = $(CCOPT) $(INCLS) $(DEFS)
+-CFLAGS_SHARED = -shared -Wl,-soname,$(SOLIBRARY).$(MAJ)
++CFLAGS += $(CCOPT) $(INCLS) $(DEFS)
++CFLAGS_SHARED = $(LDFLAGS) -shared -Wl,-soname,$(SOLIBRARY).$(MAJ)
+ 
+ INSTALL = @INSTALL@
+ INSTALL_PROGRAM = @INSTALL_PROGRAM@

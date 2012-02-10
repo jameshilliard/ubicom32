@@ -1,0 +1,112 @@
+#! /bin/sh 
+#
+# Generate some sid configuration files ahead of time.
+#
+# Calling convention
+# - cwd is in build tree, with usable ../configrun-sid
+
+# snarf autoconf variables 
+srcdir="@srcdir@"
+
+if [ ! -x ../configrun-sid ]; then
+    echo "Call `basename $0` from BUILD/sid/bsp/pregen!"
+    exit 1
+fi
+
+
+crs () {
+    ../configrun-sid $@ >/dev/null
+}
+
+mvic() {
+    if [ ! -f $1 ]; then
+	echo "$1 does not exist!" 1>&2
+	exit 1
+    elif [ ! -f $srcdir/$2 ]; then
+	mv -f $1 $srcdir/$2
+        echo "$2 created."
+    else
+	sum1=`cat $1 | grep -v "^#" | sum`
+	sum2=`cat $srcdir/$2 | grep -v "^#" | sum`
+	if [ "$sum1" != "$sum2" ]; then
+	    mv -f $1 $srcdir/$2
+	    echo "$2 updated."
+	fi
+    fi
+    rm -f $1
+}
+
+crs --cpu=arm --no-run --gdb=5000 -EL
+mvic sid.conf arm-gloss.conf
+
+crs --cpu=arm --no-run --gdb=5000 -EL --tksm
+mvic sid.conf arm-gloss-tksm.conf
+
+crs --cpu=arm --no-run --gdb=5000 -EB
+mvic sid.conf arm-glossBE.conf
+
+crs --cpu=arm --no-run --gdb=5000 --board=pid7t-uart1:gdb -EL
+mvic sid.conf arm-pid.conf
+
+crs --cpu=arm --no-run --gdb=5000 --board=pid7t-uart1:gdb -EL --tksm
+mvic sid.conf arm-pid-tksm.conf
+
+crs --cpu=arm --no-run --gdb=5000 --board=pid7t-uart1:gdb -EB
+mvic sid.conf arm-pidBE.conf
+
+crs --cpu=arm --no-run --board=pid7t-redboot-uart1:5000 -EL
+mvic sid.conf arm-pid-redboot.conf
+
+crs --cpu=arm --no-run --board=pid7t-redboot-uart1:5000 -EL --tksm
+mvic sid.conf arm-pid-redboot-tksm.conf
+
+crs --cpu=arm --no-run --gdb=5000 --board=cma110:cma222-uart1:gdb -EL
+mvic sid.conf arm-cma.conf
+
+crs --cpu=arm --no-run --gdb=5000 --board=cma110:cma222-uart1:gdb -EL --tksm
+mvic sid.conf arm-cma-tksm.conf
+
+crs --cpu=x86 --no-run a.out
+mvic a.out.conf i386-gloss.conf
+
+crs --cpu=x86 --no-run --gdb=5000
+mvic sid.conf i386-gdb.conf
+
+crs --cpu=mep --no-run a.out
+mvic a.out.conf mep-gloss.conf
+
+crs --cpu=mep --no-run --gdb=5000 -EB
+mvic sid.conf mep-gdb.conf
+
+crs --cpu=mep --no-run --gdb=5000 -EB --tksm
+mvic sid.conf mep-gdb-tksm.conf
+
+crs --cpu=mep --no-run --gdb=5000 -EL
+mvic sid.conf mep-little-gdb.conf
+
+crs --cpu=mep --no-run --gdb=5000 -EL --tksm
+mvic sid.conf mep-little-gdb-tksm.conf
+
+crs --cpu=mt --no-run a.out
+mvic a.out.conf mt-gloss.conf
+
+crs --cpu=mt --no-run --gdb=5000
+mvic sid.conf mt-gdb.conf
+
+crs --cpu=sh5 --no-run a.out
+mvic a.out.conf sh5-gloss.conf
+
+crs --cpu=sh5 --no-run --gdb=5000
+mvic sid.conf sh5-gdb.conf
+
+crs --cpu=xstormy16 --no-run a.out
+mvic a.out.conf xstormy16-gloss.conf
+
+crs --cpu=xstormy16 --no-run --gdb=5000
+mvic sid.conf xstormy16-gdb.conf
+
+crs --cpu=xstormy16 --no-run --gdb=5000 --board=gloss-tty
+mvic sid.conf xstormy16-gloss-gdb.conf
+
+crs --cpu=xstormy16 --no-run --gdb=5000 --tksm
+mvic sid.conf xstormy16-gloss-gdb-tksm.conf

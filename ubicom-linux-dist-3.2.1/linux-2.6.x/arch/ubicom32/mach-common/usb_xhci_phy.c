@@ -1,0 +1,370 @@
+/*
+ * arch/ubicom32/mach-common/pcie_phy.c
+ *      PCI Express interface management.
+ *
+ * (C) Copyright 2010, Ubicom, Inc.
+ *
+ * This file is part of the Ubicom32 Linux Kernel Port.
+ *
+ * The Ubicom32 Linux Kernel Port is free software: you can redistribute
+ * it and/or modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation, either version 2 of the
+ * License, or (at your option) any later version.
+ *
+ * The Ubicom32 Linux Kernel Port is distributed in the hope that it
+ * will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
+ * the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with the Ubicom32 Linux Kernel Port.  If not,
+ * see <http://www.gnu.org/licenses/>.
+ *
+ * Ubicom32 implementation derived from (with many thanks):
+ *   arch/arm
+ *   arch/mips
+ */
+
+#include <linux/kernel.h>
+#include <linux/pci.h>
+#include <linux/init.h>
+#include <linux/io.h>
+#include <asm/ubicom32.h>
+
+#include "usb_xhci.h"
+
+
+/*
+ * Make a blocking region byte write, mostly for the Phy register update
+ */
+static inline void xhci_br_writeb(volatile u8 * addr, u8 val)
+{
+	asm volatile (
+		" move.1	0(%[addr]), %[val]	\n"
+		" cycles 5				\n"
+		:
+		: [addr] "a" (addr), [val] "d" (val)
+	);
+}
+
+/*
+ * Write a byte into one of the pcie phy register
+ */
+static void __init phy_writeb(struct ubicom32_io_port *phy, u32 offset, u8 val)
+{
+	/* Write a byte into phy's register through BR */
+	volatile u8 *addr = (u8 *)phy + IO_PORT_BR_OFFSET + offset;
+	xhci_br_writeb(addr, val);
+}
+
+/*
+ * Hard-coded phy initialization sequence come from snowbush
+ */
+void __init xhci_phy_config(struct ubicom32_io_port *phy)
+{
+	XHCI_TRACE("%s phy[0x%08x]\n", __func__, (u32)phy);
+ 	phy_writeb(phy, 0x001, 0x00);
+ 	phy_writeb(phy, 0x002, 0x30);
+ 	phy_writeb(phy, 0x003, 0xF0);
+ 	phy_writeb(phy, 0x004, 0x06);
+ 	phy_writeb(phy, 0x005, 0x90);
+ 	phy_writeb(phy, 0x006, 0x0E);
+ 	phy_writeb(phy, 0x007, 0xB7);
+ 	phy_writeb(phy, 0x008, 0xE0);
+ 	phy_writeb(phy, 0x009, 0x00);
+ 	phy_writeb(phy, 0x00A, 0x70);
+ 	phy_writeb(phy, 0x00B, 0x00);
+ 	phy_writeb(phy, 0x00C, 0x00);
+ 	phy_writeb(phy, 0x00D, 0x00);
+ 	phy_writeb(phy, 0x00E, 0x00);
+ 	phy_writeb(phy, 0x00F, 0x00);
+ 	phy_writeb(phy, 0x010, 0x00);
+ 	phy_writeb(phy, 0x011, 0x00);
+ 	phy_writeb(phy, 0x012, 0x00);
+ 	phy_writeb(phy, 0x013, 0x00);
+ 	phy_writeb(phy, 0x014, 0x00);
+ 	phy_writeb(phy, 0x015, 0x00);
+ 	phy_writeb(phy, 0x016, 0x00);
+ 	phy_writeb(phy, 0x017, 0x00);
+ 	phy_writeb(phy, 0x018, 0x00);
+ 	phy_writeb(phy, 0x019, 0x00);
+ 	phy_writeb(phy, 0x01A, 0x00);
+ 	phy_writeb(phy, 0x01B, 0x00);
+ 	phy_writeb(phy, 0x01C, 0x00);
+ 	phy_writeb(phy, 0x01D, 0x00);
+ 	phy_writeb(phy, 0x01E, 0x00);
+ 	phy_writeb(phy, 0x01F, 0x00);
+ 	phy_writeb(phy, 0x020, 0x00);
+ 	phy_writeb(phy, 0x021, 0x00);
+ 	phy_writeb(phy, 0x022, 0x05);
+ 	phy_writeb(phy, 0x023, 0x22);
+ 	phy_writeb(phy, 0x024, 0x00);
+ 	phy_writeb(phy, 0x025, 0x00);
+ 	phy_writeb(phy, 0x026, 0x00);
+ 	phy_writeb(phy, 0x027, 0x00);
+ 	phy_writeb(phy, 0x028, 0x00);
+ 	phy_writeb(phy, 0x029, 0x00);
+ 	phy_writeb(phy, 0x02A, 0x00);
+ 	phy_writeb(phy, 0x02B, 0x00);
+ 	phy_writeb(phy, 0x02C, 0x00);
+ 	phy_writeb(phy, 0x02D, 0x00);
+ 	phy_writeb(phy, 0x02E, 0x20);
+ 	phy_writeb(phy, 0x02F, 0x0A);
+ 	phy_writeb(phy, 0x030, 0x0E);
+ 	phy_writeb(phy, 0x031, 0x40);
+ 	phy_writeb(phy, 0x032, 0xA4);
+ 	phy_writeb(phy, 0x033, 0x02);
+ 	phy_writeb(phy, 0x034, 0x80);
+ 	phy_writeb(phy, 0x035, 0x02);
+ 	phy_writeb(phy, 0x036, 0x00);
+ 	phy_writeb(phy, 0x037, 0x00);
+ 	phy_writeb(phy, 0x038, 0x00);
+ 	phy_writeb(phy, 0x039, 0x00);
+ 	phy_writeb(phy, 0x03A, 0x00);
+ 	phy_writeb(phy, 0x03B, 0x00);
+ 	phy_writeb(phy, 0x03C, 0x00);
+ 	phy_writeb(phy, 0x03D, 0x00);
+ 	phy_writeb(phy, 0x03E, 0x00);
+ 	phy_writeb(phy, 0x03F, 0x00);
+ 	phy_writeb(phy, 0x040, 0x00);
+ 	phy_writeb(phy, 0x041, 0x00);
+ 	phy_writeb(phy, 0x042, 0x00);
+ 	phy_writeb(phy, 0x043, 0x00);
+ 	phy_writeb(phy, 0x044, 0x00);
+ 	phy_writeb(phy, 0x045, 0x00);
+ 	phy_writeb(phy, 0x046, 0x00);
+ 	phy_writeb(phy, 0x047, 0x00);
+ 	phy_writeb(phy, 0x048, 0x00);
+ 	phy_writeb(phy, 0x049, 0x00);
+ 	phy_writeb(phy, 0x04A, 0x00);
+ 	phy_writeb(phy, 0x04B, 0x00);
+ 	phy_writeb(phy, 0x04C, 0x00);
+ 	phy_writeb(phy, 0x04D, 0x00);
+ 	phy_writeb(phy, 0x04E, 0x00);
+ 	phy_writeb(phy, 0x04F, 0x00);
+ 	phy_writeb(phy, 0x050, 0x00);
+ 	phy_writeb(phy, 0x051, 0x00);
+ 	phy_writeb(phy, 0x052, 0x00);
+ 	phy_writeb(phy, 0x053, 0x00);
+ 	phy_writeb(phy, 0x054, 0x00);
+ 	phy_writeb(phy, 0x055, 0x00);
+ 	phy_writeb(phy, 0x056, 0x00);
+ 	phy_writeb(phy, 0x057, 0x00);
+ 	phy_writeb(phy, 0x058, 0x00);
+ 	phy_writeb(phy, 0x059, 0x00);
+ 	phy_writeb(phy, 0x05A, 0x00);
+ 	phy_writeb(phy, 0x05B, 0x00);
+ 	phy_writeb(phy, 0x05C, 0x00);
+ 	phy_writeb(phy, 0x05D, 0x00);
+ 	phy_writeb(phy, 0x05E, 0x00);
+ 	phy_writeb(phy, 0x05F, 0x00);
+ 	phy_writeb(phy, 0x060, 0x00);
+ 	phy_writeb(phy, 0x061, 0x00);
+ 	phy_writeb(phy, 0x062, 0x00);
+ 	phy_writeb(phy, 0x063, 0x7A);
+ 	phy_writeb(phy, 0x064, 0x00);
+ 	phy_writeb(phy, 0x065, 0x46);
+ 	phy_writeb(phy, 0x066, 0x8B);
+ 	phy_writeb(phy, 0x067, 0x11);
+ 	phy_writeb(phy, 0x068, 0x10);
+ 	phy_writeb(phy, 0x069, 0x0A);
+ 	phy_writeb(phy, 0x06A, 0x2A);
+ 	phy_writeb(phy, 0x06B, 0x95);
+ 	phy_writeb(phy, 0x06C, 0x32); //32
+ 	phy_writeb(phy, 0x06D, 0x43);  // change refclk to 48 MHz
+ 	phy_writeb(phy, 0x06E, 0x01);
+ 	phy_writeb(phy, 0x06F, 0x00);
+ 	phy_writeb(phy, 0x070, 0x00);
+ 	phy_writeb(phy, 0x071, 0x00);
+ 	phy_writeb(phy, 0x072, 0x00);
+ 	phy_writeb(phy, 0x200, 0x00);
+ 	phy_writeb(phy, 0x201, 0x00);
+ 	phy_writeb(phy, 0x202, 0x00);
+ 	phy_writeb(phy, 0x203, 0x00);
+ 	phy_writeb(phy, 0x204, 0x00);
+ 	phy_writeb(phy, 0x205, 0x00);
+// 	phy_writeb(phy, 0x206, 0x15);//15//
+ 	phy_writeb(phy, 0x206, 0x15);//15//
+ 	phy_writeb(phy, 0x207, 0x9A);
+ 	phy_writeb(phy, 0x208, 0x9C);
+ 	phy_writeb(phy, 0x210, 0xC2);
+ 	phy_writeb(phy, 0x211, 0x00);
+ 	phy_writeb(phy, 0x212, 0x01);
+ 	phy_writeb(phy, 0x213, 0x80);
+ 	phy_writeb(phy, 0x214, 0x12);//12//35
+ 	phy_writeb(phy, 0x215, 0x00);//40//00
+ 	phy_writeb(phy, 0x216, 0x00);
+ 	phy_writeb(phy, 0x217, 0x2E);
+ 	phy_writeb(phy, 0x218, 0x44);
+ 	phy_writeb(phy, 0x219, 0xFC);
+ 	phy_writeb(phy, 0x21A, 0x2C);
+ 	phy_writeb(phy, 0x21B, 0x08);
+ 	phy_writeb(phy, 0x21C, 0x10);
+ 	phy_writeb(phy, 0x21D, 0x00);
+ 	phy_writeb(phy, 0x21E, 0x00);
+ 	phy_writeb(phy, 0x21F, 0x00);
+ 	phy_writeb(phy, 0x220, 0x00);
+ 	phy_writeb(phy, 0x221, 0x00);
+ 	phy_writeb(phy, 0x222, 0x00);
+ 	phy_writeb(phy, 0x223, 0x00);
+ 	phy_writeb(phy, 0x224, 0x00);
+ 	phy_writeb(phy, 0x225, 0x00);
+ 	phy_writeb(phy, 0x226, 0x00);
+ 	phy_writeb(phy, 0x227, 0x00);
+ 	phy_writeb(phy, 0x228, 0x00);
+ 	phy_writeb(phy, 0x229, 0x00);
+ 	phy_writeb(phy, 0x22A, 0x00);
+ 	phy_writeb(phy, 0x22B, 0x00);
+ 	phy_writeb(phy, 0x22C, 0x40);
+ 	phy_writeb(phy, 0x22D, 0x00);
+ 	phy_writeb(phy, 0x22E, 0x00);
+ 	phy_writeb(phy, 0x22F, 0x00);
+ 	phy_writeb(phy, 0x230, 0x00);
+ 	phy_writeb(phy, 0x231, 0x00);
+ 	phy_writeb(phy, 0x232, 0x00);
+ 	phy_writeb(phy, 0x233, 0x00);
+ 	phy_writeb(phy, 0x234, 0x00);
+ 	phy_writeb(phy, 0x235, 0x00);
+ 	phy_writeb(phy, 0x236, 0x00);
+ 	phy_writeb(phy, 0x237, 0x00);
+ 	phy_writeb(phy, 0x238, 0x00);
+ 	phy_writeb(phy, 0xA01, 0x09);
+ 	phy_writeb(phy, 0xA02, 0x40);
+ 	phy_writeb(phy, 0xA03, 0x02);
+ 	phy_writeb(phy, 0xA04, 0x3C);
+ 	phy_writeb(phy, 0xA05, 0x00);
+ 	phy_writeb(phy, 0xA06, 0x00);
+ 	phy_writeb(phy, 0xA07, 0x00);
+ 	phy_writeb(phy, 0xA08, 0x00);
+ 	phy_writeb(phy, 0xA09, 0xC3);// c3//
+ 	phy_writeb(phy, 0xA0A, 0x52);// 52//91
+ 	phy_writeb(phy, 0xA0B, 0x23);// 23//63
+ 	phy_writeb(phy, 0xA0C, 0x80); 
+ 	phy_writeb(phy, 0xA0D, 0xC0);
+ 	phy_writeb(phy, 0xA0E, 0x14);
+ 	phy_writeb(phy, 0xA0F, 0x19);
+ 	phy_writeb(phy, 0xA10, 0x98);
+ 	phy_writeb(phy, 0xA11, 0x0C);
+ 	phy_writeb(phy, 0xA12, 0x1B);
+ 	phy_writeb(phy, 0xA13, 0x07);
+ 	phy_writeb(phy, 0xA14, 0x0F);
+ 	phy_writeb(phy, 0xA15, 0x08);
+ 	phy_writeb(phy, 0xA16, 0x9F);
+ 	phy_writeb(phy, 0xA17, 0x00);
+ 	phy_writeb(phy, 0xA30, 0x00);
+ 	phy_writeb(phy, 0xA31, 0x00);
+ 	phy_writeb(phy, 0xA32, 0x00);
+ 	phy_writeb(phy, 0xA33, 0x00);
+ 	phy_writeb(phy, 0xA34, 0x00);
+ 	phy_writeb(phy, 0xA35, 0x00);
+ 	phy_writeb(phy, 0xA36, 0x00);
+ 	phy_writeb(phy, 0xA37, 0x00);
+ 	phy_writeb(phy, 0xA38, 0x00);
+ 	phy_writeb(phy, 0xA39, 0x05);
+ 	phy_writeb(phy, 0xA3A, 0x05);
+ 	phy_writeb(phy, 0xA3B, 0x05);
+ 	phy_writeb(phy, 0xA3C, 0x05);
+ 	phy_writeb(phy, 0xA3D, 0x05);
+ 	phy_writeb(phy, 0xA3E, 0x05);
+ 	phy_writeb(phy, 0xA3F, 0x05);
+ 	phy_writeb(phy, 0xA40, 0x25);//25//16
+ 	phy_writeb(phy, 0xA41, 0x64);
+ 	phy_writeb(phy, 0xA42, 0x93);
+ 	phy_writeb(phy, 0xA43, 0xF9);
+ 	phy_writeb(phy, 0xA44, 0x80);
+ 	phy_writeb(phy, 0xA45, 0x00);
+ 	phy_writeb(phy, 0xA46, 0x00);
+ 	phy_writeb(phy, 0xA47, 0x00);
+ 	phy_writeb(phy, 0xA48, 0x00);
+ 	phy_writeb(phy, 0xA49, 0x00);
+ 	phy_writeb(phy, 0xA4A, 0x00);
+ 	phy_writeb(phy, 0xA4B, 0x00);
+ 	phy_writeb(phy, 0xA4C, 0x0C);
+ 	phy_writeb(phy, 0xA4D, 0x82);
+ 	phy_writeb(phy, 0xA4E, 0x7E);
+ 	phy_writeb(phy, 0xA4F, 0x0B);
+ 	phy_writeb(phy, 0xA50, 0x33);
+ 	phy_writeb(phy, 0xA51, 0xA1);
+ 	phy_writeb(phy, 0xA52, 0x4A);
+ 	phy_writeb(phy, 0xA53, 0xC9);
+ 	phy_writeb(phy, 0xA54, 0x07);
+ 	phy_writeb(phy, 0xA55, 0x92);
+ 	phy_writeb(phy, 0xA56, 0xBB);
+ 	phy_writeb(phy, 0xA57, 0x0D);
+ 	phy_writeb(phy, 0xA58, 0xD0);
+ 	phy_writeb(phy, 0xA59, 0x40);
+ 	phy_writeb(phy, 0xA5A, 0x00);
+ 	phy_writeb(phy, 0xA5B, 0x00);
+ 	phy_writeb(phy, 0xA5C, 0x00);
+ 	phy_writeb(phy, 0xA5D, 0x00);
+ 	phy_writeb(phy, 0xA5E, 0x00);
+ 	phy_writeb(phy, 0xA5F, 0x00);
+ 	phy_writeb(phy, 0xA60, 0x00);
+ 	phy_writeb(phy, 0xA61, 0x00);
+ 	phy_writeb(phy, 0xA62, 0x00);
+ 	phy_writeb(phy, 0xA63, 0x00);
+ 	phy_writeb(phy, 0xA64, 0x00);
+ 	phy_writeb(phy, 0xA65, 0x00);
+ 	phy_writeb(phy, 0xA66, 0x00);
+ 	phy_writeb(phy, 0xA67, 0x00);
+ 	phy_writeb(phy, 0xA68, 0x00);
+ 	phy_writeb(phy, 0xA69, 0x00);
+ 	phy_writeb(phy, 0xA6A, 0x00);
+ 	phy_writeb(phy, 0xA6B, 0x00);
+ 	phy_writeb(phy, 0xA6C, 0x00);
+ 	phy_writeb(phy, 0xA6D, 0x00);
+ 	phy_writeb(phy, 0xA6E, 0x00);
+ 	phy_writeb(phy, 0xA6F, 0x00);
+ 	phy_writeb(phy, 0xA70, 0x00);
+ 	phy_writeb(phy, 0xA71, 0x00);
+ 	phy_writeb(phy, 0xA72, 0x00);
+ 	phy_writeb(phy, 0xA73, 0x00);
+ 	phy_writeb(phy, 0xA74, 0x00);
+ 	phy_writeb(phy, 0xA75, 0x00);
+ 	phy_writeb(phy, 0xA76, 0x00);
+ 	phy_writeb(phy, 0xA77, 0x00);
+ 	phy_writeb(phy, 0xA78, 0x00);
+ 	phy_writeb(phy, 0xA79, 0x00);
+ 	phy_writeb(phy, 0xA7A, 0x00);
+ 	phy_writeb(phy, 0xA7B, 0x00);
+ 	phy_writeb(phy, 0xA7C, 0x00);
+ 	phy_writeb(phy, 0xA7D, 0x00);
+ 	phy_writeb(phy, 0xA7E, 0x00);
+ 	phy_writeb(phy, 0xA7F, 0x1B);
+ 	phy_writeb(phy, 0xA80, 0x58);
+ 	phy_writeb(phy, 0xA81, 0xFF);
+ 	phy_writeb(phy, 0xA82, 0x80);
+ 	phy_writeb(phy, 0xA83, 0x00);
+ 	phy_writeb(phy, 0xA84, 0x00);
+ 	phy_writeb(phy, 0xA85, 0x00);
+ 	phy_writeb(phy, 0xA86, 0x00);
+ 	phy_writeb(phy, 0xA87, 0x0F);
+ 	phy_writeb(phy, 0xA88, 0xFF);
+ 	phy_writeb(phy, 0xA89, 0xFF);
+ 	phy_writeb(phy, 0xA8A, 0xFF);
+ 	phy_writeb(phy, 0xA8B, 0xF3);
+ 	phy_writeb(phy, 0xA8C, 0x38);
+ 	phy_writeb(phy, 0xA8D, 0x43);
+ 	phy_writeb(phy, 0xA8E, 0xC3);
+ 	phy_writeb(phy, 0xA8F, 0xFC);
+ 	phy_writeb(phy, 0xA90, 0x50);
+ 	phy_writeb(phy, 0xA91, 0x00);
+ 	phy_writeb(phy, 0xA92, 0x00);
+ 	phy_writeb(phy, 0xA93, 0x00);
+ 	phy_writeb(phy, 0xA94, 0x00);
+ 	phy_writeb(phy, 0xA95, 0x00);
+ 	phy_writeb(phy, 0xA96, 0x00);
+ 	phy_writeb(phy, 0xA97, 0x9C);
+ 	phy_writeb(phy, 0xA98, 0x02);
+ 	phy_writeb(phy, 0x000, 0xE0);
+ 	phy_writeb(phy, 0xA00, 0xE3);
+  
+	// enable 100MHzoutput
+ 	phy_writeb(phy, 0x073, 0x00);
+	/* Assert the init-done */
+	XHCI_TRACE("phy_ctl0[0x%08x]\n", (u32)&phy->ctl0);
+	xhci_nbr_writel(&phy->ctl0, 1);
+	XHCI_TRACE("phy_ctl2[0x%08x]\n", (u32)&phy->ctl2);
+	xhci_nbr_writel(&phy->ctl2, 0xa);
+}
+EXPORT_SYMBOL(xhci_phy_config);

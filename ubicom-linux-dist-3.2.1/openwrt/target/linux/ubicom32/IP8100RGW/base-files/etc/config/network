@@ -1,0 +1,68 @@
+# Copyright (C) 2006 OpenWrt.org
+
+config interface loopback
+	option ifname	lo
+	option proto	static
+	option ipaddr	127.0.0.1
+	option netmask	255.0.0.0
+
+config interface lan
+	option ifname	eth0
+	option type 	bridge
+	option proto	static
+	option ipaddr	192.168.0.1
+	option netmask	255.255.255.0
+	option pppoe_passthrough	0
+
+config interface wan
+	option ifname   eth1
+	option proto    dhcp
+
+config qos streamengine
+	option traffic_shaping	1
+	option auto_uplink	1
+	option qos_uplink	256
+	option hop_offset	0
+	option qos_enable	1
+	option link_type	2
+	option auto_classification	1
+	option qos_dyn_fragmentation	1
+	option bittorrent_classification 1
+	option http_content_classification 1
+	option user_rules_classification 1
+	option qos_rule_00	0//1/0/0/6/0.0.0.0/255.255.255.255/0/65535/0.0.0.0/255.255.255.255/0/65535
+	option qos_rule_01	0//1/0/0/6/0.0.0.0/255.255.255.255/0/65535/0.0.0.0/255.255.255.255/0/65535
+	option qos_rule_02	0//1/0/0/6/0.0.0.0/255.255.255.255/0/65535/0.0.0.0/255.255.255.255/0/65535
+	option qos_rule_03	0//1/0/0/6/0.0.0.0/255.255.255.255/0/65535/0.0.0.0/255.255.255.255/0/65535
+	option qos_rule_04	0//1/0/0/6/0.0.0.0/255.255.255.255/0/65535/0.0.0.0/255.255.255.255/0/65535
+	option qos_rule_05	0//1/0/0/6/0.0.0.0/255.255.255.255/0/65535/0.0.0.0/255.255.255.255/0/65535
+	option qos_rule_06	0//1/0/0/6/0.0.0.0/255.255.255.255/0/65535/0.0.0.0/255.255.255.255/0/65535
+	option qos_rule_07	0//1/0/0/6/0.0.0.0/255.255.255.255/0/65535/0.0.0.0/255.255.255.255/0/65535
+	option qos_rule_08	0//1/0/0/6/0.0.0.0/255.255.255.255/0/65535/0.0.0.0/255.255.255.255/0/65535
+	option qos_rule_09	0//1/0/0/6/0.0.0.0/255.255.255.255/0/65535/0.0.0.0/255.255.255.255/0/65535
+	option http_content_rule_00	0//130/text/plain
+	option http_content_rule_01	0//130/text/html
+	option http_content_rule_02	0//130/application/pdf
+	option http_content_rule_03	0//130/image/jpeg
+	option http_content_rule_04	0//130/video/mpeg
+	option http_content_rule_05	0//130/video/flv
+	option http_content_rule_06	1//130/video/
+	option http_content_rule_07	0//130/image/gif
+	option http_content_rule_08	0//130/application/octet-stream
+	option http_content_rule_09	0//130/audio/mpeg
+	option http_content_rule_10	0//130/audio/
+	option http_content_rule_11	0//130/application/zip
+	option http_content_rule_12	0//130/image/tiff
+	option http_content_rule_13	0//130/image/png
+	option http_content_rule_14	0//130/text/richtext
+	option http_content_rule_15	0//130/text/webviewhtml
+	option http_content_rule_16	0//130/video/quicktime
+	option http_content_rule_17	0//130/video/x-msvideo
+	option http_content_rule_18	0//130/application/msword
+	option http_content_rule_19	0//130/application/vnd.ms-excel
+
+config fast_path network_accelerator
+	option auto_load 1
+
+config wanmon wanmon
+	option enabled 1

@@ -1,0 +1,1 @@
+/home/art/ubicom/ubicom32toolchain/configure --target=ubicom32-elf --with-gmp=/usr --with-mpfr=/usr --enable-gdbmi --enable-install-libbfd --prefix=/opt/ubicom32 --enable-languages=c,c++ --enable-libssp=no --enable-libada=no  --enable-rda=no --disable-werror

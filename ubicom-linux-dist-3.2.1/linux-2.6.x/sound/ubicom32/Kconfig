@@ -1,0 +1,64 @@
+# ALSA Ubicom32 drivers
+
+menuconfig SND_UBI32
+	tristate "Ubicom32 sound devices"
+	select SND_PCM
+	default n
+	help
+	  Say Y here to include support for audio on the Ubicom32 platform.
+	  To compile this driver as a module, say M here: the module will be
+	  called snd_ubi32.
+
+if SND_UBI32
+
+config SND_UBI32_AUDIO_GENERIC_CAPTURE
+	bool "Generic Capture Support"
+	default n
+	help
+	  Use this option to support ADCs which don't require special drivers.
+
+config SND_UBI32_AUDIO_GENERIC
+	bool "Generic Playback Support"
+	default n
+	help
+	  Use this option to support DACs which don't require special drivers.
+
+comment "I2C Based Codecs"
+
+config SND_UBI32_AUDIO_CS4350
+	bool "Cirrus Logic CS4350 DAC"
+	depends on I2C
+	default n
+	help
+	  Support for the Cirrus Logic CS4350 DAC.
+
+config SND_UBI32_AUDIO_CS4350_AUTO_MUTE
+	bool "Enable Auto Mute"
+        depends on SND_UBI32_AUDIO_CS4350
+	default n
+	help
+	  CS4350 has a known bug with Auto Mute.  The wrong channel is 
+	  muted on auto mute detection.
+
+config SND_UBI32_AUDIO_CS4384
+	bool "Cirrus Logic CS4384 DAC"
+	depends on I2C
+	default n
+	help
+	  Support for the Cirrus Logic CS4384 DAC.
+
+config SND_UBI32_AUDIO_CS4525
+	bool "Cirrus Logic CS4525 DAC"
+	depends on I2C
+	default n
+	help
+	  Support for the Cirrus Logic CS4525 DAC Amplifier.
+
+config SND_UBI32_AUDIO_WM8988
+	bool "Wolfson WM8988 DAC"
+	depends on I2C
+	default n
+	help
+	  Support for the Wolfson WM8988 DAC.
+
+endif #SND_UBI32

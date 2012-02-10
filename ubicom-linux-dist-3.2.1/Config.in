@@ -1,0 +1,141 @@
+#
+# For a description of the syntax of this configuration file,
+# see scripts/kbuild/config-language.txt.
+#
+
+mainmenu "Ultra Configuration"
+
+comment "******** General settings **********"
+config HAVE_DOT_CONFIG
+	bool
+	default y
+
+# menu "Target settings"
+
+choice
+	prompt "Distro"
+	help
+	  Select your project.
+
+config DISTRO_UCLINUX
+	bool "uClinux"
+	help
+	  uClinux will run on board.
+
+config DISTRO_OPENWRT
+	bool "openwrt"
+	help
+	  OpenWrt will run on board.
+	
+endchoice
+
+choice
+	prompt "Root file system"
+	default DISTRO_INITRAMFS
+	help
+	  Select your project.
+
+config DISTRO_INITRAMFS
+	bool "initramfs"
+	help
+	  Rootfs on initramfs file system
+
+config DISTRO_SQUASHFS
+	bool "squashfs"
+	help
+	  Rootfs on squashfs file system
+
+endchoice
+
+config DISTRO_TYPE
+	string
+	default "uClinux" if DISTRO_UCLINUX
+	default "openwrt" if DISTRO_OPENWRT
+
+config DISTRO_OCM_SIZE_H
+	string
+	default "linux-2.6.x/arch/ubicom32/include/asm/ocm_size.h" if DISTRO_UCLINUX
+	default "linux-2.6.x/arch/ubicom32/include/asm/ocm_size.h" if DISTRO_OPENWRT
+
+config DISTRO_KERNEL
+	string
+	default "linux-2.6.x" if DISTRO_UCLINUX
+	default "build_dir/toolchain-ubicom32-unknown-linux-gnu/linux/" if DISTRO_OPENWRT
+
+config SQUASHFS_IMAGE_FILE
+	string
+	default "romfs.sfs" if DISTRO_UCLINUX
+	default "bin/ubicom32/root.squashfs" if DISTRO_OPENWRT
+
+config DISTRO_MENUCONFIG
+	bool "Run distro menuconfig"
+	help
+	  If you select this option after you close ubicom distro menuconfig, 
+	  it will pop up distro linux menuconfig.
+	
+comment "******** Upgrade Identity settings **********"
+
+config IDENTITY_STRING
+	string "Application Identity String (up to 31 chars)"
+	default "Unknown - BOARD"
+	help
+
+	  This is used to detect compatibility between the application and
+	  upgrade images.  The IDENTITY_STRING must match in order for an
+	  upgrade image to be accepted for upgrade.
+
+	  For example
+	   "ProductX rev1.1"
+	  would be a good IDENTITY_STRING
+
+comment "******** Bootloader settings **********"
+
+source config/Config.in.ultra
+
+config RUN_CTOOL
+	bool "Regenerate ultra configs"
+	default n
+	help
+	  If you select this option ultra config files will be updated.
+
+config IPPROFILE
+	bool "Enable Profiler"
+	default n
+	help
+	  If you want to use Profiler tool, enable this option.
+
+config LOADER_UBOOT
+	bool "Enable U-Boot"
+	default y
+	help
+	  Enable uboot that will work between ultra and your distribution. If
+	  you enable, enable also 'Regenerate ultra configs' option.
+
+config DISABLE_MAINEXEC
+	bool "Disable mainexec (BOOTLOADER DEVELOPMENT ONLY)"
+	default n
+	help
+	  Select this option to disable mainexec.  This is generally useful if
+	  developing bootloader code.  This option will cause the Target OS to use
+	  drivers contained in bootexec.
+
+#if DISTRO_UCLINUX
+#source config/Config.in.uClinux
+#endif
+
+#if DISTRO_OPENWRT
+#source config/Config.in.openwrt-trunk
+#endif
+
+#if LOADER_UBOOT
+#source config/Config.in.u-boot
+#endif
+
+#source config/Config.in.toolchain
+
+# config FINDFS
+# 	bool "findfs"
+# 	default n
+# 	select VOLUMEID
+
+# endmenu

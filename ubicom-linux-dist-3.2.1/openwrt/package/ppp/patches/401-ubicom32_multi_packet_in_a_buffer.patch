@@ -1,0 +1,65 @@
+diff -ru ppp-2.4.4_old/pppd/main.c ppp-2.4.4_new/pppd/main.c
+--- ppp-2.4.4_old/pppd/main.c	2011-08-12 09:53:22.000000000 +0300
++++ ppp-2.4.4_new/pppd/main.c	2011-08-12 10:29:49.000000000 +0300
+@@ -1037,6 +1037,7 @@
+     p = inpacket_buf;	/* point to beginning of packet buffer */
+ 
+     len = read_packet(inpacket_buf);
++parse:
+     if (len < 0)
+ 	return;
+ 
+@@ -1071,7 +1072,7 @@
+      */
+     if (protocol != PPP_LCP && lcp_fsm[0].state != OPENED) {
+ 	dbglog("Discarded non-LCP packet when LCP not open");
+-	return;
++	goto exit;
+     }
+ 
+     /*
+@@ -1084,7 +1085,7 @@
+ 		protocol == PPP_EAP)) {
+ 	dbglog("discarding proto 0x%x in phase %d",
+ 		   protocol, phase);
+-	return;
++	goto exit;
+     }
+ 
+     /*
+@@ -1093,12 +1094,12 @@
+     for (i = 0; (protp = protocols[i]) != NULL; ++i) {
+ 	if (protp->protocol == protocol && protp->enabled_flag) {
+ 	    (*protp->input)(0, p, len);
+-	    return;
++	    goto exit;
+ 	}
+         if (protocol == (protp->protocol & ~0x8000) && protp->enabled_flag
+ 	    && protp->datainput != NULL) {
+ 	    (*protp->datainput)(0, p, len);
+-	    return;
++	    goto exit;
+ 	}
+     }
+ 
+@@ -1110,6 +1111,20 @@
+ 	    warn("Unsupported protocol 0x%x received", protocol);
+     }
+     lcp_sprotrej(0, p - PPP_HDRLEN, len + PPP_HDRLEN);
++
++    return;
++
++exit:
++    /* check if there is another packet in this buffer */
++    ;u_char *p_proto_len = p + 2;
++    u_short proto_len;
++    GETSHORT(proto_len, p_proto_len);
++    if (len > proto_len) {
++	/* there is another packet */
++	p += proto_len;
++	len = len - proto_len;
++	goto parse;
++    }
+ }
+ 
+ /*

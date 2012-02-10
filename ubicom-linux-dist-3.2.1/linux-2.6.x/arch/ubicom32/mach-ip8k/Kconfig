@@ -1,0 +1,200 @@
+config IP8000QEMU
+	bool "IP8000QEMU"
+	select UBICOM32_V5
+	help
+		Ubicom IP8000 QEMU supports:
+			8008-QEMU v1.0
+
+config IP8000BRINGUP
+	bool "IP8000BRINGUP"
+	select UBICOM32_V5
+	select UBICOM32_IP8K_SHUTTLE
+	select NEW_LEDS
+	select LEDS_CLASS
+	select LEDS_GPIO
+	select PCIEPORTBUS if PCI
+	select ARCH_SUPPORTS_MSI if PCI
+	select PCI_MSI if PCI
+	help
+		Ubicom IP8000 BringUp, supports:
+			8008-0010 v1.0 IP8K Bringup Board
+
+config IP8100RGW_ES
+	bool "IP8100RGW_ES"
+	select UBICOM32_V5
+	select UBICOM32_IP8K_SHUTTLE
+	select UBICOM_INPUT
+	select NEW_LEDS
+	select LEDS_CLASS
+	select LEDS_GPIO
+	select SPI
+	select SPI_UBICOM32_GPIO
+	select I2C
+	select I2C_GPIO
+	select AT24
+	select GPIO_PCA953X
+	select MTD_UBI32_FC
+	select MTD_UBI32_NAND_SPI_ER
+	select UBICOM32_MULTI_FLASH
+	select UBICOM32_LCD_ADAPTER if FB
+	select PCIEPORTBUS if PCI
+	select ARCH_SUPPORTS_MSI if PCI
+	select PCI_MSI if PCI
+	select PCI_DOMAINS if PCI
+	select FB_UBICOM32 if FB
+	select TOUCHSCREEN_TSC2007 if INPUT_TOUCHSCREEN
+	select LCD_CLASS_DEVICE
+	select LCD_UBICOM32POWER
+	select VDC_LCD_SYNC
+	select VDC_LCD_BITBANG_16
+	help
+		Ubicom IP8100 (engineering sample) Router Gateway Eval, supports:
+			8008-0110 v1.0	IP8K RGW Board
+			8008-0111 v1.1  IP8K RGW Board
+			8008-0112 v1.2  IP8K RGW Board
+			8008-0310 v1.0  IP8K RGW Cost-effective 4-layer Board
+
+config IP8500TAP_ES
+	bool "IP8500TAP_ES"
+	select UBICOM32_V5
+	select UBICOM32_IP8K_SHUTTLE
+	select PCIEPORTBUS if PCI
+	select ARCH_SUPPORTS_MSI if PCI
+	select PCI_MSI if PCI
+	select PCI_DOMAINS if PCI
+	select NEW_LEDS
+	select LEDS_CLASS
+	select LEDS_GPIO
+	select RTC_CLASS
+	select RTC_DRV_S35390A
+	select I2C
+	select I2C_GPIO
+	select AT24
+	select MAX4550
+	select GPIO_PCA953X
+	select MTD_UBI32_FC
+	select MTD_UBI32_NAND_SPI_ER
+	select UBICOM32_MULTI_FLASH
+	select UBICOM32_LCD_ADAPTER
+	select SND if SOUND
+	select SND_UBI32 if SOUND
+	select SND_UBI32_AUDIO_CS4384 if SOUND
+	select FB_UBICOM32 if FB
+	select TOUCHSCREEN_TSC2007 if INPUT_TOUCHSCREEN
+	select LCD_CLASS_DEVICE
+	select LCD_UBICOM32POWER
+	select VDC_LCD_SYNC
+	select VDC_LCD_BITBANG_16
+	help
+		Ubicom IP8500 TotalAudio Eval, supports:
+		8008-0210 v1.0 IP8K TAP Board (Shuttle)
+		8008-0211 v1.1 IP8K TAP Board (Shuttle)
+
+config IP8500TAP_DAO
+	bool "IP8500TAP_DAO"
+	select UBICOM32_V5
+	select PCIEPORTBUS if PCI
+	select ARCH_SUPPORTS_MSI if PCI
+	select PCI_MSI if PCI
+	select PCI_DOMAINS if PCI
+	select NEW_LEDS
+	select LEDS_CLASS
+	select LEDS_GPIO
+	select RTC_CLASS
+	select RTC_DRV_S35390A
+	select I2C
+	select I2C_GPIO
+	select AT24
+	select MAX4550
+	select GPIO_PCA953X
+	select MTD_UBI32_FC
+	select MTD_UBI32_NAND_SPI_ER
+	select UBICOM32_MULTI_FLASH
+	select UBICOM32_LCD_ADAPTER
+	select SND if SOUND
+	select SND_UBI32 if SOUND
+	select SND_UBI32_AUDIO_CS4350 if SOUND
+	select FB_UBICOM32 if FB
+	select TOUCHSCREEN_TSC2007 if INPUT_TOUCHSCREEN
+	select LCD_CLASS_DEVICE
+	select LCD_UBICOM32POWER
+	select VDC_LCD_SYNC
+	select VDC_LCD_BITBANG_16
+	help
+		Ubicom IP8500 TotalAudio Eval, supports:
+		8008-0210 v1.0 IP8K TAP Board
+
+		With Daughter Card:
+		8000-1010 v1.0 (Plugged into PPI #2 J7)
+
+		Use this board type to use the DAO interface found
+		on the IP8K Production Silicon.  You may not use the
+		video in function in this configuration.
+
+config IP8100RGW
+	bool "IP8100RGW"
+	select UBICOM32_V5
+	select UBICOM_INPUT
+	select NEW_LEDS
+	select LEDS_CLASS
+	select LEDS_GPIO
+	select SPI
+	select SPI_UBICOM32_GPIO
+	select I2C
+	select I2C_GPIO
+	select AT24
+	select GPIO_PCA953X
+	select MTD_UBI32_FC
+	select MTD_UBI32_NAND_SPI_ER
+	select UBICOM32_MULTI_FLASH
+	select UBICOM32_LCD_ADAPTER if FB
+	select PCIEPORTBUS if PCI
+	select ARCH_SUPPORTS_MSI if PCI
+	select PCI_MSI if PCI
+	select PCI_DOMAINS if PCI
+	select FB_UBICOM32 if FB
+	select TOUCHSCREEN_TSC2007 if INPUT_TOUCHSCREEN
+	select LCD_CLASS_DEVICE
+	select LCD_UBICOM32POWER
+	select VDC_LCD_SYNC
+	select VDC_LCD_BITBANG_16
+	help
+		Ubicom IP8100 Router Gateway Eval, supports:
+			8008-0111 v1.1  IP8K RGW Board
+			8008-0112 v1.2  IP8K RGW Board
+			8008-0310 v1.0  IP8K RGW Cost-effective 4-layer Board
+
+config IP8500TAP
+	bool "IP8500TAP"
+	select UBICOM32_V5
+	select PCIEPORTBUS if PCI
+	select ARCH_SUPPORTS_MSI if PCI
+	select PCI_MSI if PCI
+	select PCI_DOMAINS if PCI
+	select NEW_LEDS
+	select LEDS_CLASS
+	select LEDS_GPIO
+	select RTC_CLASS
+	select RTC_DRV_S35390A
+	select I2C
+	select I2C_GPIO
+	select AT24
+	select MAX4550
+	select GPIO_PCA953X
+	select MTD_UBI32_FC
+	select MTD_UBI32_NAND_SPI_ER
+	select UBICOM32_MULTI_FLASH
+	select UBICOM32_LCD_ADAPTER
+	select SND if SOUND
+	select SND_UBI32 if SOUND
+	select SND_UBI32_AUDIO_CS4384 if SOUND
+	select FB_UBICOM32 if FB
+	select TOUCHSCREEN_TSC2007 if INPUT_TOUCHSCREEN
+	select LCD_CLASS_DEVICE
+	select LCD_UBICOM32POWER
+	select VDC_LCD_SYNC
+	select VDC_LCD_BITBANG_16
+	help
+		Ubicom IP8500 TotalAudio Eval, supports:
+		8008-0210 v1.0 IP8K TAP Board
+		8008-0211 v1.1 IP8K TAP Board

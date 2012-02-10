@@ -1,0 +1,9 @@
+set main verbose? 0
+
+load libloader.la loader_component_library
+load libmapper.la mapper_component_library
+
+new sw-load-elf loader
+new hw-mapper-basic bus
+
+connect-pin main starting - loader load!         # ERROR: invalid direction

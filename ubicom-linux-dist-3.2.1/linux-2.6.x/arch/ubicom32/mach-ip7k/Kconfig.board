@@ -1,0 +1,24 @@
+#
+# Add any board specific configuration sub-menus here
+#
+
+choice
+	prompt "Display Detection"
+	depends on FB_UBICOM32
+	help
+		Choose a display type for use with the board.
+
+config DISPLAY_AUTODETECT
+	bool "Auto Detect"
+	help
+		Auto detect display, late in boot sequence.
+
+config DISPLAY_NOAUTODETECT
+	bool "Not Auto Detected"
+	select VDC_NOAUTODETECT
+	help
+		Select the connected display
+
+endchoice
+
+

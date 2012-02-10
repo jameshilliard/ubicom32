@@ -1,0 +1,266 @@
+<?xml version="1.0" ?>
+<!DOCTYPE defcomplib SYSTEM "http://sources.redhat.com/sid/component.dtd" [
+<!ENTITY stdinterface SYSTEM "../common-xml/interface.xml">
+<!ENTITY stdbehavior SYSTEM "../common-xml/behavior.xml">
+<!ENTITY debugregisters SYSTEM "../common-xml/debugger-register-access.xml">
+<!ENTITY stdconventions SYSTEM "../common-xml/conventions.xml">
+<!ENTITY stdenvironment SYSTEM "../common-xml/environment.xml">
+]>
+
+<defcomplib lib="libcgencpu.la" dlsym="cgen_component_library">
+  <defcomponent name="hw-cpu-ubicom32" type="concrete">
+
+  &stdinterface;
+
+
+
+    <!-- pins -->
+    <defpin name="irq_0" direction="in" legalvalues="any value" behaviors="interrupt" />
+    <defpin name="irq_1" direction="in" legalvalues="any value" behaviors="interrupt" />
+    <defpin name="irq_2" direction="in" legalvalues="any value" behaviors="interrupt" />
+    <defpin name="irq_3" direction="in" legalvalues="any value" behaviors="interrupt" />
+    <defpin name="irq_4" direction="in" legalvalues="any value" behaviors="interrupt" />
+    <defpin name="irq_5" direction="in" legalvalues="any value" behaviors="interrupt" />
+    <defpin name="irq_6" direction="in" legalvalues="any value" behaviors="interrupt" />
+    <defpin name="irq_7" direction="in" legalvalues="any value" behaviors="interrupt" />
+    <defpin name="irq_8" direction="in" legalvalues="any value" behaviors="interrupt" />
+    <defpin name="irq_9" direction="in" legalvalues="any value" behaviors="interrupt" />
+    <defpin name="irq_10" direction="in" legalvalues="any value" behaviors="interrupt" />
+    <defpin name="irq_11" direction="in" legalvalues="any value" behaviors="interrupt" />
+    <defpin name="irq_12" direction="in" legalvalues="any value" behaviors="interrupt" />
+    <defpin name="irq_13" direction="in" legalvalues="any value" behaviors="interrupt" />
+    <defpin name="irq_14" direction="in" legalvalues="any value" behaviors="interrupt" />
+    <defpin name="irq_15" direction="in" legalvalues="any value" behaviors="interrupt" />
+    <defpin name="irq_16" direction="in" legalvalues="any value" behaviors="interrupt" />
+    <defpin name="irq_17" direction="in" legalvalues="any value" behaviors="interrupt" />
+    <defpin name="irq_18" direction="in" legalvalues="any value" behaviors="interrupt" />
+    <defpin name="irq_19" direction="in" legalvalues="any value" behaviors="interrupt" />
+    <defpin name="irq_20" direction="in" legalvalues="any value" behaviors="interrupt" />
+    <defpin name="irq_21" direction="in" legalvalues="any value" behaviors="interrupt" />
+    <defpin name="irq_22" direction="in" legalvalues="any value" behaviors="interrupt" />
+    <defpin name="irq_23" direction="in" legalvalues="any value" behaviors="interrupt" />
+    <defpin name="irq_24" direction="in" legalvalues="any value" behaviors="interrupt" />
+    <defpin name="irq_25" direction="in" legalvalues="any value" behaviors="interrupt" />
+    <defpin name="irq_26" direction="in" legalvalues="any value" behaviors="interrupt" />
+    <defpin name="irq_27" direction="in" legalvalues="any value" behaviors="interrupt" />
+    <defpin name="irq_28" direction="in" legalvalues="any value" behaviors="interrupt" />
+    <defpin name="irq_29" direction="in" legalvalues="any value" behaviors="interrupt" />
+    <defpin name="irq_30" direction="in" legalvalues="any value" behaviors="interrupt" />
+    <defpin name="irq_31" direction="in" legalvalues="any value" behaviors="interrupt" />
+    <defpin name="irq_math_coprocessor_completion" direction="in" legalvalues="0 / non-zero" behaviors="interrupt" />
+    <defpin name="irq_math_coprocessor_exception" direction="in" legalvalues="0 / non-zero" behaviors="interrupt" />
+    <defpin name="watchdog_trigger" direction="in" legalvalues="any value" behaviors="timer" />
+    <defpin name="watchdog_reset" direction="out" legalvalues="0 / non-zero" behaviors="timer" />
+    <defpin name="timer_enable" direction="out" legalvalues="0 / non-zero" behaviors="timer" />
+
+
+    <!-- buses -->
+    <defbus name="data-bus" addresses="any" accesses="any" behaviors="data access" />
+
+
+    <!-- attributes -->
+    <defattribute name="cX:dN" category="watchable register" legalvalues="number" behaviors="register access" />
+    <defattribute name="cX:aM" category="watchable register" legalvalues="number" behaviors="register access" />
+    <defattribute name="cX:mac_hi" category="watchable register" legalvalues="number" behaviors="register access" />
+    <defattribute name="cX:mac_lo" category="watchable register" legalvalues="number" behaviors="register access" />
+    <defattribute name="cX:mac_rc16" category="watchable register" legalvalues="number" behaviors="register access" />
+    <defattribute name="cX:source3" category="watchable register" legalvalues="number" behaviors="register access" />
+    <defattribute name="cX:insn_cnt" category="watchable register" legalvalues="number" behaviors="register access" />
+    <defattribute name="cX:csr" category="watchable register" legalvalues="number" behaviors="register access" />
+    <defattribute name="cX:rosr" category="watchable register" legalvalues="number" behaviors="register access" />
+    <defattribute name="cX:iread_data" category="watchable register" legalvalues="number" behaviors="register access" />
+    <defattribute name="cX:int_mask0" category="watchable register" legalvalues="number" behaviors="register access" />
+    <defattribute name="cX:int_mask1" category="watchable register" legalvalues="number" behaviors="register access" />
+    <defattribute name="cX:pc" category="watchable register" legalvalues="number" behaviors="register access" />
+    <defattribute name="int_stat0" category="watchable register" legalvalues="number" behaviors="register access" />
+    <defattribute name="int_stat1" category="watchable register" legalvalues="number" behaviors="register access" />
+    <defattribute name="global_ctrl" category="watchable register" legalvalues="number" behaviors="register access" />
+    <defattribute name="global_timer" category="watchable register" legalvalues="number" behaviors="register access" />
+    <defattribute name="tctrl" category="watchable register" legalvalues="number" behaviors="register access" />
+    <defattribute name="mt_en" category="watchable register" legalvalues="number" behaviors="register access" />
+    <defattribute name="mt_pri" category="watchable register" legalvalues="number" behaviors="register access" />
+    <defattribute name="mt_sched" category="watchable register" legalvalues="number" behaviors="register access" />
+    <defattribute name="syscall-arg0" category="watchable register" legalvalues="number" behaviors="syscall" />
+    <defattribute name="syscall-arg1" category="watchable register" legalvalues="number" behaviors="syscall" />
+    <defattribute name="syscall-arg2" category="watchable register" legalvalues="number" behaviors="syscall" />
+    <defattribute name="syscall-arg3" category="watchable register" legalvalues="number" behaviors="syscall" />
+    <defattribute name="syscall-error" category="watchable register" legalvalues="number" behaviors="syscall" />
+    <defattribute name="syscall-result" category="watchable register" legalvalues="number" behaviors="syscall" />
+    <defattribute name="syscall-trap" category="setting" legalvalues="number" defaultvalue="63" behaviors="syscall" />
+  </defcomponent>
+  <synop>
+    <p>This component models the Ubicom UBICOM32 processor family.</p>
+  </synop>
+  <func>
+    <modelling>
+	<p>This component models a UBICOM32 processor.  </p>
+	<p>It does not model the math coprocessor or the multifunction timers.</p>
+    </modelling>
+    &stdbehavior;
+
+    <behavior name="interrupt">
+
+      <p>Various hardware interrupt sources are allowed.  Each of these
+      corresponds to an input pin for the cpu.  When driven, the
+      pin will set the corresponding bit in the interrupt_status[0]
+      register.  An interrupt will occur in a context if the corresponding
+      bit is set on in the interrupt_mask[0] for the context and
+      the Global Control register has the interrupt enable bit (bit 0)
+      set to 1.</p>
+
+      <p>The following lists the external interrupt pins:</p>
+
+      <ul>   
+	<li>irq_0</li>
+	<li>irq_1</li>
+	<li>irq_2</li>
+	<li>irq_3</li>
+	<li>irq_4</li>
+	<li>irq_5</li>
+	<li>irq_6</li>
+	<li>irq_7</li>
+	<li>irq_8</li>
+	<li>irq_9</li>
+	<li>irq_10</li>
+	<li>irq_11</li>
+	<li>irq_12</li>
+	<li>irq_13</li>
+	<li>irq_14</li>
+	<li>irq_15</li>
+	<li>irq_16</li>
+	<li>irq_17</li>
+	<li>irq_18</li>
+	<li>irq_19</li>
+	<li>irq_20</li>
+	<li>irq_21</li>
+	<li>irq_22</li>
+	<li>irq_23</li>
+	<li>irq_24</li>
+	<li>irq_25</li>
+	<li>irq_26</li>
+	<li>irq_27</li>
+	<li>irq_28</li>
+	<li>irq_29</li>
+	<li>irq_30</li>
+	<li>irq_31</li>
+	<li>irq_math_coprocessor_completion</li>
+	<li>irq_math_coprocessor_exception</li>
+      </ul>
+
+    </behavior>
+
+    <behavior name="syscall">
+
+      <p>Syscalls are supported via the int.s instruction with a value 
+      specified by the <attribute>syscall-trap</attribute> attribute (default 63).
+      Syscall implementation is handled by the gloss component.
+      Parameters and return values are handled by the following
+      register attributes: </p>
+
+      <table>
+	<tr><td>syscall-arg0</td><td>first argument of syscall (syscall number)</td></tr>
+	<tr><td>syscall-arg1</td><td>second argument of syscall</td></tr>
+	<tr><td>syscall-arg2</td><td>third argument of syscall</td></tr>
+	<tr><td>syscall-arg3</td><td>fourth argument of syscall</td></tr>
+	<tr><td>syscall-error</td><td>errno code</td></tr>
+	<tr><td>syscall-result</td><td>return code</td></tr>
+	<tr><td>syscall-trap</td><td>trap number of syscall</td></tr>
+      </table>
+    </behavior>
+
+    <behavior name="timer">
+
+      <p>There are a number of pins provided to support external timers. </p> 
+
+      <p>The watchdog_enable pin is used as an output pin to enable/disable
+      a watchdog timer.  The pin is driven whenever the watchdog enable
+      bit (bit 3) of the Global Control register changes in value.  The
+      driven value is 0 or 1, depending on the global enable bit setting.</p>
+
+      <p>The watchdog_trigger pin is used as input to denote when a Watchdog
+      timer has expired/wrapped.  The cpu will then verify that the 
+      watchdog enable bit (bit 3) in the Global Control register is set.
+      If it is, a global watchdog reset will be issued by driving the
+      watchdog_reset pin.</p>  
+
+      <p>The timer_enable pin is used as an output pin to enable/disable the 
+      four multi-function timers: timer1, timer2, timer3, and timer4. 
+      The pin is driven whenever the timer enable bit (bit 1) of the 
+      Global Control register changes.  It is either driven with 0 or 1, 
+      depending on the value of the global enable bit.</p>
+
+      <p>The tctrl register is tied to each timer via two output pins that
+      represent the specific timer reset and interrupt enable.  The
+      following lists the pins and which tctrl bit they are tied to:</p>
+
+      <table>
+	<tr><td>tctrl_t1rst</td><td>bit 0</td><td>timer 1 counter reset</td></tr>
+	<tr><td>tctrl_t2rst</td><td>bit 1</td><td>timer 2 counter reset</td></tr>
+	<tr><td>tctrl_t3rst</td><td>bit 2</td><td>timer 3 counter reset</td></tr>
+	<tr><td>tctrl_t4rst</td><td>bit 3</td><td>timer 4 counter reset</td></tr>
+	<tr><td>tctrl_t1ie</td><td>bit 4</td><td>timer 1 interrupt enable</td></tr>
+	<tr><td>tctrl_t2ie</td><td>bit 5</td><td>timer 2 interrupt enable</td></tr>
+	<tr><td>tctrl_t3ie</td><td>bit 6</td><td>timer 3 interrupt enable</td></tr>
+	<tr><td>tctrl_t4ie</td><td>bit 7</td><td>timer 4 inetrrupt enable</td></tr>
+      </table>
+
+      <p>The txrst pins are only driven with a 1 if the corresponding bit
+      is set in the tctrl register.  The txie bits are driven when the
+      value changes and are driven with the new value.</p>
+
+    </behavior>
+
+    <behavior name="register access">
+
+      <p>All direct memory address registers are accessible via attributes.
+      In the case of context-specific registers, the name is prefixed
+      with "cx:" where x is the context number (e.g. c0:d1).  The following
+      table lists the context-prefixed attribute names and the registers 
+      they represent:</p>
+
+      <table>
+	<tr><td>d0 to d31</td><td>32 data registers</td></tr>         
+	<tr><td>a0 to a7</td><td>8 address registers</td></tr>      
+	<tr><td>mac_hi</td><td>high accumulator</td></tr>      
+	<tr><td>mac_lo</td><td>low accumulator</td></tr>       
+	<tr><td>mac_rc16</td><td>mac in s15 format</td></tr>
+	<tr><td>source3</td><td>source 3 register</td></tr>
+	<tr><td>insn_cnt</td><td>instruction count</td></tr>
+	<tr><td>csr</td><td>context status register</td></tr>
+	<tr><td>rosr</td><td>read-only status register</td></tr>
+	<tr><td>iread_data</td><td>iread register</td></tr>
+	<tr><td>int_mask0</td><td>interrupt mask[0] register</td></tr>
+	<tr><td>int_mask1</td><td>interrupt mask[1] register</td></tr>
+	<tr><td>pc</td><td>context specific pc</td></tr>
+      </table>
+
+      <p>In addition to the context-specific registers, the following global
+      register attributes exist:</p>
+
+      <table>      
+	<tr><td>global_ctrl</td><td>global control register</td></tr>
+	<tr><td>int_stat0</td><td>interrupt status[0] register</td></tr>
+	<tr><td>int_stat1</td><td>interrupt status[1] register</td></tr>
+	<tr><td>mt_en</td><td>multithreading enable register</td></tr>
+	<tr><td>mt_pri</td><td>multithreading priority register</td></tr>
+	<tr><td>mt_sched</td><td>multithreading scheduling register</td></tr>
+	<tr><td>tctrl</td><td>tctrl register</td></tr>
+	<tr><td>global_timer</td><td>global timer</td></tr>
+      </table>
+
+      <p>To handle communication with the gloss component the <attribute>syscall-x</attribute>
+      register attributes are used.  See the syscall section above.</p>
+              
+      <p>The <attribute>pc</attribute> attribute is also available.  The 
+      current endianness is available as attribute <attribute>endian</attribute>.</p>
+
+    &debugregisters;
+    </behavior>
+
+  &stdconventions;
+  </func>
+  <env>
+  &stdenvironment;
+  </env>
+</defcomplib>
+

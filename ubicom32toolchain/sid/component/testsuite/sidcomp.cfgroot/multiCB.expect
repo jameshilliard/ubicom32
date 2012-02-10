@@ -1,0 +1,5 @@
+multiCB.badconf:24: could not set component loader accessor load-accessor-data
+multiCB.badconf:25: component loader has no bus load-accessor-data
+multiCB.badconf:28: component mem has no bus all
+multiCB.badconf:30: could not set component bus accessor \[0,0x7fffff\]
+Configuration error.  Aborting.

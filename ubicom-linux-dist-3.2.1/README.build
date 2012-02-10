@@ -1,0 +1,260 @@
+		      ============================
+			   Build Instructions
+			     Ubicom Distro
+			  Release v1.0 2009-07
+		      ============================
+
+ 1. General Setup
+-------------------
+
+	Export UBICOM_DONGLE (if not done so already) so that the build system
+	can find your dongle.
+
+	If you are using the bash shell, in your .bashrc file, add:
+
+		export UBICOM_DONGLE=<YOUR DONGLE IP ADDRESS>:5010
+
+	For example:
+
+		export UBICOM_DONGLE=192.168.0.22:5010
+
+	Note: You may need to re-invoke the shell for this to take effect.
+
+
+
+ 2. Setup Toolchain
+---------------------
+
+	By default toolchain is a symlink that points to a particular release
+	in toolchain-archive.  In the release this link should point to a
+	working toolchain.
+
+	If you do have a toolchain already, you can call
+
+		export TOOLCHAIN_DIR=<path>
+
+	or pass the Toolchain directory path as shown below:
+
+		make TOOLCHAIN_DIR=<path> <target>
+
+	For example:
+		make TOOLCHAIN_DIR=<path> menuconfig
+		make TOOLCHAIN_DIR=<path> install
+		make TOOLCHAIN_DIR=<path> help
+		make TOOLCHAIN_DIR=<path> info
+
+
+
+ 3. Terminology
+-------------------
+
+	We have a top directory and call it as ubicom-distro.
+	
+	We have a bootloader. It can include 'Ultra' or 'Ultra and U-Boot'.
+
+	We call currently selected Linux distribution as 'distro' or 'distro 
+	linux'.
+
+
+
+ 4. Build distro
+-------------------
+
+	Configure Top-level Build
+	---------------------------
+
+	First you need to configure the build system for distro	and your board.
+	Do this by running:
+
+		make menuconfig
+
+	You only need to do this once, unless you need to change the board
+	or distro to something else.
+
+	Notes:
+	When you do this,
+	  (i)	Pick your 'Distro' (uClinux or openwrt).
+	 (ii)	Optionally you could choose to 'Run Distro menuconfig'. If
+		you have picked this option, when you save and exit out
+		of the top-level menuconfig, the Distro-specific
+		menuconfig will get invoked automatically.
+	(iii)	Save and exit out of the top-level menuconfig.
+
+
+	Configure distro
+	-------------------
+
+	Now if you didn't already do this above in Configure Top-level you
+	can configure the distro you selected with the command:
+
+		make distro_menuconfig
+
+	Notes:
+	- If your distro is uClinux, don't forget to configure the kernel
+	  to the same board that you used for bootexec.
+
+
+	Build
+	-------
+
+	You are now ready to build! You can do so with
+
+		make
+
+	This will build currently selected Linux distribution and bootloader
+	NOTE: When you use this, the bootloader is only built once and will 
+	not be rebuilt again unless you use 'make bootloader_clean'. Alternatively, 
+	you can type 'make bootloader' to force bootloader recompilation. Use
+	'make ready' to see if *.elf files are ready.
+
+	Notes:
+	- If your distro is openwrt, although it is not used in make process
+	  you may want to examine the elf file generated in:
+		<PATH TO YOUR UBICOM DISTRO>/openwrt/bin/
+
+
+	Install
+	---------
+
+	If this is your first built with ubicom distro, you will probably
+	want to install all elf files: bootloader and distro elf files. To 
+	install all of them, type:
+
+		make install_all
+
+	However, if you already installed your bootloader, you will probably 
+	want to install only your distro image. To install it, type:
+
+		make install
+
+	Notes:
+	- When do you need to type 'make install_all' again?
+
+	If you have changes that regenerates your ultra configs, you must
+	again type make install_all. For example, if you enable/disable U-Boot
+	or Profiler, regeneration of ultra configs will be done internally. 
+	This concludes that your elf files will be updated with these new configs. 
+	Therefore, you must type:
+
+		make install_all
+
+	- If you enable/disable U-Boot or Profiler from menuconfig, ultra
+	config regeneration will be done internally. Also, you can select
+	'Regenerate ultra configs' option from menuconfig. Config regeneration 
+	will be done in next make command.
+
+
+
+ 5. Stand-alone project builds
+-------------------------------
+
+	If you want to build bootloader, type
+
+		make bootloader
+
+	If you want to build distro, type
+
+		make
+
+	Advanced use, for developers of these specific targets.
+
+	If you want to build only bootexec, type
+
+		make bootexec
+
+	If you want to build only mainexec, type
+
+		make mainexec
+
+	If you want to build only u-boot, type
+
+		make uboot
+
+
+
+ 6. Targets specific to sub directories
+-----------------------------------------
+
+	When you type make help, you will see available make command targets
+	(menuconfig is a target in 'make menuconfig' command). The targets 
+	except the ones listed in the make help output will be passed to distro
+	linux internally.
+	
+	For example, we don't have a target 'single'. Therefore when you type
+
+		make single
+		
+	This will invoke 'make single' command under distro linux directory.
+	
+	You can call bootloader commands by using:
+	
+		make bootloader_<target_name>
+		
+	<target_name> will be passed to the bootloader projects: bootexec and 
+	uboot. If <target_name> is not supported by one of the project it will 
+	fail. In this case, please use the following commands:
+
+	For uboot, you can type
+
+		make uboot_<target_name>
+
+	For bootexef, you can type
+
+		make bootexec_<target_name>
+
+
+	To just build kernel or any user application has been modified, use
+	openwrt/make1pkg. Following Examples are for recompiling kernel (1%),
+	and for recompiling a user application package (2%), then build ELF:
+
+		1% openwrt/make1pkg		# no argument
+	or
+		2% openwrt/make1pkg samba	# rebuild samba, then ELF
+
+
+
+ 7. Makefile parameters
+-------------------------
+
+	The make parameters are DISTRO_DIR, ULTRA_DIR, UBOOT_DIR, and
+	TOOLCHAIN_DIR. In Setup Toolchain section, it is explained that
+	how the latest can be overridden. Their usage follows:
+
+		DISTRO_DIR is distro (uClinux, openwrt) directory.
+		ULTRA_DIR is ultra directory.
+		UBOOT_DIR is u-boot directory.
+		TOOLCHAIN_DIR is toolchain directory.
+
+	You can override all of these variables by exporting them. Also, you
+	can define them in your .bashrc file.
+
+
+
+ 8.  Troubleshooting
+----------------------
+
+	Build Diagnostics
+	-----------------------
+
+	If you want to see your current settings, type:
+
+		 make info
+
+	To check if your bootloader and distro elf files are ready, type:
+
+		 make ready
+
+	If you encounter any problems during the build process, you can turn
+	on Verbose mode as shown below:
+
+		 make V=99
+	or
+		 make V=99 install
+
+	Build Issues
+	-----------------------
+
+	If you are having issues with these instructions check whether 
+	environment variables mentioned in 'Section 7. Makefile parameters' 
+	are not defined. As these can be used to change the behaviour of 
+	the build, but if used incorrectly will cause problems.

@@ -1,0 +1,21 @@
+## This conf file contains commands with arguments in incorrect order
+
+# configuration logging
+set main verbose? 0
+
+load libloader.la loader_component_library
+load libsched.la sched_component_library
+load console_component_library libconsoles.la	# incorrect order
+load libconsoles.la console_component_library
+load gloss_component_library libgloss.la	# incorrect order
+
+new loader sw-load-elf			# incorrect order
+new sid-sched-host host-sched
+new sid-sched-sim target-sched
+
+set 1 target-sched enabled?		# incorrect order
+set num-clients 1 host-sched 		# incorrect order
+
+connect-pin load! loader main -> stop!				# incorrect order
+connect-pin -> loader! load main perform-activity		# incorrect order
+set num-clients 1000 host-sched					# incorrect order

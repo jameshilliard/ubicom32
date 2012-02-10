@@ -1,0 +1,19 @@
+Steps to build elf2flt.
+
+1. First build and install binutils and gcc.
+
+2. In this example the toolchain sources are located at /scratch/natg/ubicom32toolchain.
+   The toolchain is installed at /scratch/natg/u32tools. Our toolchain target ubicom32-elf.
+   For the example you configure efl2flt as follows
+
+./configure --target=ubicom32-elf --prefix=/scratch/natg/u32tools --with-libbfd=/scratch/natg/u32tools/i686-pc-linux-gnu/ubicom32-elf/lib/libbfd.a --with-libiberty=/scratch/natg/u32tools/lib/libiberty.a --with-binutils-include-dir=/scratch/natg/ubicom32toolchain/include -with-bfd-include-dir=/scratch/natg/u32tools/i686-pc-linux-gnu/ubicom32-elf/include --with-bfd-src-dir=/scratch/natg/ubicom32toolchain/bfd
+
+
+  We are going to pickup libiberty and libbfd from the installed toolchain area. The bfd include directory is also pointing to the installed tool area. The
+binutils-include and bfd-src are pointing to the toolchain sources.
+
+3 make
+
+4.make install
+
+You are done.

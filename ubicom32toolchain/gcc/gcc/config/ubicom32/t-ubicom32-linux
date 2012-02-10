@@ -1,0 +1,6 @@
+LIB2FUNCS_EXTRA = \
+	$(srcdir)/config/ubicom32/divmod.c
+
+# We only support v3, v4 and v5 ISAs for uClinux.
+
+MULTILIB_OPTIONS = march=ubicom32v3/march=ubicom32v4/march=ubicom32v5

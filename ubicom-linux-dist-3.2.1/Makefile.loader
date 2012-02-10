@@ -1,0 +1,413 @@
+########################################################################
+#
+# Makefile.loader
+#
+#     Image and Install targets for Ubicom Distro
+#
+# Copyright © 2009 Ubicom Inc. <www.ubicom.com>
+#
+# In this file, we have targets to produce images for bootexec, uboot if
+# enabled, and distro. Final images are elf files. Also, there are targets
+# used to load them to ubicom32 boards. Therefore, we call this file as
+# Makefile.loader.
+#
+########################################################################
+
+########################################################################
+# TODO list: Please update this list
+#	uboot defs including the word 'uClinux' must have 'distro' instead
+########################################################################
+
+########################################################################
+# TODO: Find a smart way to include the followings from ultra
+#	We can create a new file in ultra, Makefile.macros, including the
+#	following tools, then we can include it from here.
+########################################################################
+OBJCOPY:=ubicom32-elf-objcopy
+OBJDUMP:=ubicom32-elf-objdump
+NM:=ubicom32-elf-nm
+ELF2BIN:=$(ULTRA_TOOLS)/elf2bin
+# mkimage can also be found in a working u-boot build
+#MKIMAGE:=$(UBOOT_DIR)/tools/mkimage
+MKIMAGE:=$(ULTRA_TOOLS)/mkimage
+GET_SECTOR_BOUNDARY := $(ULTRA_DIR)/scripts/get_sector_boundary.sh
+PROG:=expect $(ULTRA_DIR)/scripts/prog_board.exp ubicom32
+export OBJCOPY OBJDUMP NM ELF2BIN GET_SECTOR_BOUNDARY PROG
+
+define addGDBLoaderKernel
+	@echo "... Adding GDB Loader Kernel to $(2)"; \
+	$(OBJCOPY) --add-section .downloader=$(LOADER_DIR)/loader.bin \
+		--change-section-address=.downloader=0xd0000000 --set-section-flags \
+		.downloader=contents,load $(1) $(2)
+endef
+
+define addImageToElf
+	@ADDR=$(4); \
+	echo "... Creating $(1) from $(2)";\
+	echo "    with symbols $(3)";\
+	echo "    loading at   `printf '0x%x' $$ADDR`";\
+	$(OBJCOPY) --add-section .image=$(2) --change-section-address=.image=$$ADDR \
+		--set-section-flags .image=contents,load $(3) $(1).tmp
+	$(call addGDBLoaderKernel, $(1).tmp,$(1))
+	rm $(1).tmp
+endef
+UPGRADE=$(BIN_DIR)/upgrade
+ROOTFS=$(BIN_DIR)/rootfs
+########################################################################
+# Final elf files
+########################################################################
+MAINEXEC_FINAL:=$(BIN_DIR)/mainexec.elf
+BOOTEXEC_FINAL:=$(BIN_DIR)/bootexec.elf
+UBOOT_FINAL:=u-boot.elf
+#DISTRO_FINAL:=$(MAINEXEC_DIR)/vmlinux.elf
+DISTRO_FINAL:=image.elf
+
+########################################################################
+# Check if parametered file exists
+########################################################################
+define CheckFile
+	@if [ ! -e $(1) ]; then \
+		echo "You need to produce $(1), please type $(MAKE) help"; \
+		exit 1; \
+	fi
+endef
+
+check_mainexec_elf:
+	$(call CheckFile,$(MAINEXEC_DIR)/ultra.elf)
+
+check_bootexec_elf:
+	$(call CheckFile,$(BOOTEXEC_DIR)/ultra.elf)
+
+check_uboot_elf: check_bootexec_elf
+	$(call CheckFile,$(UBOOT_FINAL))
+
+check_uboot_exec:
+	$(call CheckFile,$(UBOOT_DIR)/u-boot)
+
+check_distro_elf:
+	$(call CheckFile,$(DISTRO_FINAL))
+
+check_bin_dir:
+	$(DO_X)
+	@if [ ! -e $(BIN_DIR) ]; then		\
+		mkdir -p $(BIN_DIR);		\
+	fi
+
+########################################################################
+# Check if elfs are ready
+########################################################################
+define IsReady
+	@if [ -e $(1) ]; then \
+		echo "$(1): ready"; \
+	else \
+		echo "$(1): not ready"; \
+	fi
+endef
+
+ready:
+	@echo "Checking final elf files..."
+	$(call IsReady,$(BOOTEXEC_DIR)/ultra.elf)
+	$(if $(CONFIG_LOADER_UBOOT),$(call IsReady,$(UBOOT_FINAL)))
+ifndef CONFIG_DISABLE_MAINEXEC
+	$(call IsReady,$(MAINEXEC_DIR)/ultra.elf)
+endif
+	$(call IsReady,$(DISTRO_FINAL))
+
+########################################################################
+# Clean produced elf files
+########################################################################
+image_clean:
+	$(ECHO) "... do $@"
+	rm -f $(UBOOT_FINAL)
+	rm -f $(DISTRO_FINAL)
+	rm -f $(BIN_DIR)/*
+
+########################################################################
+# Create loader.bin binary
+########################################################################
+$(LOADER_DIR)/lk.elf: gdbloader $(BOOTEXEC_DIR)/ultra.elf
+
+########################################################################
+# Final elf files depend on loader
+########################################################################
+$(MAINEXEC_FINAL) $(BOOTEXEC_FINAL) $(UBOOT_FINAL) $(DISTRO_FINAL): $(LOADER_DIR)/lk.elf
+
+########################################################################
+# Flash address settings. These settings are received from ctool
+########################################################################
+mainexec_flash_begin_addr:= 0x`${NM} $(MAINEXEC_FINAL) | grep __flash_begin | sed 's/ .*//'`
+bootexec_flash_begin_addr:= 0x`${NM} $(BOOTEXEC_FINAL) | grep __flash_begin | sed 's/ .*//'`
+#mainexec_flash_limit_addr:= 0x`${NM} $(MAINEXEC_FINAL) | grep __flash_limit | sed 's/ .*//'`
+mainexec_sdram_begin_addr:= 0x`${NM} $(MAINEXEC_FINAL) | grep __sdram_begin | sed 's/ .*//'`
+
+flash_sector_size:=$$(( $(EXTFLASH_MAX_PAGE_SIZE_KB) * 1024 ))
+flash_sector_mask:=$$(( $(flash_sector_size) - 1 ))
+bootloader_reserved_space:= $(APP_BOOTLOADER_RESERVED_SPACE_IN_SECTORS) * $(flash_sector_size)
+#bootexec_image_end_addr_from_elf := `$(SHELL) $(GET_SECTOR_BOUNDARY) $(BOOTEXEC_FINAL) 1`
+
+ifdef CONFIG_DISABLE_MAINEXEC
+bootexec_sdram_begin_addr:= 0x`${NM} $(BOOTEXEC_FINAL) | grep __sdram_begin | sed 's/ .*//'`
+uClinux_image_start_addr_dec := $$(($(bootexec_flash_begin_addr) + $(bootloader_reserved_space)))
+uClinux_image_run_addr_dec := $$(($(bootexec_sdram_begin_addr) + $(APP_UCLINUX_MEM_START_ADDR)))
+else
+uClinux_image_start_addr_dec := $$(($(mainexec_flash_begin_addr) + $(bootloader_reserved_space)))
+uClinux_image_run_addr_dec := $$(($(mainexec_sdram_begin_addr) + $(APP_UCLINUX_MEM_START_ADDR)))
+endif
+
+########################################################################
+# If u-boot is enabled, the start of distro linux will change
+########################################################################
+ifeq ($(CONFIG_LOADER_UBOOT),y)
+
+bootexec_flash_begin_addr:= 0x`${NM} $(BOOTEXEC_FINAL) | grep __flash_begin | sed 's/ .*//'`
+bootexec_flash_limit_addr:= 0x`${NM} $(BOOTEXEC_FINAL) | grep __flash_limit | sed 's/ .*//'`
+ULTRA_UBOOT_CONFIG_H := $(UBOOT_DIR)/include/configs/ultra_uboot_config.h
+uboot_env_size := $$(($(APP_UBOOT_ENV_SIZE_IN_SECTORS) * $(EXTFLASH_MAX_PAGE_SIZE_KB) * 1024))
+uboot_env_addr := $$(($(bootexec_flash_limit_addr) - $(uboot_env_size)))
+uboot_image_last_sector := $(APP_BOOTLOADER_RESERVED_SPACE_IN_SECTORS)
+uboot_image_end_addr_from_elf := `$(SHELL) $(GET_SECTOR_BOUNDARY) $(UBOOT_FINAL) 1`
+uboot_image_end_addr := $$(($(bootexec_flash_begin_addr) + $(bootloader_reserved_space) - $(APP_SNV_RESERVED_KB) * 1024))
+
+endif
+
+
+########################################################################
+# Check if images to load are ready. If don't prepare them. Then, load
+# bootexec, u-boot if enabled, and distro images.
+########################################################################
+install_all: $(if $(CONFIG_LOADER_UBOOT),install_uboot, install_bootexec) install_distro
+bootloader_install install_bootloader: $(if $(CONFIG_LOADER_UBOOT),install_uboot,install_bootexec)
+install: install_distro
+
+ifneq ($(CONFIG_LOADER_UBOOT),y)
+install_bootexec: check_bin_dir $(BOOTEXEC_FINAL)
+	$(DO_X)
+	$(PROG) $(BOOTEXEC_FINAL)
+endif
+install_mainexec: check_bin_dir
+	$(ECHO) Use install_distro instead
+
+distro_install install_distro: check_bin_dir check_distro_elf
+	$(DO_X)
+	$(PROG) $(DISTRO_FINAL)
+
+########################################################################
+# Images are elf files produced for bootexec, uboot if enabled, and distro
+########################################################################
+image_all: image_bootexec image_mainexec $(if $(CONFIG_LOADER_UBOOT),image_uboot) image_distro
+
+########################################################################
+# Targets for mainexec. We have mainexec elf file after typing make mainexec.
+# Therefore, here we only check if it exists.
+########################################################################
+image_mainexec: $(MAINEXEC_FINAL)
+image_bootexec: $(BOOTEXEC_FINAL)
+image_bootloader: $(BOOTEXEC_FINAL)
+ifeq ($(CONFIG_LOADER_UBOOT),y)
+image_bootloader:  $(UBOOT_FINAL)
+endif
+
+########################################################################
+# Targets for distro. Before producing distro image, images it depends on
+# must be ready. These are bootexec and u-boot if enabled. Before creating
+# new distro elf file, we remove old vmlinux related binaries.
+########################################################################
+image_distro: image_bootloader
+image_distro: image_distro_clean $(DISTRO_FINAL)
+
+image_distro_clean:
+	$(DO_X)
+	-rm -f $(DISTRO_FINAL) $(UPGRADE).* $(BIN_DIR)/vmlinux.bin
+
+$(DISTRO_FINAL): $(UPGRADE).elf
+	ln -sfv $< $@
+	$(ECHO)
+	$(ECHO) "Run 'ubicom32-elf-gdb $@' to load using dongle or $(UPGRADE).ub to upgrade with u-boot."
+
+########################################################################
+# Align the start of the vmlinux.elf image to the next sector boundary
+# after the bootexec end and u-boot if enabled. Otherwise, vmlinux would
+# overwrite the it.
+########################################################################
+
+$(UPGRADE).elf: $(UPGRADE).ub
+	$(call addImageToElf,$@,$<,$(KERNEL_DIR)/vmlinux,$(uClinux_image_start_addr_dec));
+
+$(ROOTFS).bin: $(SQUASHFS_IMAGE_FILE)
+	cp $< $@
+
+$(ROOTFS).elf: $(ROOTFS).bin
+	$(call addImageToElf,$@,$<,$(LOADER_DIR)/lk.elf,0x60200000);
+
+#
+# The multi image is setup as follows:
+#	Image 0: Mainexec
+#	Image 1: Initial ramdisk
+#	Image 2: Linux Kernel
+#
+# Even if the initial ramdisk is not used, you must have a dummy image in
+# the image 1 slot.
+#
+# The entry point is the same for mainexec and linux kernel.
+#
+ifdef CONFIG_DISABLE_MAINEXEC
+IMAGE_LIST:=$(BIN_DIR)/vmlinux.gz $(BIN_DIR)/initrd.gz
+IMAGE_LIST_MKIMAGE:=$(BIN_DIR)/vmlinux.gz:$(BIN_DIR)/initrd.gz
+else
+IMAGE_LIST:=$(BIN_DIR)/mainexec.gz $(BIN_DIR)/initrd.gz $(BIN_DIR)/vmlinux.gz
+IMAGE_LIST_MKIMAGE:=$(BIN_DIR)/mainexec.gz:$(BIN_DIR)/initrd.gz:$(BIN_DIR)/vmlinux.gz
+endif
+
+ifeq ($(CONFIG_DISTRO_SQUASHFS),y)
+$(UPGRADE).ub: $(IMAGE_LIST) $(UPGRADE).vars $(ROOTFS).bin .config
+	# Make u-boot image
+	$(DO_X)
+	. $(UPGRADE).vars; \
+	echo "... Creating u-boot image $@ from $<";\
+	$(MKIMAGE) -A ubicom32 -O linux -T multi -C gzip \
+		-a $$START_ADDR -e $$ENTRY_POINT \
+		-n $(CONFIG_IDENTITY_STRING) -d $(IMAGE_LIST_MKIMAGE) $@;
+	$(ECHO) Sector Size is $(flash_sector_size)
+	EXTRA=$$(($(flash_sector_size) - (`stat $@ -c %s` & $(flash_sector_mask)))); \
+	echo "Add $$EXTRA bytes to $@ to round up to $(flash_sector_size) byte boundary"; \
+	dd oflag=append of=$@ if=/dev/zero conv=block,notrunc count=$$EXTRA bs=1 status=noxfer 2> /dev/null
+	if [ 0 -ne $$(($(APP_KERNEL_RESERVED_SPACE_IN_SECTORS))) ]; then \
+	EXTRA=$$(($(APP_KERNEL_RESERVED_SPACE_IN_SECTORS) * $(flash_sector_size) - `stat $@ -c %s`)); \
+	echo "Add $$EXTRA bytes to $@ to round up to $(APP_KERNEL_RESERVED_SPACE_IN_SECTORS) sectors for kernel partition"; \
+	dd oflag=append of=$@ if=/dev/zero conv=notrunc count=$$EXTRA bs=1 status=noxfer 2> /dev/null; \
+	fi
+	echo "ROOTFS starts at $$((`stat $@ -c %s`))"
+	dd oflag=append of=$@ if=$(ROOTFS).bin conv=notrunc status=noxfer 2> /dev/null
+	EXTRA=$$(($(flash_sector_size) - (`stat $@ -c %s` & $(flash_sector_mask)))); \
+	echo "Add $$EXTRA bytes to $@ to round up to $(flash_sector_size) byte boundary"; \
+	dd oflag=append of=$@ if=/dev/zero conv=block,notrunc count=$$EXTRA bs=1 status=noxfer 2> /dev/null
+else
+$(UPGRADE).ub: $(IMAGE_LIST) $(UPGRADE).vars .config
+	# Make u-boot image
+	$(DO_X)
+	. $(UPGRADE).vars; \
+	echo "... Creating u-boot image $@ from $<";\
+	$(MKIMAGE) -A ubicom32 -O linux -T multi -C gzip \
+		-a $$START_ADDR -e $$ENTRY_POINT \
+		-n $(CONFIG_IDENTITY_STRING) -d $(IMAGE_LIST_MKIMAGE) $@;
+	$(ECHO) Sector Size is $(flash_sector_size)
+	EXTRA=$$(($(flash_sector_size) - (`stat $@ -c %s` & $(flash_sector_mask)))); \
+	echo "Add $$EXTRA bytes to $@ to round up to $(flash_sector_size) byte boundary"; \
+	dd oflag=append of=$@ if=/dev/zero conv=block,notrunc count=$$EXTRA bs=1 status=noxfer 2> /dev/null
+endif
+
+$(BIN_DIR)/initrd.gz: $(BIN_DIR)/initrd.bin
+	$(DO_X)
+	$(ECHO) "... Creating $@ from $<"
+	@cat $< | gzip -v -9 > $@
+
+$(BIN_DIR)/vmlinux.gz: $(BIN_DIR)/vmlinux.bin
+	$(DO_X)
+	$(ECHO) "... Creating $@ from $<"
+	@cat $< | gzip -v -9 > $@
+
+$(BIN_DIR)/mainexec.gz: $(BIN_DIR)/mainexec.bin
+	$(DO_X)
+	$(ECHO) "... Creating $@ from $<"
+	@cat $< | gzip -v -9 > $@
+
+$(UPGRADE).vars: $(BIN_DIR)/vmlinux.bin
+	$(DO_X)
+	printf "START_ADDR=0x%x\n" $$(( $(uClinux_image_run_addr_dec))) > $@
+	printf "ENTRY_POINT=0x%x\n" $$(( $(uClinux_image_run_addr_dec))) >> $@
+
+#
+# TODO: if you want an initial ramdisk then here is the place to put it
+# today we put a dummy file
+#
+$(BIN_DIR)/initrd.bin:
+	touch $@
+
+$(BIN_DIR)/vmlinux.bin: Makefile.loader
+	$(DO_X)
+	$(ECHO) "... Extracting $@ from $(KERNEL_DIR)/vmlinux"
+	$(ELF2BIN) -b _begin -e _end -f 0xff -pad \
+		$(KERNEL_DIR)/vmlinux -o $@
+
+$(BIN_DIR)/mainexec.bin: $(BIN_DIR)/mainexec.elf
+	$(DO_X)
+	$(ECHO) "... Extracting $@ from $<"
+	$(ELF2BIN) -b __flash_entry_load_begin -e __flash_limit -f 0xff \
+		$< -o $@
+
+$(MAINEXEC_DIR)/ultra.elf: mainexec_default
+$(MAINEXEC_FINAL): $(MAINEXEC_DIR)/ultra.elf
+	$(DO_X)
+	cp $(MAINEXEC_DIR)/ultra.elf $@
+
+$(BOOTEXEC_DIR)/ultra.elf: bootexec_default
+$(BOOTEXEC_FINAL): $(BOOTEXEC_DIR)/ultra.elf
+	$(DO_X)
+	$(call addGDBLoaderKernel,$<,$@)
+
+
+########################################################################
+# Prepare u-boot image and load it
+########################################################################
+ifeq ($(CONFIG_LOADER_UBOOT),y)
+
+image_uboot: check_bin_dir check_bootexec_elf
+image_uboot: image_uboot_clean $(UBOOT_FINAL) check_uboot_size
+
+image_uboot_clean:
+	$(DO_X)
+	-rm -f $(UBOOT_FINAL) $(BIN_DIR)/u-boot*
+
+$(UBOOT_FINAL): $(BIN_DIR)/u-boot.elf
+	$(DO_X)
+	ln -sfv $< $@
+
+$(BIN_DIR)/u-boot.elf: $(BIN_DIR)/bootexec_bd.bin+u-boot.ub
+	$(DO_X)
+	$(call addImageToElf,$@,$<,$(UBOOT_DIR)/u-boot,$(bootexec_flash_begin_addr))
+
+$(BIN_DIR)/bootexec_bd.bin+u-boot.ub: $(BIN_DIR)/u-boot.ub $(BIN_DIR)/bootexec.elf
+	$(DO_X)
+	cp $(BOOTEXEC_DIR)/build/bin/bd.bin $(BIN_DIR)/bootexec_bd.bin
+	cp $(BIN_DIR)/bootexec_bd.bin $@
+	@EXTRA=$$(((`stat $@ -c %s` & 31) ? (32 - (`stat $@ -c %s` & 31)) : 0)); \
+	echo "Add $$EXTRA bytes to bootexec_bd.bin to round up to 32 byte boundary"; \
+	dd oflag=append of=$@ if=/dev/zero conv=block,notrunc count=$$EXTRA bs=1 status=noxfer 2> /dev/null
+	echo "Padded bootexec_bd.bin size `stat $@ -c %s`"
+	cat $< >> $@
+	echo "New size `stat $@ -c %s`"
+
+$(BIN_DIR)/u-boot.ub: $(BIN_DIR)/u-boot.gz $(BIN_DIR)/u-boot.vars .config
+	echo "... Creating u-boot image $@ from $<"; \
+	. $(BIN_DIR)/u-boot.vars; \
+	$(MKIMAGE) -A ubicom32 -O u-boot -T firmware -C gzip \
+		-a $$START_ADDR -e $$ENTRY_POINT \
+		-n $(CONFIG_IDENTITY_STRING) -d $< $@; \
+
+$(BIN_DIR)/u-boot.vars: $(BIN_DIR)/u-boot.bin
+	UBOOT_ADDR=0x`${NM} $(UBOOT_DIR)/u-boot | grep _stext | sed 's/ .*//'`; \
+	echo "START_ADDR=$$UBOOT_ADDR" > $@; \
+	echo "ENTRY_POINT=$$UBOOT_ADDR" >> $@
+
+$(BIN_DIR)/u-boot.gz: $(BIN_DIR)/u-boot.bin
+	$(ECHO)  "... Creating $@ from $<"
+	$(ECHO) -n "    compressing with gzip..."
+	gzip -v < $<  > $@
+
+$(BIN_DIR)/u-boot.bin: check_uboot_exec Makefile.loader
+	$(ECHO) "... Extracting $@ from $(UBOOT_DIR)/u-boot"
+	$(ELF2BIN) -b _stext -e _end -f 0xff -pad $(UBOOT_DIR)/u-boot -o $@
+
+check_uboot_size:
+	@echo "Checking if u-boot image size fits into the reserved space in flash..."
+	@if [ $(uboot_image_end_addr) -lt $(uboot_image_end_addr_from_elf) ]; then \
+		echo "** u-boot image size is bigger than its reserved space in flash, can't continue."; \
+		echo "** u-boot image size end address is $(uboot_image_end_addr_from_elf)."; \
+		echo "** Reserved space for u-boot image ends at $(uboot_image_end_addr)."; \
+		exit 1; \
+	fi
+
+uboot_install install_uboot: check_uboot_elf
+	$(PROG) $(UBOOT_FINAL)
+
+endif

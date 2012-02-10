@@ -1,0 +1,29 @@
+#
+# used by VDC
+#
+config VDC_LCD_BITBANG_16
+	bool
+	default n
+
+config VDC_LCD_BITBANG_8
+	bool
+	default n
+
+config VDC_LCD_BITBANG_8_SPLIT
+	bool
+	default n
+
+config VDC_LCD_SYNC
+	bool
+	default n
+
+config VDC_LCD_DIRECT
+	bool
+	default n
+
+config VDC_LCD_BITBANG_DISPLAY
+	bool
+	default n
+	help
+		Selected automagically when a bitbang display is selected.
+

@@ -1,0 +1,32 @@
+diff -Naur a/aconfigure b/aconfigure
+--- a/aconfigure	2010-02-12 16:12:41.000000000 +0200
++++ b/aconfigure	2011-03-14 14:23:09.000000000 +0200
+@@ -12192,7 +12192,11 @@
+ if test "$build" = "$host"; then
+     ac_cross_compile=
+ else
+-    ac_cross_compile=${host_orig}-
++    if [ x"$CC" = x ]; then
++        ac_cross_compile=${host_orig}-
++    else
++        ac_cross_compile=`echo "$CC" | sed 's,\(.*\)gcc,\1,g'`
++    fi
+ fi
+ ac_linux_poll=select
+ 
+diff -Naur a/aconfigure.ac b/aconfigure.ac
+--- a/aconfigure.ac	2010-02-12 16:12:41.000000000 +0200
++++ b/aconfigure.ac	2011-03-14 14:24:09.000000000 +0200
+@@ -980,7 +980,11 @@
+ if test "$build" = "$host"; then
+     ac_cross_compile=
+ else
+-    ac_cross_compile=${host_orig}-
++    if [ x"$CC" = x ]; then
++        ac_cross_compile=${host_orig}-
++    else
++        ac_cross_compile=`echo "$CC" | sed 's,\(.*\)gcc,\1,g'`
++    fi
+ fi
+ AC_SUBST(ac_linux_poll,select)
+ AC_SUBST(ac_host,unix)

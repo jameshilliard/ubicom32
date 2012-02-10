@@ -1,0 +1,24 @@
+# ip3k sidlib testsuite.
+
+if {! $sidtarget(ip3k)} { untested "ip3k sidlib not available"; return }
+
+# load support procs
+load_lib "rundefs.exp"
+
+# all machines (should match the directory name under sidlib)
+set all_machs "ip3k"
+
+set libtool "../libtool"
+set libtool_flags ""
+set gcc_flags "-g"
+
+# download all needed configuration and executable files
+
+foreach src [lsort [glob -nocomplain $srcdir/$subdir/*.conf]] {
+  remote_download host $src
+}
+foreach src [lsort [glob -nocomplain $srcdir/$subdir/*.out]] {
+  remote_download host $src
+}
+
+run-sidlib-tests $all_machs $srcdir/sidlib.ip3k "*.cxx" $libtool $libtool_flags $gcc_flags x

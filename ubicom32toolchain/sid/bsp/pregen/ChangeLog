@@ -1,0 +1,223 @@
+2007-02-05  Dave Brolley  <brolley@redhat.com>
+
+	* Contribute the following changes:
+	2001-12-04  Frank Ch. Eigler  <fche@redhat.com>
+
+	* mep*.conf: Regenerated with mepcfgtool tweaks.
+
+	2001-10-29  Frank Ch. Eigler  <fche@redhat.com>
+
+	* pregen-configs.in (mep): Add --tksm for some configurations.
+
+	2001-10-04  Frank Ch. Eigler  <fche@redhat.com>
+
+	* pregen-configs.in (mep): Make "-EB" explicit where needed.
+
+	2001-07-30  Ben Elliston  <bje@redhat.com>
+
+	* pregen-configs.in: Emit mep-gloss.conf.
+	* mep-gdb-tksm.conf: Regenerate.
+	* mep-gdb.conf: Likewise.
+	* mep-little-gdb-tksm.conf: Likewise.
+	* mep-little-gdb.conf: Likewise.
+	* mep-gloss.conf: New file.
+
+	2001-07-11  Ben Elliston  <bje@redhat.com>
+
+	* pregen-configs.in (mep): Generate little endian versions.
+	* mep-little-gdb.conf: New file.
+	* mep-little-gdb-tksm.conf: Likewise.
+
+	2001-07-02  Ben Elliston  <bje@redhat.com>
+
+	* pregen-configs.in (mep): Create basic files.
+	* mep-gdb.conf, mep-gdb-tksm.conf: New files.
+
+2005-12-16  Nathan Sidwell  <nathan@codesourcery.com>
+
+	Second part of ms1 to mt renaming.
+	* Makefile.in: Rebuilt.
+	* mt-gdb.conf: Renamed & rebuilt.
+	* mt-gloss.conf: Renamed & rebuilt.
+	* pregen-configs.in: Adjust.
+
+2005-06-24  Dave Brolley  <brolley@redhat.com>
+
+	* pregen-configs.in: Add support for Ms1.
+	* ms1-gloss.conf: New file.
+	* ms1-gdb.conf: Likewise.
+
+2005-06-03  Jim Blandy  <jimb@redhat.com>
+
+	* Makefile.in: Regenerated with Automake 1.9.5.
+
+2002-02-01  Frank Ch. Eigler  <fche@redhat.com>
+
+	* ALL.conf: Regenerated with scheduler slot names etc.
+
+2001-12-27  Frank Ch. Eigler  <fche@redhat.com>
+
+	* ALL.conf: Regenerated with cpu/sched etc. changes.
+
+2001-12-17  matthew green  <mrg@redhat.com>
+
+	* pregen-configs.in: Add support for Xstormy16.
+	* xstormy16-gloss.conf: New file.
+	* xstormy16-gdb.conf: Likewise.
+	* xstormy16-gloss-gdb.conf: Likewise.
+	* xstormy16-gloss-gdb-tksm.conf: Likewise.
+
+2001-12-04  Frank Ch. Eigler  <fche@redhat.com>
+
+	* ALL.conf: Regenerated with endianness-setting tweak.
+
+2001-10-29  Frank Ch. Eigler  <fche@redhat.com>
+
+	* (*.conf): Regenerated with memory component tweaks.
+
+2001-10-26  Frank Ch. Eigler  <fche@redhat.com>
+
+	* (*.conf): Regenerated with reset-net etc. tweaks.
+
+2001-10-19  Thomas Fitzsimmons  <fitzsim@redhat.com>
+
+	* i386-gdb.conf: New file.
+	* pregen-configs.in: Add lines for i386-gdb.conf.
+
+2001-10-17  Dave Brolley  <brolley@redhat.com>
+
+	* All configs using --gdb regenerated.
+
+2001-10-12  Thomas Fitzsimmons  <fitzsim@redhat.com>
+
+	* i386-gloss.conf: New file.
+	* pregen-configs.in: Add code to generate i386-gloss.conf.
+
+2001-10-04  Frank Ch. Eigler  <fche@redhat.com>
+
+	* (*.conf): Regenerated without superfluous bool attr settings.
+
+2001-10-03  Frank Ch. Eigler  <fche@redhat.com>
+
+	* (*.conf): Regenerated with gdb cfgroot relationship.
+
+2001-08-06  Frank Ch. Eigler  <fche@redhat.com>
+
+	* (*.conf): Regenerated without dud loader in gdb configurations.
+
+2001-08-06  Ben Elliston  <bje@redhat.com>
+
+	* (*.conf): Regenerate with cache component library included.
+
+2001-08-01  Dave Brolley  <brolley@redhat.com>
+
+	* arm-cma-tksm.conf: Regenerated for --load and --gdbport changes.
+	* arm-cma.conf: Ditto.
+	* arm-gloss-tksm.conf: Ditto.
+	* arm-gloss.conf: Ditto.
+	* arm-glossBE.conf: Ditto.
+	* arm-pid-redboot-tksm.conf: Ditto.
+	* arm-pid-redboot.conf: Ditto.
+	* arm-pid-tksm.conf: Ditto.
+	* arm-pid.conf: Ditto.
+	* arm-pidBE.conf: Ditto.
+	* xstormy16-gdb.conf: Ditto.
+	* xstormy16-gloss-gdb-tksm.conf: Ditto.
+	* xstormy16-gloss-gdb.conf: Ditto.
+	* xstormy16-gloss.conf: Ditto.
+
+2001-07-18  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* (*.conf): Regenerated after adding --enable-warnings option
+	to configrun-sid.in.
+
+2001-07-10  matthew green  <mrg@redhat.com>
+
+	* Makefile.in: Regenerate.
+	* pregen-configs.in: Add xstormy16 support.
+	* xstormy16-gdb.conf: New file.
+	* xstormy16-gloss-gdb-tksm.conf: New file.
+	* xstormy16-gloss-gdb.conf: New file.
+	* xstormy16-gloss.conf: New file.
+
+2001-07-02  Ben Elliston  <bje@redhat.com>
+
+	* pregen-configs.in (mvic): Be silent if a file is unchanged.
+
+2001-06-26  Frank Ch. Eigler  <fche@redhat.com>
+
+	* Makefile.am (ACLOCAL_AMFLAGS): Refer to $srcdir.
+	* Makefile.in: Regenerated.
+
+2001-05-29  matthew green  <mrg@redhat.com>
+
+	* arm-cma-tksm.conf: Regenerated.
+	* arm-cma.conf, arm-gloss-tksm.conf, arm-gloss.conf: Likewise.
+	* arm-glossBE.conf, arm-pid-redboot-tksm.conf: Likewise.
+	* arm-pid-redboot.conf, arm-pid-tksm.conf, arm-pid.conf: Likewise.
+	* arm-pidBE.conf: Likewise.
+
+2001-04-05  Frank Ch. Eigler  <fche@redhat.com>
+
+	* pregen-configs.in (arm): Generate redboot rather than cygmon .conf
+	files.
+	* arm-pid-redboot.conf, arm-pid-redboot-tksm.conf: New files.
+	* armpid-redboot.img: New ROM image for RedBoot snapshot 2001-04-05.
+	* arm-pid-cygmon.conf, arm-pid-cygmon-tksm.conf: Zapped files.
+
+2001-04-04  Frank Ch. Eigler  <fche@redhat.com>
+
+	* arm-*.conf: Regenerated with new enable_z_packet default.
+
+2001-02-15  Frank Ch. Eigler  <fche@redhat.com>
+
+	* pregen-configs.in (mvic): Robustify, verbosify.
+
+2001-01-23  Frank Ch. Eigler  <fche@redhat.com>
+
+	* *.conf: Regenerated with sorted "load" commands.
+
+2001-01-23  Frank Ch. Eigler  <fche@redhat.com>
+
+	* arm-pid-cygmon.conf, arm-pid-cygmon-tksm.com: Regenerated.
+
+2001-01-17  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* *.conf: Regenerated.
+
+2001-01-15  Frank Ch. Eigler  <fche@redhat.com>
+
+	* *.conf: Regenerated.
+
+2001-01-04  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* arm-cma-tksm.conf: Regenerated.
+	* arm-cma.conf: Ditto.
+	* arm-gloss-tksm.conf: Ditto.
+	* arm-gloss.conf: Ditto.
+	* arm-glossBE.conf: Ditto.
+	* arm-pid-cygmon-tksm.conf: Ditto.
+	* arm-pid-cygmon.conf: Ditto.
+	* arm-pid-tksm.conf: Ditto.
+	* arm-pid.conf: Ditto.
+	* arm-pidBE.conf: Ditto.
+
+2000-12-21  Frank Ch. Eigler  <fche@redhat.com>
+
+	* Makefile.am: Simplify to install all srcdir *.conf/*.img files.
+	* pregen-configs.in: Overwrite srcdir files only if non-comment
+	lines are different.
+	* Makefile.in: Regenerated.
+
+2000-11-23  Frank Ch. Eigler  <fche@redhat.com>
+
+	* Makefile.am: New file.  Conditionally maintain pregenerated
+	sid configuration files.
+	* Makefile.in: New generated file.
+	* pregen-configs.in: New file.  Pregeneration driver.
+	* armpid-cygmon.img, armpid-eCos.img: Moved here from parent dir.
+	* arm-cma-tksm.conf, arm-cma.conf, arm-gloss-tksm.conf: New gen files.
+	* arm-gloss.conf, arm-glossBE.conf, arm-pid-cygmon-tksm.conf: Ditto.
+	* arm-pid-cygmon.conf, arm-pid-tksm.conf, arm-pid.conf: Ditto.
+	* arm-pidBE.conf: Ditto.
+

@@ -1,0 +1,216 @@
+2006-06-26  Dave Brolley  <brolley@redhat.com>
+
+	* xstormy16.h (get_pc): New member of xstormy16_cpu.
+
+2005-10-28  Dave Brolley  <brolley@redhat.com>
+
+	* xstormy16-desc.h: Regenerate.
+
+2005-08-19  Dave Brolley  <brolley@redhat.com>
+
+	* Makefile.am: Remove references to xstormy16-write.cxx.
+	* xstormy16-cpu.h: Regenerate.
+	* xstormy16-decode.cxx: Regenerate.
+	* xstormy16-decode.h: Regenerate.
+	* xstormy16-defs.h: Regenerate.
+	* xstormy16-desc.h: Regenerate.
+	* xstormy16-sem.cxx: Regenerate.
+	* xstormy16-write.cxx: Removed.
+
+2005-06-03  Jim Blandy  <jimb@redhat.com>
+
+	* Makefile.in, aclocal.m4: Regenerated with Automake 1.9.5.
+	* configure: Regenerated with autoconf 2.59.
+
+2004-07-21  DJ Delorie  <dj@redhat.com>
+
+	* xstormy16-decode.cxx: Regenerate.
+	* xstormy16-sem.cxx: Regenerate.
+	* xstormy16-write.cxx: Regenerate.
+
+2003-09-08  Doug Evans  <dje@casey.transmeta.com>
+
+	* xstormy16/Makefile.am (cgen-xstormy16): Update call to CGEN.sh.
+	* xstormy16/Makefile.in: Regenerate.
+
+2003-07-05  Doug Evans  <dje@sebabeach.org>
+
+	* xstormy16-cpu.h: Regenerate.
+	* xstormy16-decode.cxx: Regenerate.
+	* xstormy16-decode.h: Regenerate.
+	* xstormy16-defs.h: Regenerate.
+	* xstormy16-desc.h: Regenerate.
+	* xstormy16-sem.cxx: Regenerate.
+
+2003-05-01  DJ Delorie  <dj@redhat.com>
+
+	* xstormy16-sem.cxx: Regenerate.
+	* xstormy16-write.cxx: Regenerate.
+
+2003-03-21  DJ Delorie  <dj@redhat.com>
+
+	* xstormy16-decode.cxx: Regenerate.
+	* xstormy16-decode.h: Regenerate.
+	* xstormy16-sem.cxx: Regenerate.
+	* xstormy16-write.cxx: Regenerate.
+
+2003-03-12  Frank Ch. Eigler  <fche@redhat.com>
+
+        * xstormy16-decode.cxx: Regenerate with fixed cgen SID-SIMULATOR.
+
+2002-03-05  DJ Delorie  <dj@redhat.com>
+
+	* xstormy16-sem.cxx: Regenerate.
+
+2003-02-18  DJ Delorie  <dj@redhat.com>
+
+	* xstormy16-decode.cxx: Regenerate.
+	* xstormy16-sem.cxx: Regenerate.
+	* xstormy16-write.cxx: Regenerate.
+	
+	* xstormy16.cxx (parity): Fix logic.
+
+2002-11-25  DJ Delorie  <dj@redhat.com>
+
+	* xstormy16-decode.cxx: Regenerate.
+
+2002-11-15  DJ Delorie  <dj@redhat.com>
+
+	* xstormy16-cpu.h: Regenerate.
+	* xstormy16-decode.cxx: Regenerate.
+	* xstormy16-decode.h: Regenerate.
+	* xstormy16-defs.h: Regenerate.
+	* xstormy16-desc.h: Regenerate.
+	* xstormy16-sem.cxx: Regenerate.
+	* xstormy16-write.cxx: Regenerate.
+
+2002-01-10  matthew green  <mrg@redhat.com>
+
+	* xstormy16.cxx (do_holdx): Define.
+	* xstormy16.h (do_holdx): Declare.
+
+2001-10-04  matthew green  <mrg@redhat.com>
+
+	* xstormy16-cpu.h: Regenerate with Rbj fix.
+	* xstormy16-desc.h: Likewise.
+	* xstormy16-sem.cxx: Likewise.
+
+2001-10-03  matthew green  <mrg@redhat.com>
+
+	* xstormy16.cxx (syscall): Use 4 byte values for converting the
+	syscall result and error values.
+	* xstormy16.cxx (syscall_arg0, syscall_arg1, syscall_arg2,
+	syscall_arg3, syscall_error, syscall_result): Use 4 byte values.
+
+2001-08-27  Geoffrey Keating  <geoffk@redhat.com>
+
+	* xstormy16.cxx (syscall): Clear the error number before
+	signalling the syscall.
+
+2001-08-16  graydon hoare  <graydon@redhat.com>
+
+	* Makefile.am: gcc -> $(CC) fix.
+	* Makefile.in: Regenerate.
+
+2001-08-15  graydon hoare  <graydon@redhat.com>
+
+	* Makefile.am: Add support for building and
+	linking invididual objects from opcodes.
+	* Makefile.in: Regenerate.
+
+2001-08-03  matthew green  <mrg@redhat.com>
+
+	* xstormy16.h (dtor): Add throw() specifier.
+
+2001-08-01  matthew green  <mrg@redhat.com>
+
+	* xstormy16.cxx (xstormy16_cpu::dbg_get_reg): Use little endian.
+	(xstormy16_cpu::dbg_set_reg): Likewise. 
+
+2001-07-31  Corinna Vinschen  <vinschen@redhat.com>
+
+	* xstormy16.cxx (xstormy16_cpu::dbg_get_reg): Set register
+	size to actual register size in CPU.
+	(xstormy16_cpu::dbg_set_reg): Ditto. Change register number
+	of PC from 17 to 16.
+
+2001-07-30  Geoffrey Keating  <geoffk@redhat.com>
+
+	* xstormy16-sem.cxx: Regenerate.
+	* xstormy16-decode.cxx: Regenerate.
+
+	* xstormy16.cxx (parity): Return just the parity bit.
+
+2001-07-27  Geoffrey Keating  <geoffk@redhat.com>
+
+	* xstormy16-sem.cxx: Regenerate.
+
+2001-07-22  matthew green  <mrg@redhat.com>
+
+	* xstormy16-decode.cxx: Regenerate.
+	* xstormy16-sem.cxx: Likewise.
+
+2001-07-22  matthew green  <mrg@redhat.com>
+
+	* xstormy16-cpu.h: Regenerate.
+	* xstormy16-decode.cxx: Likewise.
+	* xstormy16-decode.h: Likewise.
+	* xstormy16-sem.cxx: Likewise.
+
+2001-07-21  matthew green  <mrg@redhat.com>
+
+	* xstormy16-sem.cxx: Regenerate.
+
+2001-07-21  matthew green  <mrg@redhat.com>
+
+	* xstormy16-decode.cxx: Regenerate.
+	* xstormy16-sem.cxx: Likewise.
+
+2001-07-19  matthew green  <mrg@redhat.com>
+
+	* xstormy16-decode.cxx: Regenerate.
+	* xstormy16-decode.h: Likewise.
+	* xstormy16-sem.cxx: Likewise.
+	* xstormy16.cxx: Implement syscall().
+	* xstormy16.h: Add syscall() and friends.
+
+2001-07-18  Ben Elliston  <bje@redhat.com>
+
+	* hw-cpu-xstormy16.txt: Regenerate.
+
+2001-07-12  matthew green  <mrg@redhat.com>
+
+	* xstormy16.cxx (step_insns): Remove bogus pc advancement.
+
+2001-07-12  matthew green  <mrg@redhat.com>
+
+	* xstormy16.h (bitreverse): Remove prototype.
+	* xstormy16.cxx (step_insns): Pass 32 bits to decode().
+	(parity): Implement.
+
+2001-07-11  Frank Ch. Eigler  <fche@redhat.com>
+
+	* xstormy16-decode.cxx, -desc.h: Regenerate with funny-endianness fixes.
+
+2001-07-11  Frank Ch. Eigler  <fche@redhat.com>
+
+	* hw-cpu-xstormy16.xml: Add <?xml ... ?> prefix.
+
+2001-07-10  matthew green  <mrg@redhat.com>
+
+	* Makefile.am: New file.
+	* Makefile.in: Generate.
+	* aclocal.m4: Generate.
+	* configure: Generate.
+	* configure.in: New file.
+	* hw-cpu-xstormy16.txt: Generate.
+	* hw-cpu-xstormy16.xml: New file.
+	* xstormy16-cpu.h: Generate.
+	* xstormy16-decode.cxx: Generate.
+	* xstormy16-decode.h: Generate.
+	* xstormy16-defs.h: Generate.
+	* xstormy16-desc.h: Generate.
+	* xstormy16-sem.cxx: Generate.
+	* xstormy16-write.cxx: Generate.
+	* xstormy16.cxx: New file.
+	* xstormy16.h: New file.

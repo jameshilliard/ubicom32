@@ -1,0 +1,140 @@
+2006-06-26  Dave Brolley  <brolley@redhat.com>
+
+	* m32rbf.h (get_pc): New member of m32rbf_cpu.
+
+2005-06-03  Jim Blandy  <jimb@redhat.com>
+
+	* Makefile.in, aclocal.m4: Regenerated with Automake 1.9.5.
+	* configure: Regenerated with autoconf 2.59.
+
+2003-09-08  Doug Evans  <dje@casey.transmeta.com>
+
+	* m32r/Makefile.am (cgen-m32r): Update call to CGEN.sh.
+	* m32r/Makefile.in: Regenerate.
+
+2003-07-05  Doug Evans  <dje@sebabeach.org>
+
+	* m32r-cpu.h: Regenerate.
+	* m32r-decode.cxx: Regenerate.
+	* m32r-decode.h: Regenerate.
+	* m32r-defs.h: Regenerate.
+	* m32r-desc.h: Regenerate.
+	* m32r-sem.cxx: Regenerate.
+
+2002-05-07  Frank Ch. Eigler  <fche@redhat.com>
+
+	* hw-cpu-m32r_d.txt: Regenerated with new gdb attributes.
+	* m32rbf.cxx (m32rbf_cpu ctor): Define big-endian sw breakpoint.
+
+2001-08-16  graydon hoare  <graydon@redhat.com>
+
+	* Makefile.am: gcc -> $(CC) fix.
+	* Makefile.in: Regenerate.
+
+2001-08-15  graydon hoare  <graydon@redhat.com>
+
+	* m32rbf.cxx (step_insns): Fix for bi-endian
+	disassembly.
+
+2001-08-15  graydon hoare  <graydon@redhat.com>
+
+	* m32rbf.cxx (step_insns): Add disassembly
+	tracing support.
+	* Makefile.am: Add support for building and
+	linking invididual objects from opcodes.
+	* Makefile.in: Regenerate.
+
+2001-08-03  matthew green  <mrg@redhat.com>
+
+	* m32rbf.h (dtor): Add throw() specifier.
+
+2001-07-13  Ben Elliston  <bje@redhat.com>
+
+	* Makefile.am (check-local): Rename target from "checkme".
+
+2001-07-11  Frank Ch. Eigler  <fche@redhat.com>
+
+	* hw-cpu-m32r_d.xml: Add <?xml ... ?> prefix.
+
+2001-07-04  graydon hoare  <graydon@redhat.com>
+
+	* configure.in: Add maintainer-mode doc building configury.
+	* configure: Regenerate.
+	* Makefile.am: Add maintainer-mode doc building.
+	* Makefile.in: Regenerate.
+
+2001-07-04  Ben Elliston  <bje@redhat.com>
+
+	* hw-cpu-m32r_d.txt: Generate.
+
+2001-06-29  graydon hoare  <graydon@redhat.com>
+
+	* hw-cpu-m32r_d.xml: Add.
+
+2001-06-28  Jeff Johnston  <jjohnstn@redhat.com>
+
+        * hw-cpu-m32r.txt: Remove debug-exec? setting references.
+        * m32rbf.cxx (m32r_cpu::memory_trap): Remove
+        error message code under control of removed debug_exec_p flag.
+
+2001-06-26  Frank Ch. Eigler  <fche@redhat.com>
+
+	* Makefile.am (ACLOCAL_AMFLAGS): Refer to $srcdir.
+	* Makefile.in: Regenerated.
+
+2001-06-22  Ben Elliston  <bje@redhat.com>
+
+	* m32rbf.cxx (m32rbf_cpu::memory_trap): Ignore bus::delayed.
+
+2001-06-21  matthew green  <mrg@redhat.com>
+
+	* Makefile.am (BFDINCLUDES): New define.
+	(INCLUDES): Add $(BFDINCLUDES)
+	* Makefile.in: Regenerate.
+
+2001-03-21  Ben Elliston  <bje@redhat.com>
+
+	* Makefile.in: Regenerate.
+
+2001-03-01  Frank Ch. Eigler  <fche@redhat.com>
+
+	* m32r-decode.cxx, -sem.cxx: Regenerated with b.p. hints.
+
+2001-01-26  Frank Ch. Eigler  <fche@redhat.com>
+
+	* m32r-decode.h, -sem.cxx: Regenerated with more tracing improvements.
+
+2001-01-15  Frank Ch. Eigler  <fche@redhat.com>
+
+	* m32r-sem.cxx: Regenerated with tracing improvements.
+
+2000-11-15  Jeff Johnston  <jjohnstn@redhat.com>
+
+        * configure: Regenerated.
+        * aclocal.m4: Ditto.
+        * Makefile.in: Ditto.
+
+2000-11-11  Frank Ch. Eigler  <fche@redhat.com>
+
+	* m32r-decode.cxx: Regenerated.  Reorganized.
+
+2000-11-10  Frank Ch. Eigler  <fche@redhat.com>
+
+	* m32r-decode.cxx: Regenerated.  Improved.
+
+2000-11-01  Frank Ch. Eigler  <fche@redhat.com>
+
+	* Makefile.am (CXXFLAGS): Use TOP_CXXFLAGS.
+	* Makefile.in: Regenerated.
+
+2000-10-23  Frank Ch. Eigler  <fche@redhat.com>
+
+	* m32r-decode.h, -defs.h: Regenerated.
+
+2000-09-22  Frank Ch. Eigler  <fche@redhat.com>
+
+	* Makefile.am, configure.in: Reworked to use new CGEN.sh conventions.
+	* m32r-decode.cxx: Regenerated with new trace syntax.
+	* m32r-cpu.h, m32r-decode.h: Regenerated with new copyright.
+	* m32r-defs.h, m32r-desc.h, m32r-sem.cxx: Ditto.
+	* Makefile.in, configure: Regenerated.

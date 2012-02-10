@@ -1,0 +1,98 @@
+menu "USB Controllers"
+config UBI32_DWC_OTG
+	bool "Synopsys DWC OTG"
+	depends on UBICOM32_V5
+	default y
+	help
+	  Enable/Disable Synopsys DWC USB 2.0 OTG support.
+
+config DWC_PORT0_ENABLE
+	bool "USB 2.0 port 0"
+	depends on UBI32_DWC_OTG
+	default y
+	help
+	  Enable/Disable the first DWC OTG port.
+	
+choice 
+	prompt "Controller mode"
+	default DWC_PORT0_OTG
+	depends on DWC_PORT0_ENABLE
+
+config DWC_PORT0_OTG
+	bool "OTG"
+	help
+	  OTG
+
+config DWC_PORT0_HOST
+	bool "Host only"
+	help
+	  Port 0 works in host only mode
+
+config DWC_PORT0_DEVICE
+	bool "Device only"
+	help
+	  Port 0 works in device only mode
+
+endchoice
+
+	
+config DWC_PORT1_ENABLE
+	bool "USB 2.0 port 1"
+	depends on UBI32_DWC_OTG
+	default n
+	help
+	  Enable/Disable the second USB port.
+
+choice 
+	prompt "Controller mode"
+	default DWC_PORT1_HOST
+	depends on DWC_PORT1_ENABLE
+
+config DWC_PORT1_HOST
+	bool "Host only"
+	help
+	  Port 1 works in host only mode
+
+config DWC_PORT1_DEVICE
+	bool "Device only"
+	help
+	  Port 1 works in device only mode
+
+endchoice
+config DWC_DDMA_DESC
+	bool "USB 2.0 Descriptor dma"
+	depends on UBI32_DWC_OTG && !UBICOM32_IP8K_SHUTTLE
+	default y
+	help
+	  Enable/Disable the descriptor dma.
+
+config UBI32_XHCI
+	bool "USB 3.0 xHCI controller"
+	depends on UBICOM32_V5
+	default n
+	help
+	  Enable/Disable USB 3.0 xHCI support
+
+config XHCI_PORT0_ENABLE
+	bool "USB 3.0 port W"
+	depends on UBI32_XHCI
+	default n
+	help
+	  Enable/Disable the first XHCI port.
+
+config XHCI_PORT1_ENABLE
+	bool "USB 3.0 port K"
+	depends on UBI32_XHCI
+	default y
+	help
+	  Enable/Disable the first XHCI port.
+
+config UBI32_SS_USB2_MODE
+	bool "USB 3.0 support USB 2.0 mode"
+	depends on UBI32_XHCI
+	default y
+	help
+	  Enable/Disable USB 3.0 fallback to USB 2.0 mode.
+
+endmenu
+

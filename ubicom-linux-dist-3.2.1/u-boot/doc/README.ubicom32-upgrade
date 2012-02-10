@@ -1,0 +1,143 @@
+Emergency Upgrade for Ubicom32
+------------------------------
+
+1. USB Upgrade
+--------------
+
+To enable upgrading from USB, enable the following configuration options in
+your include/configs/XXX.h file:
+
+	CONFIG_CMD_USB_UPGRADE
+	CONFIG_CMD_USB
+	CONFIG_USB_STORAGE
+	CONFIG_CMD_STORAGE
+	CONFIG_CMD_FAT
+	CONFIG_DOS_PARTITION
+
+	for ip7k designs, add:
+		CONFIG_MUSB_HCD
+		CONFIG_USB_IP7K
+
+You must also define the following variables:
+	CONFIG_CMD_USB_UPGRADE_DEVICE
+		This tells u-boot which device to try and write the upgrade
+		file to.
+			i.e. "nor0"
+
+	CONFIG_CMD_USB_UPGRADE_PARTITION
+		This tells u-boot which partition on the device to write
+		the upgrade file to.
+			i.e. "upgrade"
+		This partition is defined by mtdparts.
+
+	CONFIG_CMD_USB_UPGRADE_LOAD_ADDRESS
+		This tells u-boot where to stage the upgrade file in RAM.
+		The address must exist in DDR and extend far enough that
+		the largest image can be loaded into the space.
+
+The USB Upgrade command will be compiled into u-boot.  To use USB Upgrade,
+use the following command sequence:
+
+1) usb start
+2) usb part
+	print_part of 0
+
+	Partition Map for USB device 0  --   Partition Type: DOS
+
+	Partition     Start Sector     Num Sectors     Type
+	    1                   32          946144       b
+
+	print_part of 1
+	## Unknown partition table
+
+	print_part of 2
+	## Unknown partition table
+	
+	print_part of 3
+	## Unknown partition table
+	
+	print_part of 4
+	## Unknown partition table
+
+3) Choose the correct device and partition.  In the above example,
+   it is device 0, partition 1.
+
+4) usb_upgrade <device[:part]> <filename>
+	examples:
+		usb_upgrade 0 upgrade.ub
+		usb_upgrade 0:1 upgrade.ub
+
+5) reboot
+
+
+2. Emergency Upgrade (USB)
+--------------------------
+
+To enable Emergency Upgrade, enable the following configuration options in
+your include/configs/XXX.h file:
+
+	(all of the necessary configuration for CMD_USB_UPGRADE above)	
+	CONFIG_EUPGRADE
+
+This will force u-boot to try an emergency upgrade from USB when it starts.
+The user can abort this process by pressing SPACE.
+
+3. Emergency Upgrade (USB) + Video
+----------------------------------
+
+To enable Emergency Upgrade + Video, enable the following configuration 
+options in your include/configs/XXX.h file:
+
+	(all of the necessary configuration for CONFIG_EUPGRADE above)	
+	CONFIG_EUPGRADE_VIDEO
+	CONFIG_CFB_CONSOLE
+	CONFIG_VIDEO
+	CONFIG_VGA_AS_SINGLE_DEVICE
+	CONFIG_FONT_8X13_ASCII
+	CONFIG_SYS_CONSOLE_IS_IN_ENV
+	CONFIG_PNG
+
+	for ip7k:
+	CONFIG_UBICOM32_VIDEO
+
+Additionally, add the following lines to CONFIG_EXTRA_ENV_SETTINGS:
+
+	"stdin=serial\0"
+	"stderr=serial\0"
+	"stdout=serial\0"
+
+You must also define the following variables:
+	CONFIG_EUPGRADE_VIDEO_LOGO_PNG
+		Pathname to the PNG file that you want to use as instructions,
+		etc.  The progress bar will be drawn over this PNG if enabled.
+
+	CONFIG_EUPGRADE_VIDEO_STATUS_BAR 
+		Enable the status bar.
+
+	CONFIG_EUPGRADE_VIDEO_STATUS_BAR_X
+	CONFIG_EUPGRADE_VIDEO_STATUS_BAR_Y
+	CONFIG_EUPGRADE_VIDEO_STATUS_BAR_WIDTH
+	CONFIG_EUPGRADE_VIDEO_STATUS_BAR_HEIGHT
+		The x and y position of the status bar and its width and 
+		height.
+
+	CONFIG_EUPGRADE_VIDEO_STATUS_BAR_FG
+	CONFIG_EUPGRADE_VIDEO_STATUS_BAR_BG
+		Foreground and background color of the bar, in 16-bit RGB565.
+
+	CONFIG_EUPGRADE_VIDEO_STATUS_BAR_BORDER
+		Color of the 1 pixel board which surrounds the status bar,
+		in 16-bit RGB565.
+
+	CONFIG_EUPGRADE_VIDEO_STATUS_ROW
+	CONFIG_EUPGRADE_VIDEO_STATUS_COL
+		Row and column of the status bar text.  Note that the
+		text is printed white on black and is not transparent.
+		The row and column size is dependent on the font.  In the
+		case of the 8x13 font, the width of a character is 8 pixels 
+		and the height of each line is 13 pixels.  The fonts are
+		always mono-spaced.
+
+The process for upgrade is the same as above, except that this mode
+provides the user feedback on the video display.
+

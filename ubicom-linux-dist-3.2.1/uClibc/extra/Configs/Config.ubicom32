@@ -1,0 +1,50 @@
+#
+# For a description of the syntax of this configuration file,
+# see extra/config/Kconfig-language.txt
+#
+
+config TARGET_ARCH
+	string
+	default "ubicom32"
+
+config FORCE_OPTIONS_FOR_ARCH
+	bool
+	default y
+	select ARCH_BIG_ENDIAN
+
+config ARCH_CFLAGS
+	string
+
+config CROSS
+	string
+
+choice
+	prompt "Target Processor Architecture"
+	default CONFIG_UC_UBICOM32_V3
+	help
+	  This selects the instruction set architecture of your Ubicom32 CPU. This
+	  information is used for optimizing purposes. To build a library that
+	  will run on any Ubicom32 CPU, you can specify "v3" here.
+	  If you pick anything other than "v3," there is no
+	  guarantee that uClibc will even run on anything other than the
+	  selected processor type.
+
+	  You should probably select the Ubicom32 ISA that best matches the
+	  CPU you will be using on your device. uClibc will be tuned
+	  for that architecture.
+
+	  If you don't know what to do, choose "v3"
+
+config CONFIG_UC_UBICOM32_V3
+	bool "ISA v3"
+	select ARCH_HAS_NO_MMU
+
+config CONFIG_UC_UBICOM32_V4
+	bool "ISA v4"
+	select ARCH_HAS_NO_MMU
+
+config CONFIG_UC_UBICOM32_V5
+	bool "ISA v5"
+	select ARCH_HAS_MMU
+	select ARCH_USE_MMU if ARCH_HAS_MMU
+endchoice

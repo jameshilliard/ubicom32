@@ -1,0 +1,18 @@
+--- busybox-1.17.3/editors/awk.c.org	2011-06-09 15:23:07.000000000 -0700
++++ busybox-1.17.3/editors/awk.c	2011-06-09 17:20:21.000000000 -0700
+@@ -706,11 +706,10 @@
+ 
+ static double my_strtod(char **pp)
+ {
+-#if ENABLE_DESKTOP
+-	if ((*pp)[0] == '0'
+-	 && ((((*pp)[1] | 0x20) == 'x') || isdigit((*pp)[1]))
+-	) {
+-		return strtoull(*pp, pp, 0);
++#if 1 //ENABLE_DESKTOP
++	if ((*pp)[0] == '0') {
++		int base = (((*pp)[1] | 0x20) == 'x') ? 16 : 8;
++		return strtoull(*pp, pp, base);
+ 	}
+ #endif
+ 	return strtod(*pp, pp);

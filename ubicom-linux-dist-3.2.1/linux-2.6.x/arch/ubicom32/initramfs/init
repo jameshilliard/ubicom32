@@ -1,0 +1,21 @@
+#!/bin/busybox hush
+
+echo "Hello there."
+export HOME=/root
+cd
+
+echo "Contents of /bin"
+/bin/busybox ls -CF /bin
+
+echo "Contents of /dev"
+/bin/busybox ls -CF /dev
+
+echo "Mounting /proc"
+mount -t proc proc /proc
+
+echo "Contents of /proc"
+/bin/busybox ls -CF /proc
+
+echo "Starting lash"
+/bin/busybox lash
+

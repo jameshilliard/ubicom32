@@ -1,0 +1,15 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2011 Ubicom, Inc 
+
+START=99
+
+UBI32_NA="/sys/devices/system/ubi32_na/"
+
+start() {
+	if [ -d $UBI32_NA ]; then
+		/sbin/set_smp_affinity na pciej pciek &
+	else
+		/sbin/set_smp_affinity eth0 eth1 pciej pciek &
+	fi
+}
+

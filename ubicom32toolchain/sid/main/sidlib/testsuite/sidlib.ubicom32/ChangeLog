@@ -1,0 +1,97 @@
+2002-01-29  Dave Brolley  <brolley@redhat.com>
+
+	* ip4kmpc.out.conf: Regenerated.
+
+2002-01-28  Dave Brolley  <brolley@redhat.com>
+
+	* ip4kmpc.out.conf: Regenerated.
+	* ip4kcopro.out.conf: Regenerated.
+
+2002-01-17  Dave Brolley  <brolley@redhat.com>
+
+	* ip4kmpc_1.cxx (main): Adjust step counts to match new cpu/copro
+	scheduling scheme.
+	* ip4kmpc_2.cxx: Ditto.
+	* ip4kmpc_3.cxx: Ditto.
+	* ip4kmpc_4.cxx: Ditto.
+	* ip4kmpc_5.cxx: Ditto.
+
+2002-01-10  Dave Brolley  <brolley@redhat.com>
+
+	* ip4kcopro_1.cxx: Change to reflect new reset behavior of coprocessor.
+	* ip4kcopro_5.cxx: Ditto.
+	* ip4kmpc_1.cxx: Ditto.
+	* ip4kmpc_2.cxx: Ditto.
+
+2001-11-16  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4kcpu.s: Changed to exit with return code 3.
+	* ip4kcpu.out: Rebuilt.
+	* ip4kcpu_1.cxx: Added check for exit code being 3
+	using new get_exit_code interface.
+	* ip4kcpu_3.cxx: Changed the check for nop insn which
+	has changed in encoding.
+	* ip4kcpu_4.cxx: Ditto.
+
+2001-11-08  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4kcpu_1.cxx: Add tests of reading/writing registers
+	of all the contexts.
+	* ip4kmpc_1.cxx: Ditto.
+
+2001-10-31  Dave Brolley  <brolley@redhat.com>
+
+	* ip4kmpc.out.conf: Regenerated.
+
+2001-10-18  Dave Brolley  <brolley@redhat.com>
+
+	* ip4kmpc_copro.out: Regenerated.
+
+2001-10-17  Dave Brolley  <brolley@redhat.com>
+
+	* ip4kcopro_1.cxx (main): num-data-banks now defaults to 8.
+
+2001-10-12  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4kmpc_2.cxx: Fix typo (mcp -> mpc).
+	* ip4kmpc_copro.s: Ditto.
+
+2001-09-25  Dave Brolley  <brolley@redhat.com>
+
+	* ip4kmpc_copro.out: Regenerated.
+
+2001-09-19  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4ksidlib.exp: Add libtool setting which points to 
+	build directory libtool.
+	
+2001-09-10  Jeff Johnston  <jjohnstn@redhat.com>
+	
+	* ip4kcopro_1.cxx: New file.
+	* ip4kcopro_2.cxx: Ditto.
+	* ip4kcopro_3.cxx: Ditto.
+	* ip4kcopro_4.cxx: Ditto.
+	* ip4kcopro_5.cxx: Ditto.
+	* ip4kcopro.out: Ditto.
+	* ip4kcopro.out.conf: Ditto.
+	* ip4kcopro.s: Ditto.
+	* ip4kcpu_1.cxx: Ditto.
+	* ip4kcpu_2.cxx: Ditto.
+	* ip4kcpu_3.cxx: Ditto.
+	* ip4kcpu_4.cxx: Ditto.
+	* ip4kcpu_5.cxx: Ditto.
+	* ip4kcpu.out: Ditto.
+	* ip4kcpu.out.conf: Ditto.
+	* ip4kcpu.s: Ditto.
+	* ip4kmpc_1.cxx: Ditto.
+	* ip4kmpc_2.cxx: Ditto.
+	* ip4kmpc_3.cxx: Ditto.
+	* ip4kmpc_4.cxx: Ditto.
+	* ip4kmpc_5.cxx: Ditto.
+	* ip4kmpc_copro.out: Ditto.
+	* ip4kmpc_copro.s: Ditto.
+	* ip4kmpc_main.out: Ditto.
+	* ip4kmpc_main.s: Ditto.
+	* ip4kmpc.out.conf: Ditto.
+	* ip4ksidlib.exp: Ditto.
+	* test.h: Ditto.

@@ -1,0 +1,45 @@
+march=
+Target Report Var(ubicom32_arch_name) Init("ubicom32v4") Joined
+Specify the name of the target architecture
+
+mfdpic
+Target Report Mask(FDPIC)
+Enable Function Descriptor PIC mode
+
+minline-plt
+Target Report Mask(INLINE_PLT)
+Enable inlining of PLT in function calls
+
+mfastcall
+Target Report Mask(FASTCALL)
+Enable default fast (call) calling sequence for smaller applications
+
+mipos-abi
+Target Report Mask(IPOS_ABI)
+Enable the ipOS ABI in which D10-D13 are caller-clobbered
+
+msched-rate=
+Target RejectNegative Report Var(ubicom32_sched_rate_name) Init("0") Joined
+Specify the scheduling rate in terms of concurrent threads
+
+mtls
+Target Report Mask(UBICOM32_TLS)
+Enable trivial TLS support via D14
+
+; Hopefully we don't care, but we have this option in case there are people
+; who are still relying on it.  It may be deleted in the future.
+mpadstruct
+Target Report RejectNegative Mask(PADSTRUCT)
+Make structs a multiple of 4 bytes (warning: ABI altered)
+
+msoft-float
+Target Report RejectNegative Mask(SOFT_FLOAT)
+Use software emulation for floating point
+
+mhard-float
+Target Report RejectNegative InverseMask(SOFT_FLOAT, HARD_FLOAT)
+Use hardware floating point instructions
+
+mtune=shuttle-ip8k
+Target RejectNegative Var(ubicom32_tune, TUNE_SHUTTLE_IP8K)
+Generate code for IP8K Shuttle processor

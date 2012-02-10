@@ -1,0 +1,8 @@
+fix_grouping.lo /home/art/newlib-1.16.0/newlib/libc/locale/fix_grouping.lo
+ldpart.lo /home/art/newlib-1.16.0/newlib/libc/locale/ldpart.lo
+lmessages.lo /home/art/newlib-1.16.0/newlib/libc/locale/lmessages.lo
+lmonetary.lo /home/art/newlib-1.16.0/newlib/libc/locale/lmonetary.lo
+lnumeric.lo /home/art/newlib-1.16.0/newlib/libc/locale/lnumeric.lo
+locale.lo /home/art/newlib-1.16.0/newlib/libc/locale/locale.lo
+nl_langinfo.lo /home/art/newlib-1.16.0/newlib/libc/locale/nl_langinfo.lo
+timelocal.lo /home/art/newlib-1.16.0/newlib/libc/locale/timelocal.lo

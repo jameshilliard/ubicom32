@@ -1,0 +1,9 @@
+wrongOrd.badconf:8: dlsym of libconsoles.la *
+wrongOrd.badconf:10: dlsym of libgloss.la *
+wrongOrd.badconf:12: component type loader unknown
+wrongOrd.badconf:16: component 1 not found
+wrongOrd.badconf:17: component num-clients not found
+wrongOrd.badconf:19: directional arrow expected
+wrongOrd.badconf:20: directional arrow expected
+wrongOrd.badconf:21: component num-clients not found
+Configuration error.  Aborting.

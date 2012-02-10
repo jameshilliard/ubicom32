@@ -1,0 +1,84 @@
+2001-11-16  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* simwcpu.cxx (simwcpu::get_exit_code): New method.
+
+2001-11-06  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* sidlib.cxx: Initialize lt_preloaded_symbols table to
+	have all sid component libraries so libsid library can be
+	used without using libtool and -dlpreopen.
+	* configure.in: Add setting of INTLLIBS_EXTERNAL and
+	HAVE_EXTERNAL_INTLLIB.
+	* Makefile.am: Fixed to install INTLLIBS_EXTERNAL which
+	have no relative directory.
+	[HAVE_EXTERNAL_INTLLIB]: Create INTLLIBS_INSTALL from
+	INTLLIBS_EXTERNAL.
+	* Makefile.in: Regenerated.
+	* configure: Ditto.
+
+2001-10-23  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* Makefile.am: Add libintl install library if configure
+	finds it in build tree.
+	* configure.in: Add setting of INTLLIBS_INSTALL variable.
+	* Makefile.in: Regenerated.
+	* configure: Ditto.
+
+2001-10-18  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* Makefile.am: Install libtool as sidlibtool in bin directory.
+	* configure: Regenerated.
+	* Makefile.in: Ditto.
+	* aclocal.m4: Ditto.
+
+2001-10-12  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* cfgroot_interface: Rename check_first_step to check_init.
+	(cfgroot_interface::cfgroot_interface): Initialize init_done and
+	load_done.
+	(cfgroot_interface::advance): Use check_load.
+	* simwcpu.cxx (simwcpu::read_register): Use check_load.
+	(simwcpu::write_register): Ditto.
+	(simwcpu::drive_pin): Ditto.
+	(simwcpu::reset): Ditto.
+	(simwcpu::restore_state_map): Ditto.
+	(simwcpu::save_state_map): Ditto.
+
+2001-09-19  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* cfgroot_interface (cfgroot_interface::cfgroot_interface):
+	Instantiate special sid-control-cfgroot-libsid version of
+	cfgroot that knows about libsid.a
+
+2001-09-10  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* testsuite: New directory.
+	* Makefile.am: Add testsuite support.
+	* configure.in: Ditto.
+	* Makefile.in: Regenerated.
+	* configure: Ditto.
+	* cfgroot_interface.cxx (cfgroot_interface::advance): Change
+	check for running to look for "no" instead of "0".
+	* simwcpu.cxx (simwcpu::get_attribute): New method.
+	(simwcpu::set_attribute): Ditto.
+	(simwcpu::restore_state_map): Add error message when restore
+	fails for a component.
+
+2001-08-02  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* cfgroot_interface.cxx: Add pointer references to all of the
+	known component libraries.
+
+2001-08-02  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* aclocal.m4: New file.
+	* cfgroot_interface.cxx: Ditto.
+	* config.in: Ditto.
+	* configure: Ditto.
+	* configure.in: Ditto.
+	* Makefile.am: Ditto.
+	* Makefile.in: Ditto.
+	* sidlib.cxx: Ditto.
+	* simwcpu.cxx: Ditto.
+	* stamp-h.in: Ditto.
+

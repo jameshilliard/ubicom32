@@ -1,0 +1,15 @@
+Index: dnsmasq-2.55/src/rfc2131.c
+===================================================================
+--- dnsmasq-2.55.orig/src/rfc2131.c	2010-06-06 22:22:30.000000000 +0300
++++ dnsmasq-2.55/src/rfc2131.c	2011-05-06 08:59:37.442276334 +0300
+@@ -1379,7 +1379,9 @@
+ 	    time = 0xffffffff;
+ 	  else
+ 	    time = (unsigned int)difftime(lease->expires, now);
+-	  option_put(mess, end, OPTION_LEASE_TIME, 4, time);
++
++	  /* RFC2131/3.4: DHCPACK in response to DHCPINFORM should not contain lease time parameters. */
++	  //option_put(mess, end, OPTION_LEASE_TIME, 4, time);
+ 	  lease_set_interface(lease, int_index);
+ 	}
+ 

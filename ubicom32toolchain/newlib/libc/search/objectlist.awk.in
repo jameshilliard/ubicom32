@@ -1,0 +1,15 @@
+bsearch.lo /home/art/newlib-1.16.0/newlib/libc/search/bsearch.lo
+hash_bigkey.lo /home/art/newlib-1.16.0/newlib/libc/search/hash_bigkey.lo
+hash_buf.lo /home/art/newlib-1.16.0/newlib/libc/search/hash_buf.lo
+hash_func.lo /home/art/newlib-1.16.0/newlib/libc/search/hash_func.lo
+hash.lo /home/art/newlib-1.16.0/newlib/libc/search/hash.lo
+hash_log2.lo /home/art/newlib-1.16.0/newlib/libc/search/hash_log2.lo
+hash_page.lo /home/art/newlib-1.16.0/newlib/libc/search/hash_page.lo
+hcreate.lo /home/art/newlib-1.16.0/newlib/libc/search/hcreate.lo
+hcreate_r.lo /home/art/newlib-1.16.0/newlib/libc/search/hcreate_r.lo
+qsort.lo /home/art/newlib-1.16.0/newlib/libc/search/qsort.lo
+tdelete.lo /home/art/newlib-1.16.0/newlib/libc/search/tdelete.lo
+tdestroy.lo /home/art/newlib-1.16.0/newlib/libc/search/tdestroy.lo
+tfind.lo /home/art/newlib-1.16.0/newlib/libc/search/tfind.lo
+tsearch.lo /home/art/newlib-1.16.0/newlib/libc/search/tsearch.lo
+twalk.lo /home/art/newlib-1.16.0/newlib/libc/search/twalk.lo

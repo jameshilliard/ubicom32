@@ -1,0 +1,16 @@
+## This conf file contains duplicate relate commands 
+
+set main verbose? 0
+
+load libconsoles.la console_component_library
+load libgloss.la gloss_component_library
+
+new sid-io-stdio stdio
+new sw-gloss-generic/libgloss gloss
+
+relate gloss cpu stdio
+relate gloss cpu stdio			# duplicate the same relationship
+relate gloss rel1 stdio			# relationship does not exist
+relate gloss cpu2 stdio			# relationship does not exist
+relate stdio cpu gloss			# relationship does not exist
+relate stdio stdio stdio		# relationship does not exist

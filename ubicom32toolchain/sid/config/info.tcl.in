@@ -1,0 +1,26 @@
+# info.tcl.in -*- Tcl -*-
+
+# Copyright (C) 1999, 2000, 2001 Red Hat.
+# This file is part of SID and is licensed under the GPL.
+# See the file COPYING.SID for conditions for redistribution.
+
+# Additional configure-time settings.
+
+global prefix
+set prefix "@prefix@"
+set enable_shared "@enable_shared@"
+set target_alias "@target@"
+
+# pull out "--enable-targets"/"--target" settings
+global sidtarget
+set sidtarget(arm) @sidtarget_arm@
+set sidtarget(x86) @sidtarget_x86@
+set sidtarget(mips) @sidtarget_mips@
+set sidtarget(m32r) @sidtarget_m32r@
+set sidtarget(m68k) @sidtarget_m68k@
+set sidtarget(mep) @sidtarget_mep@
+set sidtarget(mt) @sidtarget_mt@
+set sidtarget(ppc) @sidtarget_ppc@
+set sidtarget(sh) @sidtarget_sh@
+set sidtarget(sh64) @sidtarget_sh64@
+set sidtarget(xstormy16) @sidtarget_xstormy16@

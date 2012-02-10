@@ -1,0 +1,75 @@
+diff -urN ppp-2.4.4-orig/chat/Makefile.linux ppp-2.4.4/chat/Makefile.linux
+--- ppp-2.4.4-orig/chat/Makefile.linux	2011-01-18 12:37:26.934554356 +0200
++++ ppp-2.4.4/chat/Makefile.linux	2011-01-18 12:44:54.016052529 +0200
+@@ -18,7 +18,7 @@
+ all:	chat
+ 
+ chat:	chat.o
+-	$(CC) -o chat chat.o
++	$(CC) $(LDFLAGS) -o chat chat.o
+ 
+ chat.o:	chat.c
+ 	$(CC) -c $(CFLAGS) -o chat.o chat.c
+diff -urN ppp-2.4.4-orig/pppd/plugins/Makefile.linux ppp-2.4.4/pppd/plugins/Makefile.linux
+--- ppp-2.4.4-orig/pppd/plugins/Makefile.linux	2006-06-04 08:04:14.000000000 +0300
++++ ppp-2.4.4/pppd/plugins/Makefile.linux	2011-01-18 12:45:00.806558316 +0200
+@@ -1,7 +1,7 @@
+ CC	= gcc
+ COPTS	= -O2 -g
+ CFLAGS	= $(COPTS) -I.. -I../../include -fPIC
+-LDFLAGS	= -shared
++LDFLAGS	+= -shared
+ INSTALL	= install
+ 
+ DESTDIR = $(INSTROOT)@DESTDIR@
+diff -urN ppp-2.4.4-orig/pppd/plugins/radius/Makefile.linux ppp-2.4.4/pppd/plugins/radius/Makefile.linux
+--- ppp-2.4.4-orig/pppd/plugins/radius/Makefile.linux	2011-01-18 12:37:26.938554260 +0200
++++ ppp-2.4.4/pppd/plugins/radius/Makefile.linux	2011-01-18 12:44:55.856052387 +0200
+@@ -44,13 +44,13 @@
+ 	$(INSTALL) -c -m 444 pppd-radattr.8 $(MANDIR)
+ 
+ radius.so: radius.o libradiusclient.a
+-	$(CC) -o radius.so -shared radius.o libradiusclient.a
++	$(CC) $(LDFLAGS) -o radius.so -shared radius.o libradiusclient.a
+ 
+ radattr.so: radattr.o
+-	$(CC) -o radattr.so -shared radattr.o
++	$(CC) $(LDFLAGS) -o radattr.so -shared radattr.o
+ 
+ radrealms.so: radrealms.o
+-	$(CC) -o radrealms.so -shared radrealms.o
++	$(CC) $(LDFLAGS) -o radrealms.so -shared radrealms.o
+ 
+ CLIENTOBJS = avpair.o buildreq.o config.o dict.o ip_util.o \
+ 	clientid.o sendserver.o lock.o util.o md5.o
+diff -urN ppp-2.4.4-orig/pppd/plugins/rp-pppoe/Makefile.linux ppp-2.4.4/pppd/plugins/rp-pppoe/Makefile.linux
+--- ppp-2.4.4-orig/pppd/plugins/rp-pppoe/Makefile.linux	2011-01-18 12:37:26.934554356 +0200
++++ ppp-2.4.4/pppd/plugins/rp-pppoe/Makefile.linux	2011-01-18 12:44:52.399557781 +0200
+@@ -29,13 +29,13 @@
+ all: rp-pppoe.so pppoe-discovery
+ 
+ pppoe-discovery: pppoe-discovery.o utils.o libplugin.a
+-	$(CC) -o pppoe-discovery pppoe-discovery.o utils.o libplugin.a
++	$(CC) $(LDFLAGS) -o pppoe-discovery pppoe-discovery.o utils.o libplugin.a
+ 
+ pppoe-discovery.o: pppoe-discovery.c
+ 	$(CC) $(CFLAGS) '-DVERSION="$(VERSION)"' -c -o pppoe-discovery.o pppoe-discovery.c
+ 
+ rp-pppoe.so: libplugin.a plugin.o
+-	$(CC) -o rp-pppoe.so -shared plugin.o libplugin.a
++	$(CC) $(LDFLAGS) -o rp-pppoe.so -shared plugin.o libplugin.a
+ 
+ install: all
+ 	$(INSTALL) -d -m 755 $(LIBDIR)
+diff -urN ppp-2.4.4-orig/pppdump/Makefile.linux ppp-2.4.4/pppdump/Makefile.linux
+--- ppp-2.4.4-orig/pppdump/Makefile.linux	2011-01-18 12:37:26.938554260 +0200
++++ ppp-2.4.4/pppdump/Makefile.linux	2011-01-18 12:44:57.082625923 +0200
+@@ -11,7 +11,7 @@
+ all:	pppdump
+ 
+ pppdump: $(OBJS)
+-	$(CC) -o pppdump $(OBJS)
++	$(CC) $(LDFLAGS) -o pppdump $(OBJS)
+ 
+ clean:
+ 	rm -f pppdump $(OBJS) *~

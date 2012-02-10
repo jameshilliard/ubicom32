@@ -1,0 +1,6 @@
+dupRel.badconf:12: cannot set relation cpu for component gloss
+dupRel.badconf:13: cannot set relation rel1 for component gloss
+dupRel.badconf:14: cannot set relation cpu2 for component gloss
+dupRel.badconf:15: cannot set relation cpu for component stdio
+dupRel.badconf:16: cannot set relation stdio for component stdio
+Configuration error.  Aborting.

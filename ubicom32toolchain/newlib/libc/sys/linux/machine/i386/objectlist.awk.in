@@ -1,0 +1,6 @@
+dl-procinfo.lo /home/art/newlib-1.16.0/newlib/libc/sys/linux/machine/i386/dl-procinfo.lo
+get_clockfreq.lo /home/art/newlib-1.16.0/newlib/libc/sys/linux/machine/i386/get_clockfreq.lo
+getpagesize.lo /home/art/newlib-1.16.0/newlib/libc/sys/linux/machine/i386/getpagesize.lo
+hp-timing.lo /home/art/newlib-1.16.0/newlib/libc/sys/linux/machine/i386/hp-timing.lo
+setjmp.lo /home/art/newlib-1.16.0/newlib/libc/sys/linux/machine/i386/setjmp.lo
+sigaction.lo /home/art/newlib-1.16.0/newlib/libc/sys/linux/machine/i386/sigaction.lo

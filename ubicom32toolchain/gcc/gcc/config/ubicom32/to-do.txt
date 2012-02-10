@@ -1,0 +1,88 @@
+Compiler to-do list 20101210
+----------------------------
+
+* Implement fast-path for modsi3 and umodsi3 where the divide result is +/-1.
+
+We have this for divsi3/udivsi3 already.
+
+* Look at implementing bypass in modsi3 and umodsi3 for divide by 1.
+
+Speeds up an interesting case.
+
+* Implement builtins for all opcodes
+
+This will enable very low-level code to be written without resorting to inline asm that can't be scheduled.
+
+* Implement builtins for spinlock operations
+
+Enable a pass that will remove redundant unlock/relock pairs that don't do anything for the Ubicom32 pipeline design.
+
+* Look at implementing sync operations
+
+Low level sync ops to help OS kernel implementations.
+
+* Implement DImode ashift by const1
+
+Implement this as an add.4/addc pair to save an instruction.
+
+* Implement DImode shifts that might benefit from SHFTD
+
+Not sure which ones can use this but it should be winning.
+
+* Don't rely on generic splitters for DImode shifts
+
+May be able to improve codegen by using ISA-specific shift conversions that split late.
+
+* Implement trampolines
+
+Implement trampolines in gcc.
+
+* Don't use AGEN instructions if there's no need
+
+If we have a movea An, Dn or an lea.1 An, ... where An is not used for address generation within the
+AGEN hazard window then use move.4 and add.4 as appropriate.  This will avoid An hazards.
+
+* Replace ret with move/calli
+
+Replace ret instructions with move/calli whenever we can avoid the An hazard on calli.
+
+* Use section anchors by default
+
+Use section anchors and rely on linker relaxation to put sections on 128 byte boundaries.
+
+* Clean up subreg handling in the predicates
+
+Don't do unecessary subreg ops in the predicate handling.
+
+* Remove dbxelf.h from the config.gcc entries for ubicom32.
+
+Remove these files as they are for STABS.
+
+* Update comments for prologue/epilogue code
+
+These need to be updated to explain what each is for.
+
+* Remove FIXME comments
+
+Remove things that apparently need fixing.
+
+* ubicom32_override_options/ubicom32_optimization_options
+
+Clean up and document.
+
+* peephole2 cleanups
+
+Most of these are a result of memory-to-memory architecture - should be an MDR pass.
+
+* movdi_cc
+
+Need to find out why this isn't being picked up by combine and fix.
+
+* Need to get FLAT ELF working on the IP8k
+
+This doesn't work correctly right now - only the IP7k works.
+
+* Implement conditional moves
+
+Need to implement conditional move operations - simulated using the merge instruction.
+

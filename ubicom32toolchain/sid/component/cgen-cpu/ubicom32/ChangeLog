@@ -1,0 +1,1167 @@
+2002-01-29  Dave Brolley  <brolley@redhat.com>
+
+	* ip4100bf.h (ip4100bf): New output pin 'runnin_pin'.
+	* ip4100bf.cxx (ip4100bf_cpu): Add 'running' pin.
+	(step_insns): Drive the 'running' pin with 1 on entry and 0 on exit.
+
+2002-01-28  Michael Snyder  <msnyder@redhat.com>
+
+	* ip4100bf.cxx (dbg_set_reg):  Save context pc before changing 
+	threads.
+
+2002-01-17  Dave Brolley  <brolley@redhat.com>
+
+	* ip4100bf.cxx (stepped): New function.
+	* ip4100bf.h (stepped): New function.
+
+2002-01-10  Jeff Johnston  <jjohnstn@redhat.com>
+	
+	* ip4100bf.cxx (ip4100bf_cpu::step_insns): When memory fault
+	occurs when executing an instruction, only signal a trap if
+	warnings are enabled.  Otherwise, add an error message if
+	tracing semantics and bump up pc.
+
+2002-01-09  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf.cxx (ip4100bf_cpu_cgen::set_h_pc_user): New method to 
+	handle user writes to pc.
+	(ip4100bf_mapped_bus::word_write): Fix read-only registers to
+	return immediately.  Also add special case for PC which calls
+	new set_h_pc_user method.
+	* ip4100bf.h (ip4100bf_cpu_cgen): Add set_h_pc_user prototype.
+
+2002-01-09  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf-sem.cxx: Regenerated after changing iread to
+	not set flags.
+
+2002-01-09  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* hw-cpu-ip4k.txt: Updated to match current class.
+	* hw-cpu-ip4k.xml: Ditto.
+	* ip4100bf.cxx (ip4100bf_cpu::ip4100bf_cpu): Add a new
+	"harvard-pc" attribute.
+	(ip4100bf_cpu::get_harvard_pc_attr): New method.
+	(ip4100bf_cpu::set_harvard_pc_attr): Ditto.
+	* ip4100bf.h (ip4100bf_cpu): Add get_harvard_pc_attr
+	and set_harvard_pc_attr method prototypes.
+
+2002-01-04  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf.cxx (ip4100bf_cpu_cgen::get_h_rosr_c): Fix to
+	use context passed, not current context.
+
+2002-01-03  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf.cxx (ip4100bf_cpu_cgen::is_past_delay): New method.
+	(ip4100bf_cpu_cgen::inc_delay_table): Ditto.
+	(ip4100bf_cpu::reset): Reset value of mt_min_delay_en.
+	(ip4100bf_cpu_cgen::set_h_mt_glbl_ctrl): Add code to
+	keep track of current min delay value.
+	(ip4100bf_cpu::scheduler): Add calls to is_past_delay()
+	to ensure that thread is allowed to execute if there is
+	a minimum delay set up for it.
+	(ip4100bf_cpu::step_insns): Call inc_delay_table() at start.
+	* ip4100bf.h: Add prototypes for new methods above and
+	add current_delay and delay_table variables to ip4100bf_cpu_cgen.
+	Also added GLBL_CTL_MIN_DELAY_MASK and GLBL_CTL_MIN_DELAY_SHIFT
+	values plus changed GLBL_CTL_TIMER_ENABLE_MASK and
+	GLBL_CTL_WATCHDOG_ENABLE_MASK.
+
+2001-12-19  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf.cxx (ip4100bf_cpu::set_d_direct_mem): Call
+	SETMEMSI_DIRECT instead of SETMEMSI.
+	* ip4100bf.h (ip4100bf_cpu::SETMEMSI_DIRECT): New inline
+	method that does not check the dcapt register because the
+	storage being accessed is direct memory.
+	(ip4100bf_cpu::SETMEMQI, ip4100bf_cpu::SETMEMUQI): Changed
+	so we check address being written directly with dcapt.
+	(ip4100bf_cpu::SETMEMHI, ip4100bf_cpu::SETMEMUHI): Changed
+	so we check address being written to with dcapt rounded
+	down to half-word boundary.
+	(ip4100bf_cpu::SETMEMSI, ip4100bf_cpu::SETMEMUSI): Changed
+	so we check address being written to against dcapt rounded
+	down to word boundary.
+	(ip4100bf_cpu::SETMEMDI, ip4100bf_cpu::SETMEMUDI): Changed
+	so we check address being written to against dcapt rounded
+	down to double-word boundary.
+
+2001-12-18  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf.cxx (ip4100bf_cpu::reset): Changed default setting
+	of mt_dbg_active to be 0x1.
+
+2001-12-14  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf.cxx (ip4100bf_mapped_bus::word_write): 
+	Make mt_break read-only register.  Also add mt_break_clr support.
+	(ip4100bf_cpu::dbg_set_reg): Remove mt_break (68) which is
+	read-only.  Add mt_break_clr (67) which is write-only.
+
+2001-11-16  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf.cxx (ip4100bf_cpu::ip4100bf_cpu): Add missing
+	colon for rosr attribute.
+
+2001-11-02  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf.cxx (ip4100bf_cpu::ip4100bf_cpu): Make sure
+	all context-specific registers are accessible via attributes.
+	Also use new names where appropriate.
+
+2001-10-30  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf.cxx (ip4kcpu::iwrite): Add flush_icache call
+	to ensure any insns changed in the cache will show up as
+	modified.
+
+2001-10-10  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf-sem.cxx: Regenerated after changing multiply
+	instructions.
+	* ip4100bf.cxx (ip4kcpu_cgen::get_h_mac_rc16): New method.
+	(ip4kcpu_cgen::set_h_mac_rc16): Ditto.
+	(ip4kcpu_cgen::get_h_acc_s15): Removed.
+	(ip4kcpu::finish_multiply): New method which sets the mac_rc16
+	register based on the mac contents.
+	(ip4kcpu::bkpt): Changed to suspend current context regardless
+	of the input mask.
+	(ip4100bf_mapped_bus::word_read): Changed to use MAC_RC16_INDEX.
+	(ip4100bf_mapped_bus::word_write): Changed so mac_rc16 is no
+	longer read-only.
+	* ip4100bf.h (ip4kcpu::finish_multiply): Added prototype.
+	(ip4kcpu_cgen::get_h_mac_rc16): Ditto.
+	(ip4kcpu_cgen::set_h_mac_rc16): Ditto.
+	(ACC_S15_ADDR, ACC_S15_INDEX): Removed.
+	(MAC_RC16_ADDR, MAC_RC16_INDEX): Added.
+	(ip4kcpu_cgen::get_h_acc_s15): Removed.
+
+2001-09-27  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf-decode.cxx: Regenerated after changing nop
+	encoding.
+	* ip4100bf-decode.h: Ditto.
+	* ip4100bf-sem.cxx: Ditto.
+
+2001-09-17  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* Makefile.am: Add include dir path to build_dir/intl.
+	* Makefile.in: Regenerated.
+
+2001-09-10  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* Makefile.am: Add support to build opcodes files necessary
+	to support disassembly tracing.
+	* Makefile.in: Regenerated.
+	* ip4100bf.cxx (ip400bf_cpu::reset): Add support to clear
+	CGEN-generated hardware registers and flush the insn cache
+	so any changes made by sid encapsulation will work.
+	(ip4100bf_cpu::step_insn): Add trace disassembly support and
+	also reorganize so that tracing only prints the line number
+	at most once.
+	(ip4100bf_cpu::stream_state): Add the syscall trap number.
+	(ip4100bf_cpu::destream_state): Ditto.
+	* ip4100bf.h (ip4100bf_mapped_bus::ip4100bf_mapped_bus): Add
+	default word mask initialization.
+	(ip4100bf_mapped_bus::read): For register reads, call the word_read
+	method directly with the default mask.
+	(ip4100bf_mapped_bus::write): For register writes, call the
+	word_write method directly with the default mask.
+
+2001-08-02  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf.cxx (ip4100bf_cpu::stream_state): New method to
+	stream out the ip4k main processor state.
+	(ip4100bf_cpu::destream_state): New method to stream in the
+	ip4k main processor state.
+	* ip4100bf.h: Added prototypes for stream_state and destream_state.
+
+2001-07-31  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf-decode.cxx: Regenerated.
+	* ip4100bf-decode.h: Ditto.
+
+2001-07-26  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf.cxx (ip4100bf_cpu::ip4100bf_cpu): Changed the hardware
+	irq pins to have names from irq_0 to irq_31.
+	(ip4100bf_cpu): Added do_irq_0_pin() to do_irq_31_pin methods to
+	replace old methods which referred to timer, DAC, external interrupt,
+	and I/O.
+	(ip4100bf_cpu_cgen::set_h_mt_break): Change to use IRQ_1_BKPT_MASK.
+	(ip4100bf_cpu_cgen::inc_h_glbl_timer): Changed to set int_stat1 bits.
+	* ip4100bf.h (ip4100bf_cpu): Removed old callback pin methods and
+	replaced them with new do_irq_x_pin methods (x = 0 to 31).
+	(ip4100bf_cpu_cgen): Moved breakpoints and timer interrupts from
+	int_stat0 to int_stat1.
+	* hw-cpu-ip4k.xml: Updated to specify new irq pin names.
+	* hw-cpu-ip4k.txt: Regenerated.
+
+2001-07-23  Dave Brolley  <brolley@redhat.com>
+
+	* hw-cpu-ip4k.xml: Remove irq_math_coprocessor. Describe
+	irq_math_coprocessor_completion and irq_math_coprocessor_exception.
+	* hw-cpu-ip4k.txt: Regenerated.
+
+2001-07-20  Nick Duffek  <nsd@redhat.com>
+
+	* ip4100bf.cxx (ip4100bf_cpu::ip4100bf_cpu,
+	ip4100bf_cpu::dbg_get_reg, ip4100bf_cpu::dbg_set_reg): Update
+	register fetch/store code to accommodate GDB and spec changes.
+	Use GDB-only register 80 as a communication channel for changing
+	the current thread.
+
+2001-07-19  Jeff Johnston  <jjohnstn@redhat.com>
+
+        * ip4100bf.cxx (ip4100bf_cpu_cgen::set_h_dcapt_pc): Make const.
+        (ip4100bf_cpu_cgen::set_h_dcapt_thread): Ditto.
+        * ip4100bf.h (ip4100bf_cpu): Add get/set memory routines for
+        QI, UQI, UHI, and UDI.  For all write memory routines, check if
+        the dcapt register contains the address being altered and if so,
+        save the pc and thread number in the dcapt_pc and dcapt_thread
+        registers respectively.
+        (ip4100bf_cpu_cgen::h_dcapt_pc): Declare mutable.
+        (ip4100bf_cpu_cgen::h_dcapt_thread): Ditto.
+
+2001-07-19  Dave Brolley  <brolley@redhat.com>
+
+	* ip4100bf.h (IRQ_0_MATH_COPROCESSOR_MASK): Removed.
+	(IRQ_1_MATH_COPROCESSOR_COMPLETION_MASK): New constant.
+	(IRQ_1_MATH_COPROCESSOR_EXCEPTION_MASK): New constant.
+	(do_irq_math_coprocessor_pin): Removed.
+	(do_irq_math_coprocessor_completion_pin): New function.
+	(do_irq_math_coprocessor_exception_pin): New function.
+	(irq_math_coprocessor_pin): Removed.
+	(irq_math_coprocessor_completion_pin): New pin.
+	(irq_math_coprocessor_exception_pin): New pin.
+	* ip4100bf.cxx (ip4100bf_cpu): Initialize
+	irq_math_coprocessor_completion_pin and
+	irq_math_coprocessor_exception_pin.
+	(do_irq_math_coprocessor_pin): Removed.
+	(do_irq_math_coprocessor_completion_pin): New function.
+	(do_irq_math_coprocessor_exception_pin): New function.
+	* hw-cpu-ip4k.txt: Remove irq_math_coprocessor. Describe
+	irq_math_coprocessor_completion and irq_math_coprocessor_exception.
+
+2001-07-18  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf.cxx (ip4100bf_cpu_cgen::set_h_dcapt_pc): New method.
+	(ip4100bf_cpu_cgen::set_h_dcapt_thread): Ditto.
+	* ip4100bf.h (ip4100bf_cpu_cgen): Add prototypes for set_h_dcapt_pc
+	and set_h_dcapt_thread.
+
+2001-07-16  Jeff Johnston  <jjohnstn@redhat.com>
+
+        * ip4100bf-decode.cxx: Regenerated with insn-chunk-bitsize.
+        * ip4100bf-desc.h: Ditto.
+        * ip4100bf.cxx (ip4100bf_cpu_cgen::get_h_mt_min_delay_enable): New.
+        (ip4100bf_cpu_cgen::set_h_mt_min_delay_enable): Ditto.
+        (ip4100bf_mapped_bus::word_read): Add mt_min_delay_enable support.
+        (ip4100bf_mapped_bus::word_write): Ditto.
+        * ip4100bf.h (ip4100bf_cpu_cgen): Add prototypes for
+        get_h_mt_min_delay_enable and set_h_mt_min_delay_enable.
+
+2001-07-11  Frank Ch. Eigler  <fche@redhat.com>
+
+	* hw-cpu-ip4k.xml: Add <?xml ... ?> prefix.
+
+2001-07-04  graydon hoare  <graydon@redhat.com>
+
+	* configure.in: Add maintainer-mode doc building configury.
+	* configure: Regenerate.
+	* Makefile.am: Add maintainer-mode doc building.
+	* Makefile.in: Regenerate.
+
+2001-07-05  Ben Elliston  <bje@redhat.com>
+
+	* Makefile.am (CPUDIR): Define.
+	(stamp-ip4k): Use it.
+	* Makefile.in: Regenerate.
+
+2001-07-04  Ben Elliston  <bje@redhat.com>
+
+	* hw-cpu-ip4k.txt: Generate.
+
+2001-06-29  graydon hoare  <graydon@redhat.com>
+
+	* hw-cpu-ip4k.xml: Add.
+
+2001-06-29  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf-sem.cxx: Regenerated after changing semantics of 
+	shmrg.1 and shmrg.2 to match latest spec 2.0.
+
+2001-06-28  Jeff Johnston  <jjohnstn@redhat.com>
+
+        * ip4100bf.cxx (ip4100bf_cpu::memory_trap): Remove code under now
+        non-existent debug_exec_p flag.
+	(ip4100bf_cpu::iread): Remove call to is_valid_flash.  Add code
+	in memory catch clause to check warnings_enabled and issue error
+	message if set.
+	(ip4100bf_cpu::iwrite): Ditto.
+	(ip4100bf_cpu::ierase): Ditto plus encapsulate code under check
+	for on_chip_flash which is currently always false.
+	(ip4100bf_cpu::is_valid_flash): Remove.
+	* ip4100bf.h (ip4100bf_cpu): Remove is_valid_flash.  Add on_chip_flash
+	builtin.
+        * hw-cpu-ip4k.txt: Remove all debug-exec? references.
+	* Makefile.am: Add touch stamp-ip4k to prevent unnecessary cgen calls.
+	* Makefile.in: Regenerated.
+
+2001-06-26  Frank Ch. Eigler  <fche@redhat.com>
+
+	* Makefile.am (ACLOCAL_AMFLAGS): Refer to $srcdir.
+	* Makefile.in: Regenerated.
+
+2001-06-22  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* Makefile.am: Added CGEN_MAINT support.
+	* Makefile.in: Regenerated.
+	* aclocal.m4: Ditto.
+	* configure: Ditto.
+	* configure.in: Ditto.
+	* ip4100bf-decode.h: Ditto.
+	* ip4100bf-defs.h: Ditto.
+	* ip4100bf-sem.cxx: Ditto.
+
+2001-06-22  Ben Elliston  <bje@redhat.com>
+
+	* ip4100bf.cxx (ip4100bf::memory_trap): Ignore bus::delayed.
+
+2001-06-21  matthew green  <mrg@redhat.com>
+
+	* Makefile.am (BFDINCLUDES): New define.
+	(INCLUDES): Add $(BFDINCLUDES)
+	* Makefile.in: Regenerate.
+
+2001-06-14  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf-decode.cxx: Regenerated after adding indexed addressing
+	support to the d-pea operand.
+	* ip4100bf-decode.h: Ditto.
+	* ip4100bf-sem.cxx: Ditto.
+
+2001-06-14  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf.cxx (ip4100bf_mapped_bus::word_write): Changed default
+	to access cpu direct memory storage area.
+	(ip4100bf_mapped_bus::word_read): Ditto.
+	(ip4100bf_mapped_bus::do_direct_passthrough): Readded so only direct
+	memory addresses use the word_read and word_write methods and only
+	if satisfying a direct memory addressing request.
+	(ip4100bf_cpu::get_s1_direct_mem): Set direct_access flag to true.
+	(ip4100bf_cpu::set_d_direct_mem): Ditto.
+	* ip4100bf.h (ip4100bf_mapped_bus): Add do_direct_passthrough method.
+	(ip4100bf_cpu_cgen::direct_access): New flag.
+	(ip4100bf_cpu_cgen::common_register_file): New storage to back all
+	non-thread-specific registers in direct memory range.
+	(ip4100bf_cpu_cgen::register_file): Changed size to reflect only
+	registers that are duplicated for each thread.
+
+2001-06-11  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf.h (REVISION_ID_VALUE): Changed to 4147.
+
+2001-06-11  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf.cxx (ip4100bf_cpu::is_valid_flash): New method.
+	(ip4100bf_cpu::iread): Remove conversion to page and replace with
+	check using is_valid_flash.
+	(ip4100bf_cpu::iwrite): Ditto.
+	(ip4100bf_cpu::ierase): Ditto.
+	* ip4100bf.h: Update list of flash memory blocks to include blocks
+	5 to 8.  As well, update SRAM start address and fix typo with
+	size of flash page.
+	(ip4100bf_cpu::is_valid_flash): New prototype.
+
+2001-06-08  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf.cxx (ip4100bf_cpu::crcgen): New method.
+	* ip4100bf.h: Added prototype for ip4100bf_cpu::crcgen.
+	* ip4100bf-decode.cxx: Regenerated after adding crcgen insn.
+	* ip4100bf-decode.h: Ditto.
+	* ip4100bf-desc.h: Ditto.
+	* ip4100bf-sem.cxx: Ditto.
+
+2001-06-06  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf.h: Removed all traces of glbl_status register which no
+	longer exists.
+	* ip4100bf.cxx (ip4100bf_cpu::dbg_get_regs): Ditto.
+	(ip4100bf_cpu::dbg_set_regs): Ditto.
+
+2001-06-06  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf.h (ip4100bf_cpu_cgen::HRT_EMPTY_MASK): Removed.
+	(ip4100bf_cpu_cgen::HRT_OCCUPIED_MASK): Added. 
+	(ip4100bf_cpu_cgen::HRT_CONTEXT_MASK): Restricted value. 
+	(ip4100bf_cpu_cgen::is_empty): Changed to use new hrt
+	table entry description.
+
+2001-06-06  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf.cxx: Removed all calls to set_h_csr_illegal_data_addr_bit,
+	set_h_csr_illegal_insn_addr_bit, and set_h_csr_illegal_insn_bit.
+	(ip4100bf_cpu_cgen::reset_h_csr_interrupt_mask_bit): Removed.
+	(ip4100bf_cpu_cgen::reset_h_csr_thread_interrupt_bit): Ditto.
+	(ip4100bf_cpu_cgen::set_h_csr_illegal_insn_bit): Ditto.
+	(ip4100bf_cpu_cgen::set_h_csr_illegal_data_addr_bit): Ditto.
+	(ip4100bf_cpu_cgen::set_h_csr_illegal_insn_addr_bit): Ditto.
+	* ip4100bf.h: Removed CSR illegal insn, interrupt mask, and
+	illegal addr bits which no longer exist.
+
+2001-06-06  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf.cxx (ip4100bf_cpu::reset): Set mt_single_step to 0.
+	(ip4100bf_cpu_cgen::get_h_mt_single_step): New method.
+	(ip4100bf_cpu_cgen::set_h_mt_single_step): Ditto.
+	(ip4100bf_mapped_bus::word_write): Added mt_single_step support.
+	(ip4100bf_mapped_bus::word_read): Ditto.
+	(ip4100bf_cpu::step_insns): Add check for mt_single_step being set
+	for current thread in which case halt current thread.
+	* ip4100bf.h: Add prototypes for get_h_mt_single_step and
+	set_h_mt_single_step.
+
+2001-06-06  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf.cxx (ip4100bf_cpu_cgen::set_h_irq_status_0): Set whole
+	register, don't just clear 0 bits.
+	(ip4100bf_cpu_cgen::set_h_irq_status_1): Ditto.
+	(ip4100bf_cpu_cgen::set_h_irq_status_0_set): When checking whether
+	to activate threads due to interrupts, check the global interrupt
+	enable flag first. 
+	(ip4100bf_cpu_cgen::set_h_irq_status_1_set): Ditto.
+	(ip4100bf_mapped_bus::word_write): Make the irq_status registers
+	read-only.
+	csr(ip4100bf_cpu_cgen::set_h_glbl_ctl): If enabling interrupts, check
+	and see if a thread is inactive and is now eligible to be activated.
+
+2001-06-05  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf.cxx (ip4100bf_cpu::reset): Added setting mt_dbg_active.
+	(ip4100bf_cpu::bkpt): Changed to not suspend current thread by
+	default and to use mt_dbg_active register to halt threads specified
+	by mask.
+	(ip4100bf_cpu_cgen::get_h_rosr): Changed to always set MEM_BUSY
+	flag to false.
+	(ip4100bf_cpu_cgen::is_active_m): Changed to also check mt_dbg_active.
+	(ip4100bf_cpu_cgen::get_h_pipe_busy): New method.
+	(ip4100bf_cpu_cgen::get_h_mt_dbg_active): Ditto.
+	(ip4100bf_cpu_cgen::set_h_mt_dbg_active): Ditto.
+        (ip4100bf_cpu_cgen::set_h_mt_dbg_active_set): Ditto.
+        (ip4100bf_cpu_cgen::set_h_mt_dbg_active_clr): Ditto.
+	(ip4100bf_cpu_cgen::get_h_dcapt): Ditto.
+	(ip4100bf_cpu_cgen::set_h_dcapt): Ditto.
+	(ip4100bf_cpu_cgen::get_h_dcapt_pc): Ditto.
+	(ip4100bf_cpu_cgen::get_h_dcapt_thread): Ditto.a
+	(ip4100bf_mapped_bus::word_write): Added code for mt_dbg_active,
+	mt_dbg_active_set, mt_break_clr, pipe_busy, dcapt, dcapt_pc, i
+	and dcapt_thread.
+	(ip4100bf_mapped_bus::word_read): Ditto.
+	* ip4100bf.h: Added declarations for register access routines for
+	mt_dbg_active, mt_dbg_active_set, mt_break_clr, pipe_busy, dcapt, 
+	dcapt_pc, and dcapt_thread.  Also renamed ROSR_MEM_DONE_BIT_MASK to be
+	ROSR_MEM_BUSY_BIT_MASK.
+
+2001-06-04  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf-cpu.h: Regenerated.
+	* ip4100bf-sem.cxx: Ditto.
+	* ip4100bf.cxx: Renamed all references to h_mt_status to h_mt_active
+	including the set and clr register routines.  Also changed all
+	references to status to be rosr.
+	* ip4100bf.h: Ditto plus changed memory map to include mt_dbg_active
+	and mt_dbg_active_set as well as updated register addresses.
+
+2001-06-01  Jeff Johnston  <jjohnstn@redhat.com>
+
+        * ip4100bf.cxx (ip4100bf_cpu::reset): Initialize An increment
+        registers to 0.
+        (ip4100bf_cpu::step_insns): Check h_ar_inc_flag to see if any
+        pre/post increments were made by instruction and update Ar registers
+        using increments specified by h_ar_inc registers.
+        * ip4100bf-sem.cxx: Regenerated.
+        * ip4100bf-cpu.h: Regenerated.
+
+2001-05-08  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf.cxx (ip4100bf_mapped_bus::word_write): Added code
+	to handle mt_stat_set and mt_stat_clr.
+	(ip4100bf_cpu_cgen::set_h_mt_stat_set): New method.
+	(ip4100bf_cpu_cgen::set_h_mt_stat_clr): Ditto.
+	(ip4100bf_cpu::reset): Changed so only thread 0 is active at reset.
+	* ip4100bf.h (ip4100bf_cpu_cgen): Added prototypes for 
+	set_h_mt_stat_set and set_h_mt_stat_clr.
+
+2001-05-03  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* hw-cpu-ip4k.txt: Updated to match current spec and code.
+
+2001-05-03  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf.cxx: Numerous changes based on amendment spec 1.96.
+	* ip4100bf.h: Ditto.
+	* ip4100bf-cpu.h: Regenerated.
+	* ip4100bf-decode.cxx: Ditto.
+	* ip4100bf-decode.h: Ditto.
+	* ip4100bf-defs.h: Ditto.
+	* ip4100bf-desc.h: Ditto.
+	* ip4100bf-sem.cxx: Ditto.
+
+2001-03-21  Ben Elliston  <bje@redhat.com>
+
+	* Makefile.in: Regenerate.
+
+2001-03-14  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf-decode.cxx: Regenerated after changing jmp insn encoding.
+
+2001-03-01  Frank Ch. Eigler  <fche@redhat.com>
+
+	* ip4100bf.cxx ({read,write}_real_data_word, iwrite, iprivilege,
+	iread, step_insns, scheduler): Add some branch probability hints.
+	* ip4100bf.h (GETMEM*, SETMEM*): Ditto.
+	(SETMEMUSI): Correct logic error in misaligned address fixup.
+	* ip4100bf-sem.cxx, -decode.cxx: Regenerated.
+
+2001-02-20  Nicholas Duffek  <nsd@redhat.com>
+
+	* ip4100bf.cxx (ip4100bf_cpu): Add 68 (global status) to the
+	expedited register list.
+
+2001-02-13  Jeff Johnston  <jjohnstn@redhat.com>a
+
+        * ip4100bf.cxx (ip4100bf_cpu_cgen::set_h_irq_status_0_bits): Removed
+        setting of pending_interrupt.
+        (ip4100bf_cpu_cgen::set_h_irq_status_1_bits): Ditto.
+        (ip4100bf_cpu_cgen::ip4100bf_cpu_cgen): Ditto.
+        (ip4100bf_cpu::suspend): Added code to check for pending interrupt.
+        * ip4100bf.h: Removed pending_interrupt array.
+
+2001-02-07  Jeff Johnston  <jjohnstn@redhat.com>
+
+        * ip4100bf.h (ip4100bf_cpu::GETMEM*, SETMEM*): New inline methods
+        to override default cpu versions that check for alignment and
+        set the CSR alignment error bit if warranted.
+        (ip4100bf_cgen_cpu::set_alignment_error): New public method.
+
+2001-01-31  Nicholas Duffek  <nsd@redhat.com>
+
+	* ip4100bf.cxx (dbg_get_reg): Retrieve PC from
+	this->hardware.h_pc instead of get_h_pc().
+
+2001-01-26  Frank Ch. Eigler  <fche@redhat.com>
+
+	* ip4100bf-decode.h: Regenerated with cleanup.
+
+2001-01-24  Nicholas Duffek  <nsd@redhat.com>
+
+	* ip4100bf.cxx (dbg_get_reg, dbg_set_reg): Implement more
+	registers, use ip4100bf_cpu methods instead of h_*_[gs]et
+	functions.
+
+2001-01-22  Jeff Johnston  <jjohnstn@redhat.com>
+
+        * ip4100bf.cxx (ip4100bf_cpu_cgen::set_h_mt_enable): Changed to
+        look for reenablement of a thread and set pc to 0 in such
+        a case.  Also removed changing mt_status since they are
+        orthogonal.
+        (ip4100bf_cpu_cgen::is_active): Added check for enabled.
+        (ip4100bf_cpu_cgen::is_enabled): Removed.
+        (ip4100bf_cpu_cgen::is_active_m): New routine that takes a mask rather
+        than context num.
+        (ip4100bf_cpu_cgen::is_enabled_m): Ditto.
+        (ip4100bf_cpu_cgen::is_active_srt, is_active_hp_srt): Changed to call
+        new _m routines that take a mask value.
+        * ip4100bf.h (ip4100bf_cpu_cgen): Added is_active_m prototype
+        and changed is_enabled to is_enabled_m which takes a mask value.
+
+2001-01-18  Jeff Johnston  <jjohnstn@redhat.com>
+
+        * ip4100vf.cxx (ip4100bf_cpu::build_hrt_table):  Initialize
+        hrt_index value.
+
+2001-01-17  Jeff Johnston  <jjohnstn@redhat.com>
+
+        * ip4100bf.cxx (ip4100bf_cpu): Changed to add "data-bus" which
+        is tied to mapped_data_bus.  Also added new setting: "coa" which
+        is coa for application.
+        (build_hrt_table): Must subtract coa before
+        accessing the data bus to get the hrt table at 0x2000.
+        (reset): Set all 8 coas to start_coa value.
+        (set_h_cr_c): New method to set coa for particular context.
+        (set_h_cr): Modified to call set_h_cr_c with current context.
+        (get_s1_direct_mem): Subtract coa before accessing data bus because
+        it will be added in by bus.
+        (set_d_direct_mem): Ditto.
+        (set_d_direct_mem_hi): Ditto.
+        (get_generic_register_attr): Ditto.
+        (set_generic_register_attr): Ditto.
+        (do_direct_passthrough): Changed to add in current coa and to
+        modify the parameter address passed in.
+        * ip4100bf.h (do_direct_passthrough): Modified to pass by reference.
+        (start_coa): New variable to store start coa value.
+        (set_h_cr_c): New method.
+        * ip4100bf-cpu.h: Regenerated after changing addressing operands
+        to compensate for coa being added in by data bus.
+        * ip4100bf-decode.cxx: Ditto.
+        * ip4100bf-decode.h: Ditto.
+        * ip4100bf-sem.cxx: Ditto.
+
+2001-01-12  Jeff Johnston  <jjohnstn@redhat.com>
+
+        * ip4100bf.cxx (ip4100bf_cpu): Fixed constructor so
+        real_data_bus is initialized to 0.
+
+2000-11-15  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf.h (_POSIX_C_SOURCE): Removed.
+	* ip4100bf.cxx (get_h_random_seed): Replaced call to rand_r with
+	actual code from newlib's rand_r routine.
+	(do_syscall): Added setting the pc before calling signal_trap and
+	also changed case statement to break if reissue rc returned.
+        * configure: Regenerated.
+        * aclocal.m4: Ditto.
+        * Makefile.in: Ditto.
+
+2000-11-11  Frank Ch. Eigler  <fche@redhat.com>
+
+	* ip4100bf-decode.cxx: Regenerated.  Reorganized.
+
+2000-11-10  Frank Ch. Eigler  <fche@redhat.com>
+
+	* ip4100bf-decode.cxx: Regenerated.  Improved.
+
+2000-11-08  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf.cxx (ip4100bf_mapped_bus::word_write): Restored
+	missing return statement for direct address registers.
+	* Makefile.am: Added -g as default CXXFLAGS.
+	* Makefile.in: Regenerated.
+
+2000-11-03  Nick Duffek  <nsd@redhat.com>
+
+	* ip4100bf.cxx (ip4100bf_cpu::ip4100bf_cpu): Change GDB
+	register count from to 111.
+
+2000-11-01  Frank Ch. Eigler  <fche@redhat.com>
+
+	* Makefile.am (CXXFLAGS): Moved definition.
+	* Makefile.in: Regenerated.
+
+2000-10-30  Nick Duffek  <nsd@redhat.com>
+
+	* ip4100bf.cxx (ip4100bf_cpu::ip4100bf_cpu): Call
+	this->create_gdb_register_attrs.
+	(ip4100bf_cpu::dbg_get_reg): New function.
+	(ip4100bf_cpu::dbg_set_reg): Likewise.
+	* ip4100bf.h (namespace ip4100bf): Redefine dbg_get_reg and
+	dbg_set_reg.
+
+2000-10-25  Frank Ch. Eigler  <fche@redhat.com>
+
+	* Makefile.am (CXXFLAGS): Override default to reduce compilation
+	effort.
+	* Makefile.in: Regenerated.
+
+2000-10-24  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf-decode.h: Regenerated after fixing extb and extw
+	semantics.
+	* ip4100bf-defs.h: Ditto.
+	* ip4100bf-sem.cxx: Ditto.
+
+2000-10-23  Frank Ch. Eigler  <fche@redhat.com>
+
+	* ip4100bf-decode.h, -defs.h: Regenerated.
+
+2000-10-20  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf.cxx (ip4100bf_cpu): Changed "syscall-trap" to be
+	a setting rather than a watchable register.
+	(set_h_tctrl_w): Fixed various errors whereby the word input value
+	was being used instead of the actual tctrl bits.  Also fixed
+	problem whereby only the tx1e_pin was being driven.
+	Moved the checking of txie bits outside of the test for
+	timer enablement so timers will always be notified of changes.
+	* ip4100bf.h (TCTRL_WRITE_MASK): Replaced with TCTRL_W_WRITE_MASK.
+
+2000-10-18  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf.cxx (reset): Now sets status of all threads to be active.
+	(activate): Renamed to try_to_activate.  All callers changed.
+	(try_to_activate): Based on activate.  Activation only occurs if
+	the context is enabled.
+	(get_h_mt_status, set_h_mt_status): Changed to
+	use new h_mt_status member.  
+	(set_h_mt_enable): Changed so that the new value is anded with
+	the current h_mt_status and used to replace h_mt_status.
+	(h_mt_enable_suspend_current): Renamed to suspend_current.  All
+	callers changed.
+	(suspend_current): New method that suspends a thread by using
+	the set_h_mt_status method.
+	(is_enabled): New method to report if context is enabled.
+	(is_active_srt, is_active_hp_srt): Changed to use mt_status
+	rather than mt_enable.
+	(get_h_glbl_ctl, set_h_glbl_ctl): Changed to use local storage.
+	(get_h_watchdog, set_h_watchdog): Ditto.
+	(get_h_clock_ctl, set_h_clock_ctl): Ditto.
+	(get_generic_register_attr, set_generic_register_attr): Added
+	try/catch to handle memory faults.
+	* ip4100bf.h (h_mt_status, h_glbl_ctl, h_clock_ctl, h_watchdog): New
+	data members.
+	(is_enabled, suspend_current, try_to_activate): New prototypes.
+
+2000-10-13  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* hw-cpu-ip4k.txt: Updated to match current spec and code.
+	* ip4100bf.cxx (ip4100bf_cpu): Fixed to set watchable attributes
+	for all major global registers.  In some cases, virtual, virtual
+	parameterized, or read-only attributes are specified.  Added
+	new pins: irq_timer_3_pin, irq_timer_4_pin, tctrl_t1rst_pin,
+	tctrl_t2rst_pin, tctrl_t3rst_pin, tctrl_t4rst_pin, tctrl_t1ie_pin,
+	tctrl_t2ie_pin, tctrl_t3ie_pin, and tctrl_t4ie_pin.
+	(word_read): Changed default case to use target pointer instead of t.
+	(word_write): Ditto plus fixed default case to read storage from
+	target first and then write the masked value back.  Also fixed
+	read-only FLASH_ACCESS_BLOCK range to be 64 bytes.
+	(get_h_csr_c, set_h_csr_c): New methods that take a context parameter
+	for use with the csr attribute.
+	(get_h_mt_priority, set_h_mt_priority): Now use h_mt_priority.
+	(build_hrt_table): Changed to read one byte at a time to remove
+	endianess problem.
+	(step_insns): Added check for CSR isr mask bit before calling
+	the isr routine to prevent erroneous recursion.
+	(get_generic_register_attr): New method to take an address and
+	provide a string containing the value of the register at the address.
+	(set_generic_register_attr): New method to take an address plus
+	a string representing the value and call the appropriate set method.
+	(get_h_tctrl, get_h_tctrl_w): New methods.
+	(set_h_tctrl, set_h_tctrl_w): New methods defined as abstract in
+	ip4100bf_cpu_cgen and defined in ip4100bf_cpu so that the
+	tctrl pins can be accessed.
+	* ip4100bf.h (t): Removed.
+	(get_h_csr_c, set_h_csr_c): New prototypes.
+	(get_generic_register_attr, set_generic_register_attr): Ditto.
+	(add_watchable_register, add_watchable_ro_register): New templated
+	methods to make it easy to add watchable registers whether they
+	are read-only, use virtual getter/setters, or require a parameter.
+	(tctrl_t1rst_pin, tctrl_t2rst_pin): New pins to communicate from
+	the tctrl register to the timers.
+	(tctrl_t3rst_pin, tctrl_t4rst_pin): Ditto.
+	(tctrl_t1ie_pin, tctrl_t2ie_pin): Ditto.
+	(tctrl_t3ie_pin, tctrl_t4ie_pin): Ditto.
+	(irq_timer_3_pin, irq_timer_4_pin): Ditto.
+
+2000-10-10  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf-sem.cxx: Regenerated after changing calli insn to
+	not set An register before setting pc.
+	* ip4100bf-decode.cxx: Ditto.
+	* ip4100bf-decode.h: Ditto.
+	* ip4100bf-desc.h: Ditto.
+	* ip4100bf.cxx (ip4100bf_cpu): Added initial settings of
+	irq_timer_3_pin and irq_timer_4_pin.  Also reset new tctrl
+	register.
+	(do_irq_timer_3_pin, do_irq_timer_4_pin): New member functions.
+	(get_h_tctrl, get_h_tctrl_w, set_h_tctrl, set_h_tctrl_w): Ditto.
+	(word_read, word_write): Added TCTRL register.
+	* ip4100bf.h (irq_timer_3_pin, irq_timer_4_pin): New output pins.
+	(TCTRL_INDEX, TCTRL_ADDR): New addresses for TCTRL register.
+	(get_h_tctrl, get_h_tctrl_w, set_h_tctrl, set_h_tctrl_w): New prototypes.
+	(TCTRL_xxx_MASK): New bit masks for accessing TCTRL register.
+
+2000-10-02  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf-decode.cxx: Regenerated after changing call insn.
+	* ip4100bf-decode.h: Ditto.
+	* ip4100bf-desc.h: Ditto.
+	* ip4100bf-sem.cxx: Ditto.
+
+2000-09-29  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf-decode.cxx: Regenerated after adding setcsr instruction.
+	* ip4100bf-decode.h: Ditto.
+	* ip4100bf-desc.h: Ditto.
+	* ip4100bf-sem.cxx: Ditto.
+	* ip4100bf.cxx (setcsr): New function to support setcsr instruction.
+	* ip4100bf.h (setcsr): Added prototype.
+
+2000-09-29  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf-sem.cxx: Regenerated after changing bfextu instruction
+	to fetch bit start from bits 4:0 and length from bits 12:8 of
+	s2 argument.
+
+2000-09-29  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf-decode.cxx: Regenerated after changing asr.2 and
+	asr.4 instructions to be dual opcode instructions that use 
+	src_3 register instead of immediate bit shift value.
+	* ip4100bf-decode.h: Ditto.
+	* ip4100bf-desc.h: Ditto.
+	* ip4100bf-sem.cxx: Ditto.
+
+2000-09-29  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf-decode.cxx: Regenerated after change to subtract
+	order.
+	* ip4100bf-decode.h: Ditto.
+	* ip4100bf-sem.cxx: Ditto.
+
+2000-09-28  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf.cxx (ip4100bf_cpu): Changed to initialize the
+	saved_privilege_list with PR_ERW.
+	(reset): Changed to load the privilege_list from the
+	saved_privilege_list which is altered by isave.  Also enable
+	all contexts by default.
+	(get_s1_direct_mem, set_d_direct_mem, set_d_direct_mem_hi): Changed
+	so original context always restored before returning.
+	(get_h_csr): Removed code that builds CSR register from condition
+	code bits since condition codes alter CSR directly.
+	(set_h_nbit_16, set_h_zbit_16, set_h_cbit_16): New routines.
+	(set_h_vbit_16, set_h_xbit_16): Ditto.
+	(set_h_nbit_32, set_h_zbit_32, set_h_cbit_32): Ditto.
+	(set_h_vbit_32, set_h_xbit_32): Ditto.
+	(h_mt_enable_suspend_current): Fixed typo so bit is turned off.
+	(check_mask): Changed to fetch condition code bits from CSR.
+	(get_flash_page): Changed to remove references to info blocks
+	which no longer follow flash memory blocks.
+	(iprivilege): Changed typo so 1 to 0 transitions properly enforced.
+	(ierase): Changed to not call iprivilege since privilege is being
+	relaxed.  Also fixed calculation of start of page to erase.
+	(isave): Rewrote code to simply save privilege_list to
+	saved_privilege_list.
+	* ip4100bf.h (saved_privilege_list): New array.
+	(get_h_nbit_16, get_h_zbit_16, get_h_vbit_16): New inline members.
+	(get_h_cbit_16, get_h_xbit_16): Ditto.
+	(get_h_nbit_32, get_h_zbit_32, get_h_vbit_32): Ditto.
+	(get_h_cbit_32, get_h_xbit_32): Ditto.
+	(set_h_nbit_16, set_h_zbit_16, set_h_vbit_16): New members.
+	(set_h_cbit_16, set_h_xbit_16): Ditto.
+	(set_h_nbit_32, set_h_zbit_32, set_h_vbit_32): Ditto.
+	(set_h_cbit_32, set_h_xbit_32): Ditto.
+	(CSR_SOURCE_THREAD_MASK, CSR_DEST_THREAD_MASK): Fixed to obey
+	C operator precedence.
+	(CSR_NBIT_16_MASK, CSR_ZBIT_16_MASK, CSR_VBIT_16_MASK): New constants.
+	(CSR_CBIT_16_MASK, CSR_XBIT_16_MASK): Ditto.
+	(CSR_NBIT_32_MASK, CSR_ZBIT_32_MASK, CSR_VBIT_32_MASK): Ditto.
+	(CSR_CBIT_32_MASK, CSR_XBIT_32_MASK): Ditto.
+	(PR_ERW, PR_ER, PR_EW, PR_E): Fixed.
+	(FLASH_MEM_A_INFO_BLOCK, FLASH_MEM_B_INFO_BLOCK): Removed.
+	(FLASH_MEM_C_INFO_BLOCK, FLASH_MEM_D_INFO_BLOCK): Ditto.
+	(FLASH_MEM_A_END, FLASH_MEM_B_END): New.
+	(FLASH_MEM_C_END, FLASH_MEM_D_END): Ditto.
+	(FLASH_INFO_A_START, FLASH_INFO_B_START): New.
+	(FLASH_INFO_C_START, FLASH_INFO_D_START): Ditto.
+	* ip4100bf-cpu.h: Regenerated.
+	* ip4100bf-decode.cxx: Ditto.
+	* ip4100bf-decode.h: Ditto.
+	* ip4100bf-sem.cxx: Ditto.
+
+2000-09-22  Frank Ch. Eigler  <fche@redhat.com>
+
+	* Makefile.am, configure.in: Reworked to use new CGEN.sh conventions.
+	* Makefile.in, configure: Regenerated.
+
+2000-09-19  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf.cxx (bfrvrs): Fixed code to do logical unsigned shift.
+	(set_h_csr_c): Fixed code to properly set all writable fields from
+	new value instead of or'ing the old and new values.
+	* ip4100bf.h (CSR_READ_ONLY_MASK): Added comment regarding flash
+	done bit.
+	* ip4100bf-sem.cxx: Regenerated after fixes to bfextu, call,
+	shftd, and intsc instructions.
+	* ip4100bf-cpu.h: Regenerated after changing irq-0/irq-1
+	operands and fixes to instructions listed above.
+
+2000-09-19  Frank Ch. Eigler  <fche@redhat.com>
+
+	* ip4100bf.h (_POSIX_C_SOURCE): New macro definition for build
+	compatibility.
+
+2000-09-15  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf-decode.cxx: Regenerated after changing instructions
+	to store s1 operands in temporary plus some fixes to c and x bits
+	and cmpi/movei sign-extension.
+	* ip4100bf-decode.h: Ditto.
+	* ip4100bf-sem.cxx: Ditto.
+	* ip4100bf.cxx (get_h_semaphore, set_h_semaphore):  Changed to 
+	access top two bytes of word array values.
+	(get_h_semaphore_w, set_h_semaphore_w): New routines to access
+	semaphore word array.
+	(word_read, word_write): Changed to access semaphores on word
+	boundaries and use word access routines.
+	(check_mask): Changed CC_LS and CC_HI to negate the meaning of the
+	C-bit because it means "not borrow".
+	* ip4100bf.h (h_semaphore): Changed to be array of USI.
+	(get_h_semaphore_w, set_h_semaphore_w): New methods.
+
+2000-09-13  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf.h (set_h_pc): Changed to mask top 8 bits which
+	are part of the virtual address space but not the program space.
+	* ip4100bf.cxx (ip4100bf_cpu): Added attribute for "syscall-trap"
+	tied to syscall_trap_num so external configuration can set syscall 
+	trap number.  Also changed reference to debugger bus to use proper 
+	name "debugger-bus".
+	(reset_h_csr_interrupt_mask_bit): Fixed typo (missing &).
+	(reset_h_csr_thread_interrupt_bit): Ditto.
+	(do_sycall): Changed trap type to be cpu_trap_software to match
+	what gloss32 expects.  Let case cpu_trap_skip fallthrough to
+	logic in cpu_trap_handled.
+	(step_insns): Removed unused boolean found.
+
+2000-09-12  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf.cxx (IRQ_0_SEMAPHORE_BIT, IRQ_0_TIMER_BIT): Added
+	initialization code for constant arrays.
+	(ip4100bf_cpu): Added setting of syscall attributes to point
+	to temporary registers.
+	(do_syscall): Changed code to load temporary syscall registers from
+	current context data registers prior to syscall.  Also added code
+	to move error and result codes from temporary registers into
+	current context data registers after the syscall.
+	* ip4100bf.h (IRQ_0_SEMAPHORE_BIT, IRQ_0_TIMER_BIT): Changed
+	declaration to remove initialization.
+	(syscall_arg0, syscall_arg1, syscall_arg2, syscall_arg3): New
+	syscall temporary registers.
+	(syscall_error, syscall_result): Ditto.
+
+2000-09-11  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf-sem.cxx: Regenerated to get fix for int.sc instruction.
+
+2000-09-11  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf.cxx (set_d_direct_mem_hi): New method to handle
+	setting high 16-bits of direct operand via movehi.
+	* ip4100bf.h (set_d_direct_mem_hi): Added prototype.
+	* ip4100bf-sem.cxx: Regenerated.
+	* ip4100bf-decode.cxx: Ditto.
+	* ip4100bf-decode.h: Ditto.
+
+2000-09-08  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf.h (timer_enable_pin, watchdog_enable_pin): Two new
+	pins added to ip4100bf_cpu so changes in the global control
+	register can be broadcast to other components.
+	* ip4100bf.cxx (ip4100bf_cpu): Changed to add new output pins.
+	(set_h_glbl_ctl): Changed to call signal_timer_enable_change()
+	and signal_watchdog_enable_change() if either enable bits are
+	changed by the set.
+	(signal_timer_enable_change, signal_watchdog_enable_change): New
+	virtual functions declared in ip4100bf_cgen_cpu and implemented
+	inline in ip4100bf_cpu which drive the timer_enable and 
+	watchdog_enable pins respectively with the new enable bit values.
+	* hw-cpu-ip4k.txt: Modified documentation to add irq and
+	timer bits used.
+
+2000-09-08  Frank Ch. Eigler  <fche@redhat.com>
+
+	* ip4100bf.h (get_s1_direct_mem): Move declaration.  Make public.
+	(set_d_direct_mem): Ditto.
+	* ip4100bf-sem.cxx: Regenerated.
+
+2000-09-07  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf.cxx (reset): Added call to set_h_csr_flash_done_bit_c
+	for each context.
+	(get_h_csr): Removed suspend bit which is no longer in CSR.
+	(set_h_csr_flash_done_bit_c): New method that takes context argument.
+	(set_h_csr_flash_done_bit): Removed.
+	(set_h_csr_flash_access_privilege_violation_bit): New method.
+	(set_h_csr_illegal_insn_bit,set_h_csr_illegal_addr_bit): Ditto.
+	(get_h_glbl_ctl_multithread_enable_bit): Ditto.
+	(unused_insn): New method to handle unused opcodes.
+	(iwrite): Removed setting of CSR flash done bit as this bit is always
+	on.  Added code to set CSR flash access privilege violation bit
+	if specified address not writable.
+	(iread): Removed setting of CSR flash done bit.  Added call to set
+	CSR flash access privilege violation bit if specified address not
+	readable.
+	(ierase): Added check for ierase enable bit in global control register.
+	(invalid_insn): Removed direct reference to illegal insn bit in CSR
+	and replaced with set method call.
+	(memory_trap): Removed direct reference to illegal addr bit in CSR
+	and replaced with set method call.
+	(scheduler): Changed logic to check for the global multithreading
+	enable bit in global ctl register.  If not set, then context 0 is
+	defaulted.  An error occurs if thread 0 is defaulted and not active.
+	* ip4100bf.h: Moved global registers into direct address storage
+	as specified in latest 08/31 spec.  Changed CSR bit masks per latest
+	spec.  Added new methods: set_h_csr_flash_done_bit_c,
+	set_h_csr_flash_access_privilege_violation_bit,
+	set_h_csr_illegal_insn_bit, set_h_csr_illegal_addr_bit,
+	get_h_glbl_ctl_multithread_enable_bit, and unused_insn.
+	Also added multithreading enable bit mask for global ctl register.
+
+2000-09-06  Frank Ch. Eigler  <fche@redhat.com>
+
+	* ip4100bf-decode.cxx: Regenerated with new opcodes, corrected
+	tracing and "calli" extraction code.
+	* ip4100bf-desc.h: Regenerated with new opcodes.
+	* ip4100bf.cxx (ip4100bf_mapped_bus word_write, word_read):
+	Correct constness of "getter" declaration.
+
+2000-08-30  Jeff Johnston  <jjohnstn@redhat.com>
+
+	* ip4100bf.h: Corrected many C++ compile errors.  Moved register
+	access routines under ip4100bf_cpu_cgen class.  Added missing
+	member definitions and removed overloading of any register access
+	members by changing name slightly.
+	* ip4100bf.cxx: Ditto.
+	* Makefile.in: Regenerated.
+
+2000-08-24  Frank Ch. Eigler  <fche@redhat.com>
+
+	* ip4100bf-sem.cxx: Regenerated.
+
+2000-08-24  Frank Ch. Eigler  <fche@redhat.com>
+
+	* ip4100bf-cpu.h, ip4100bf-decode.cxx: Generated anew.
+	* ip4100bf-decode.h, ip4100bf-defs.h, ip4100bf-desc.h: Ditto.
+	* ip4100bf-sem.cxx: Ditto.
+	* ip4100bf.h, ip4100bf.cxx: Corrected several Javaism compile errors.
+
+2000-06-29  Jeff Johnston <jjohnstn@cygnus.com>
+
+	* ip4100bf.h: Added references to stdlib.h and time.h.
+	Added privilege table support for the ixxxx routines.
+	Added pins for all of the IRQ 0 bits so that they can
+	be signalled externally.  Also added a pin for the external
+	watchdog timer.  An output pin for watchdog_reset is also
+	set up so that if a reset is allowed, other components can be
+	signalled.  Added various new CSR bit masks.  Adjusted
+	register file memory addresses per latest 06/22 spec.
+	Added IRQ 0 bit masks.  Added global timer support.
+	Moved some registers to use local storage.  Removed
+	extraneous branch code copied from another port.  Added
+	prototypes for new routines.
+	* ip4100bf.cpu (ip4100bf::word_write): Added PC, global timer,
+	and random seed to list of read-only registers.  Moved
+	irq_status_0 and irq_status_1 to list of read/write addresses.
+	Changed name of timer register to be timer_alarm.
+	(ip4100bf::ip4100bf): Added initializers for all irq callback pins.
+	Also added all pins using add_watchable_pins interface.  Changed
+	order of irq_mask registers as mask 1 precedes mask 0 in latest
+	spec layout.
+	(ip4100bf::reset): Added code to set up source and destination
+	thread context values which are initially self.  Added call
+	to reset_h_glbl_timer().  Set initial random seed value to be
+	the current time.
+	(ip4100bf::get_s1_direct_mem): New routine that gets s1 direct
+	memory arguments based on CSR Source Thread Select.
+	(ip4100bf::set_d_direct_mem): New routine that sets d direct
+	memory arguments based on CSR Destination Thread Select.
+	(ip4100bf::get_h_s1_dr): New routine that gets an s1 general
+	purpose register based on CSR Source Thread Select.
+	(ip4100bf::get_h_timer_alarm, ip4100bf::set_h_timer_alarm):
+	Routines renamed from get_h_timer and set_h_timer respectively.
+	(ip4100bf::get_h_csr): Changed code to fetch suspend bit from
+	h_mt_enable.
+	(ip4100bf::get_h_csr_isr_enable_bit): New routine.
+	(ip4100bf::get_h_csr_isr_enable_bit(int context_num)): Ditto.
+	(ip4100bf::set_h_csr_interrupt_mask_bit): Ditto.
+	(ip4100bf::get_h_glbl_timer): Ditto.
+	(ip4100bf::set_h_glbl_timer): Ditto.
+	(ip4100bf::inc_h_glbl_timer): Ditto.
+	(ip4100bf::set_h_glbl_status_hrt_error_bit): Ditto.
+	(ip4100bf::h_mt_enable_suspend_current): Ditto.
+	(ip4100bf::inc_h_count): Ditto.
+	(ip4100bf::do_watchdog_trigger_pin): Ditto.
+	(ip4100bf::do_irq_timer1_pin): Ditto.
+	(ip4100bf::do_irq_timer2_pin): Ditto.
+	(ip4100bf::do_irq_serializer_1_tx_pin): Ditto.
+	(ip4100bf::do_irq_serializer_1_rx_pin): Ditto.
+	(ip4100bf::do_irq_serializer_2_tx_pin): Ditto.
+	(ip4100bf::do_irq_serializer_2_rx_pin): Ditto.
+	(ip4100bf::do_irq_ext_interrupt_pin): Ditto.
+	(ip4100bf::do_irq_adc_data_ready_pin): Ditto.
+	(ip4100bf::do_irq_dac_buffer_available_pin): Ditto.
+	(ip4100bf::do_irq_port_a_receive_interrupt_pin): Ditto.
+	(ip4100bf::do_irq_port_a_transmit_ready_pin): Ditto.
+	(ip4100bf::do_irq_port_b_receive_interrupt_pin): Ditto.
+	(ip4100bf::do_irq_port_b_transmit_ready_pin): Ditto.
+	(ip4100bf::do_irq_math_coprocessor_pin): Ditto.
+	(ip4100bf::activate): Ditto.
+	(ip4100bf::set_h_csr): Added code to extract the source thread
+	select and destination thread select numbers so they are placed
+	into the s1_context and d_context arrays properly.
+	(ip4100bf::set_h_irq_status_0_bits): Added code to reactivate
+	any threads that don't mask the new interrupt.
+	(ip4100bf::set_h_irq_status_1_bits): Ditto plus added check
+	for special software syscall interrupt in which case a
+	trap is signalled.
+	(ip4100bf::get_h_random_seed): Changed to use rand_r function.
+	(ip4100bf::suspend): Changed code to verify a pending interrupt
+	condition didn't exist and also changed to call 
+	h_mt_enable_suspend_current().
+	(ip4100bf::bkpt): Changed to raise a cpu_trap_breakpoint signal.
+	(ip4100bf::iread): Implemented to use privilege list and to
+	read from program memory.
+	(ip4100bf::iwrite): Implemented to use privilege list and to
+	write to program memory.
+	(ip4100bf::iprivilege): Implemented to set privilege list.
+	(ip4100bf::isave): Implemented to write out the privilege list
+	to the Flash 2 information block.
+	(ip4100bf::ierase): Implemented to move all ones to storage
+	and to reset the privilege for the block.
+	(ip4100bf::get_flash_page): New routine to map program address
+	to flash page memory if applicable.
+	(ip4100bf::invalid_insn): Changed to raise a cpu_trap_invalid_insn
+	signal.
+	(ip4100bf::memory_trap): Changed to raise a cpu_trap_memory_fault
+	signal.
+	(ip4100bf::step_insns): Changed to increment the global timer
+	first, then check for interrupts.  If an interrupt is discovered,
+	a check is made for an ISR routine or whether the thread was already
+	active, in which case a pending interrupt is signalled that may
+	ignore a subsequent suspend.  The CSR thread interrupt bit is set
+	appropriately.  Added a call to increment the context counter
+	after executing the instruction.
+	(ip4100bf::is_active_srt): Changed to use new enable definition.
+	(ip4100bf::is_active_hp_srt): Ditto.
+	(ip4100bf::is_active): Ditto.
+	(ip4100bf::build_hrt_table): Added call to set the HRT
+	error table bit where appropriate.
+
+2000-06-19  Jeff Johnston <jjohnstn@cygnus.com>
+
+	* ip4100bf.cpu: Added all get/set handlers for all registers.
+	Created thread scheduler and routine to read the hrt table.
+	Changed constructor to detach data_bus from "data-memory" accessor
+	name and reattach it to real_data_bus.  The data_bus is reset
+	to a mapped data bus which maps memory to the register file.
+	Also detached "debugger_bus" and reconnected to it to a 
+	harvard_bus which divides up a single virtual memory space into
+	data and insn memory requests.  Also added semantic code for
+	all instructions backed by C functions, except for program memory
+	access functions (iread, iwrite...).
+	(ip4100bf_mapped_bus): New class which is a form of a
+	passthrough_word_bus.
+	* ip4100bf.h: Added all prototypes for changes made to ip4100bf.cpu.
+	Also added definition of ip4100bf_mapped_bus class.  Added
+	required constants for accessing data memory registers and
+	magic masks for accessing various bits.  Provided storage to back
+	up registers that are stored locally.
+
+2000-05-23  Jeff Johnston <jjohnstn@cygnus.com>
+
+	* Makefile.am: New file.
+	* configure.in: Likewise.
+	* Makefile.in: Generate.
+	* aclocal.m4: Likewise.
+	* configure: Likewise.
+	* ip4100bf-cpu.h: Likewise.
+	* ip4100bf-decode.cxx: Likewise.
+	* ip4100bf-decode.h: Likewise.
+	* ip4100bf-defs.h: Likewise.
+	* ip4100bf-desc.h: Likewise.
+	* ip4100bf-sem.cxx: Likewise.
+	* ip4100bf.cxx: New file.
+	* ip4100bf.h: Likewise.
